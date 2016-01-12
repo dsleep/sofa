@@ -1,3 +1,7 @@
+;--------------------------------
+;Include Modern UI
+
+  !include "MUI2.nsh"
 
 ;--------------------------------
 
@@ -19,21 +23,25 @@ RequestExecutionLevel user
 
 ;--------------------------------
 
+!define MUI_FINISHPAGE_RUN "$INSTDIR\bin\runSofa.exe"
+
 ; Pages
 
-LicenseText "SOFA framework binaries distributed by SurfLab"
-LicenseData "Licence.txt"
+  !insertmacro MUI_PAGE_LICENSE "Licence.txt"
+  !insertmacro MUI_PAGE_COMPONENTS
+  !insertmacro MUI_PAGE_DIRECTORY
+  !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
 
-Page license
-Page components
-Page directory
-Page instfiles
-
-UninstPage uninstConfirm
-UninstPage instfiles
+  !insertmacro MUI_UNPAGE_CONFIRM
+  !insertmacro MUI_UNPAGE_INSTFILES
 
 ;--------------------------------
+;Languages
+ 
+  !insertmacro MUI_LANGUAGE "English"
 
+;--------------------------------
 ; The stuff to install
 Section "Application binaries and examples"
 
@@ -73,6 +81,25 @@ Section "Application binaries and examples"
 SectionEnd
 
 ; Optional section (can be disabled by the user)
+Section "Register filetypes"
+  WriteRegStr HKCU "Software\Classes\.scn" "" "SurfLabSOFA.Scene"
+  WriteRegStr HKCU "Software\Classes\.scn" "Content Type" "text/xml"
+  WriteRegStr HKCU "Software\Classes\.scn" "PerceivedType" "text"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.Scene" "" "SOFA simulation scene"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.Scene\DefaultIcon" "" "$\"$INSTDIR\bin\runSOFA.exe$\",1"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.Scene\shell\open\command" "" "$\"$INSTDIR\bin\runSOFA.exe$\" --msaa 8 $\"%1$\""
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.Scene\shell\edit" "" "Edit in Modeler"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.Scene\shell\edit\command" "" "$\"$INSTDIR\bin\Modeler.exe$\" $\"%1$\""
+
+  WriteRegStr HKCU "Software\Classes\.salua" "" "SurfLabSOFA.LuaScene"
+  WriteRegStr HKCU "Software\Classes\.salua" "Content Type" "text/lua"
+  WriteRegStr HKCU "Software\Classes\.salua" "PerceivedType" "text"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.LuaScene" "" "SOFA simulation scene in Lua format"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.LuaScene\DefaultIcon" "" "$\"$INSTDIR\bin\runSOFA.exe$\",1"
+  WriteRegStr HKCU "Software\Classes\SurfLabSOFA.LuaScene\shell\open\command" "" "$\"$INSTDIR\bin\runSOFA.exe$\" --msaa 8 $\"%1$\""
+
+SectionEnd
+
 Section "Start Menu Shortcuts"
 
   CreateDirectory "$SMPROGRAMS\SurfLab SOFA"
@@ -89,6 +116,7 @@ Section "Desktop Shortcuts"
   
 SectionEnd
 
+
 ;--------------------------------
 
 ; Uninstaller
@@ -99,6 +127,9 @@ Section "Uninstall"
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SurfLab_SOFA"
   DeleteRegKey HKCU SOFTWARE\SurfLab_SOFA
 
+  DeleteRegKey HKCU "Software\Classes\SurfLabSOFA.Scene"
+  DeleteRegKey HKCU "Software\Classes\SurfLabSOFA.LuaScene"
+  
   ; Remove files and uninstaller
   RMDir /r $INSTDIR\bin
   RMDir /r $INSTDIR\examples
