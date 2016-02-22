@@ -92,7 +92,6 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
  
   /* Do the actual initialization */
   virtual void reinit(){
-    const VecCoord& restPose = mstate->read(sofa::core::ConstVecCoordId::restPosition())->getValue();
     
     {
       const real E = _youngModulus.getValue(), v = _poissonRatio.getValue();
@@ -102,6 +101,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       _materialStiffness = Vec<3, real>(U, V, W);
     }
     
+    const VecCoord& restPose = mstate->read(sofa::core::ConstVecCoordId::restPosition())->getValue();
     const VecElement &elems = _mesh->getHexahedra();
     // allocate some arrays that cache information about elements
     // including rotations, initial rotations, ...
@@ -141,10 +141,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       
       // should we re-compute element stiffness
       computeElementStiffness(_elemStiffness[i], v);
-      
-      // Apply the transformation, this is really really silly and stupid
-      // who the fuck flattens tensors.
-      
+            
       Vec<24, real> D, F;
       for(int k = 0; k < 8; k++) for(int j = 0; j < 3; j++)
         D[k*3+j] = _rotatedRestElements[i][k][j] - v[k][j];
@@ -202,7 +199,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
   }
   
 
-  //// Auxiliary functions 
+  //// Auxiliary functions ////////////////////////////////////////////////////////////////////
   
   void computeRotationPolar( Transform &R, Vec<8,Coord> v) {
     Transform A(
@@ -214,6 +211,16 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     sofa::helper::Decompose<real>::polarDecomposition(A, R);
   }
   
+//        7---------6
+//       /|        /|
+//      / |       / |
+//     3---------2  |
+//     |  |      |  |     
+//     |  4------|--5     Y  
+//     | /       | /      | Z 
+//     |/        |/       |/
+//     0---------1        o----X
+ 
   void computeElementStiffness(StiffnessMatrix &K, const Vec<8, Coord> &v) {
   
     // coefficients for where the corner points are respective to the center of
@@ -245,29 +252,36 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       const real t3 = (x3 + 1)/2;
       
       J = Transform(
-        ( (v[1]-v[0])*(1-t2)*(1-t3)+ (v[2]-v[3])*t2*(1-t3) + (v[5]-v[4])*(1-t2)*t3 + (v[6]-v[7])*t2*t3 ) /2 ,
-        ( (v[3]-v[0])*(1-t1)*(1-t3)+ (v[2]-v[1])*t1*(1-t3) + (v[7]-v[4])*(1-t1)*t3 + (v[6]-v[5])*t1*t3 ) /2,
-        ( (v[4]-v[0])*(1-t1)*(1-t2)+ (v[5]-v[1])*t1*(1-t2) + (v[6]-v[2])*(1-t1)*t2 + (v[7]-v[3])*t1*t2 ) /2       
+        ( (v[1]-v[0])*(1-t2)*(1-t3)+ (v[2]-v[3])*t2*(1-t3) + (v[5]-v[4])*(1-t2)*t3 + (v[6]-v[7])*t2*t3 ) ,
+        ( (v[3]-v[0])*(1-t1)*(1-t3)+ (v[2]-v[1])*t1*(1-t3) + (v[7]-v[4])*(1-t1)*t3 + (v[6]-v[5])*t1*t3 ) ,
+        ( (v[4]-v[0])*(1-t1)*(1-t2)+ (v[5]-v[1])*t1*(1-t2) + (v[7]-v[3])*(1-t1)*t2 + (v[6]-v[2])*t1*t2 )        
       );
       J.transpose();
       J_1.invert(J);
       J_1t.transpose(J_1);
       detJ = sofa::defaulttype::determinant(J);
-    
-      // whatever qx, qy, qz represent, they are probably deformation
-      // gradients, but why 8 of them?
-      // qi are contributions of each corner vertex
+
+      // q_i is the derivative of the control point with respect 
+      // to physical domain (dN_i/dx)
+      // to do that, we first calculate dNi_du with respect to parameter
+      // domain and then multiply that by J_1 to get the dNi_dx
       Vec<3, real> q[8];
       for(int i = 0; i < 8; i++) {
-        // TODO: what is the point of divide by 8 here, I don't exactly
-        // know the formula for dNi_dx but it looks weird.
-        Vec<3, real> dNi_dx(
-             coef[i][0]    *(1+coef[i][1]*x2)*(1+coef[i][2]*x3) / 8.0,
-          (1+coef[i][0]*x1)*   coef[i][1]    *(1+coef[i][2]*x3) / 8.0,
-          (1+coef[i][0]*x1)*(1+coef[i][1]*x2)*   coef[i][2]     / 8.0
+        Vec<3, real> dNi_du(
+             coef[i][0]    *(1+coef[i][1]*x2)*(1+coef[i][2]*x3)/4 ,
+          (1+coef[i][0]*x1)*   coef[i][1]    *(1+coef[i][2]*x3)/4 ,
+          (1+coef[i][0]*x1)*(1+coef[i][1]*x2)*   coef[i][2]    /4 
         );
-        q[i] = J_1t * dNi_dx;
+        for(int c = 0; c < 3; c++)
+          q[i][c] = dNi_du[0] * J_1[0][c] + dNi_du[1] * J_1[1][c] + dNi_du[2] * J_1[2][c];
       }
+      
+      // M = [ U V V 0 0 0 ]
+      //     [ V U V 0 0 0 ]
+      //     [ V V U 0 0 0 ]
+      //     [ 0 0 0 W 0 0 ]
+      //     [ 0 0 0 0 W 0 ]
+      //     [ 0 0 0 0 0 W ]
       
       // Now use the corner points to calculate stiffness matrices
       for(int i = 0; i < 8; i++) for(int j = i; j < 8; j++) {
@@ -302,7 +316,8 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
 
 SOFA_DECL_CLASS(TrilinearHexahedralCorotationalFEMForceField);
 
-int TrilinearHexahedralCorotationalFEMForceFieldClass = sofa::core::RegisterObject("Trilinear hexahedral corotational force field FEM")
+int TrilinearHexahedralCorotationalFEMForceFieldClass = 
+  sofa::core::RegisterObject("Trilinear hexahedral corotational force field FEM")
   .add<TrilinearHexahedralCorotationalFEMForceField>();
   
 
