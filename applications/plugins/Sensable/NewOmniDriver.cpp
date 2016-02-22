@@ -110,17 +110,11 @@ void printError(const HDErrorInfo *error, const char *message)
 }
 
 
-HDCallbackCode HDCALLBACK copyDeviceDataCallback(void * userData);
+HDCallbackCode HDCALLBACK copyDeviceDataCallback(void *);
 
 //boucle qui recupere les info sur l'interface et les copie sur data->servoDeviceData
-HDCallbackCode HDCALLBACK stateCallback(void * userData)
+HDCallbackCode HDCALLBACK stateCallback(void * /* userData */)
 {
-
-    if(doUpdate)
-    {
-        copyDeviceDataCallback(userData);
-        doUpdate.dec(); // set to 0
-    }
 
     //vector<NewOmniDriver*> autreOmniDriver = static_cast<vector<NewOmniDriver*>>(userData);
     //NewOmniData* data = static_cast<NewOmniData*>(userData);
@@ -142,14 +136,15 @@ HDCallbackCode HDCALLBACK stateCallback(void * userData)
         {
             return HD_CALLBACK_CONTINUE;
         }
+        
         HHD hapticHD = hHDVector[i];
         hdMakeCurrentDevice(hapticHD);
 
         hdBeginFrame(hapticHD);
 
 		//m_buttonState contient la valeur fusionné des boutons de l'omni. Pour recuperer ces valeurs, on passe donc par un décalage de bits.
-		autreOmniDriver[i]->stateButton1 = (((autreOmniDriver[i]->data.servoDeviceData.m_buttonState)>>0)<<31)>>31;
-		autreOmniDriver[i]->stateButton2 = (((autreOmniDriver[i]->data.servoDeviceData.m_buttonState)>>1)<<31)>>31;
+		autreOmniDriver[i]->stateButton1 = (((autreOmniDriver[i]->data.servoDeviceData.m_buttonState)>>0)<<31)>>31 != 0;
+		autreOmniDriver[i]->stateButton2 = (((autreOmniDriver[i]->data.servoDeviceData.m_buttonState)>>1)<<31)>>31 != 0;
 
         if((autreOmniDriver[i]->data.servoDeviceData.m_buttonState & HD_DEVICE_BUTTON_1) || autreOmniDriver[i]->data.permanent_feedback)
             hdSetDoublev(HD_CURRENT_FORCE, autreOmniDriver[i]->data.currentForce);
@@ -413,7 +408,6 @@ NewOmniDriver::NewOmniDriver()
     , minTool(initData(&minTool,0.0,"minTool","minTool value"))
     , openSpeedTool(initData(&openSpeedTool,0.1,"openSpeedTool","openSpeedTool value"))
     , closeSpeedTool(initData(&closeSpeedTool,0.1,"closeSpeedTool","closeSpeedTool value"))
-    , useScheduler(initData(&useScheduler,false,"useScheduler","Enable use of OpenHaptics Scheduler methods to synchronize haptics thread"))
     , setRestShape(initData(&setRestShape, false, "setRestShape", "True to control the rest position instead of the current position directly"))
     , applyMappings(initData(&applyMappings, true, "applyMappings", "True to enable applying the mappings after setting the position"))
     , alignOmniWithCamera(initData(&alignOmniWithCamera, true, "alignOmniWithCamera", "True to keep the Omni's movements in the same reference frame as the camera"))
@@ -437,10 +431,6 @@ NewOmniDriver::~NewOmniDriver()
 //arrete le call back TODO: a ne lancer que depuis l'interface n�1
 void NewOmniDriver::cleanup()
 {
-    std::cout << "NewOmniDriver::cleanup()" << std::endl;
-    if(firstDevice)
-        hdScheduleSynchronous(stopCallback, (void*) &autreOmniDriver, HD_MAX_SCHEDULER_PRIORITY);
-    isInitialized = false;
 }
 
 //configure l'effort
@@ -879,20 +869,7 @@ void NewOmniDriver::onKeyReleasedEvent(core::objectmodel::KeyreleasedEvent *kre)
 void NewOmniDriver::onAnimateBeginEvent()
 {
     // copy data->servoDeviceData to gDeviceData
-	if (useScheduler.getValue())
 		hdScheduleSynchronous(copyDeviceDataCallback, (void*) &autreOmniDriver, HD_MAX_SCHEDULER_PRIORITY);
-	else
-	{
-		doUpdate.inc(); // set to 1
-		while(doUpdate)
-		{
-#ifdef SOFA_HAVE_BOOST
-			boost::thread::yield();
-#else
-			sofa::helper::system::thread::CTime::sleep(0);
-#endif
-		}
-	}
     if (data.deviceData.ready)
     {
         data.deviceData.quat.normalize();
