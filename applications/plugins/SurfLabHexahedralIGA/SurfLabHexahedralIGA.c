@@ -27,11 +27,6 @@
 
 SOFA_EXPORT_DYNAMIC_LIBRARY void initExternalModule()
 {
-	static bool first = true;
-	if (first)
-	{
-		first = false;
-	}
 }
 
 SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleName()
@@ -58,6 +53,6 @@ SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleDescription()
 SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleComponentList()
 {
   /// string containing comma seperated names of the classes provided by the plugin
-  return "";
+  return "TrilinearHexahedralCorotationalFEMForceField";
 }
 
