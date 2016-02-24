@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<Node name="root" dt="0.02" gravity="0 -10 0">
+<Node name="root" dt="0.02" gravity="0 -10 -10">
     <VisualStyle displayFlags="showBehaviorModels showCollisionModels" />
     <CollisionPipeline depth="6" verbose="0" draw="0" />
     <BruteForceDetection name="N2" />
@@ -7,14 +7,15 @@
     <CollisionResponse name="Response" response="default" />
     <CollisionGroup name="Group" />
     <RequiredPlugin name="SurfLabHexahedralIGA" />
+    <OglSceneFrame />
     <Node name="M1">
         <EulerImplicit name="cg_odesolver" printLog="false" />
-        <CGLinearSolver iterations="50" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
+        <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
         <MechanicalObject />
         <UniformMass mass="1" />
-        <RegularGrid nx="4" ny="4" nz="20" xmin="-9" xmax="-6" ymin="0" ymax="3" zmin="0" zmax="-19" />
-        <FixedConstraint indices="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15" />
-        <TrilinearHexahedralCorotationalFEMForceField name="FEM" youngModulus="4000" poissonRatio="0.3"  />
+        <RegularGrid nx="4" ny="4" nz="6" xmin="-1" xmax="1" ymin="-1" ymax="1" zmin="1" zmax="10" />
+        <BoxConstraint box="-1 -1 -1 1 1 1" />
+        <TrilinearHexahedralCorotationalFEMForceField name="FEM" youngModulus="3000" poissonRatio="0.3" />
         <Triangle />
         <Line />
         <Point />

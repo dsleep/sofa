@@ -175,7 +175,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       // accumulate all 8 displacement in a flat vector D
       Vec<24, real> D, F;
       for(int j = 0; j < 8; j++) {
-        Coord v = _elemRotations[i] * dxr[elems[i][j]];
+        Coord v = - _elemRotations[i] * dxr[elems[i][j]];
         D[j*3+0] = v[0];
         D[j*3+1] = v[1];
         D[j*3+2] = v[2];
@@ -284,7 +284,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
         k[2][1] = q[j][2] * V * q[i][1] + q[j][1] * W * q[i][2]                        ;
         k[2][2] = q[j][2] * U * q[i][2] + q[j][1] * W * q[i][1] + q[j][0] * W * q[i][0];
         
-        k = J_1t * k * J_1 * detJ;
+        k = k * detJ;
         
         for(int m = 0; m < 3; m++) for(int l = 0; l < 3; l++) 
           K[i*3+m][j*3+l] += k[l][m];
