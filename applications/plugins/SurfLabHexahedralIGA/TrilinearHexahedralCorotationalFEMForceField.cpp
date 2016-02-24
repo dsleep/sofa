@@ -207,7 +207,6 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       (v[3]-v[0]+v[2]-v[1]+v[7]-v[4]+v[6]-v[5])*0.25f,
       (v[4]-v[0]+v[5]-v[1]+v[7]-v[3]+v[6]-v[2])*0.25f
     );
-    A.transpose();
     sofa::helper::Decompose<real>::polarDecomposition(A, R);
   }
   
@@ -272,8 +271,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
           (1+coef[i][0]*x1)*   coef[i][1]    *(1+coef[i][2]*x3)/4 ,
           (1+coef[i][0]*x1)*(1+coef[i][1]*x2)*   coef[i][2]    /4 
         );
-        for(int c = 0; c < 3; c++)
-          q[i][c] = dNi_du[0] * J_1[0][c] + dNi_du[1] * J_1[1][c] + dNi_du[2] * J_1[2][c];
+        q[i] = J_1t * dNi_du;
       }
       
       // M = [ U V V 0 0 0 ]
@@ -298,7 +296,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
         k[2][1] = q[j][2] * V * q[i][1] + q[j][1] * W * q[i][2]                        ;
         k[2][2] = q[j][2] * U * q[i][2] + q[j][1] * W * q[i][1] + q[j][0] * W * q[i][0];
         
-        k = k * detJ;
+        k = k * detJ / 8;
         
         for(int m = 0; m < 3; m++) for(int l = 0; l < 3; l++) 
           K[i*3+m][j*3+l] += k[l][m];
