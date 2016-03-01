@@ -39,13 +39,41 @@
   #pragma error "New hexa is required"
 #endif
 
-// Instead of tempalte, we just define DataTypes, this can later be
+// SOFA uses the following layout for hexahedra
+// We would rather use a hyper-cube layout.
+//       SOFA Topology layout
+//        7---------6
+//       /|        /|
+//      / |       / |
+//     3---------2  |
+//     |  |      |  |
+//     |  4------|--5     Y
+//     | /       | /      | Z
+//     |/        |/       |/
+//     0---------1        o----X
+//
+//      Our layout
+//        6---------7
+//       /|        /|
+//      / |       / |
+//     2---------3  |
+//     |  |      |  |
+//     |  4------|--5     Y
+//     | /       | /      | Z
+//     |/        |/       |/
+//     0---------1        o----X
+//
+//  So the permutation to convert from SOFA layout to ours is
+const int index_perm[8] = { 0, 1, 3, 2, 4, 5, 7, 6 };
+
+// Instead of template, we just define DataTypes, this can later be
 // converted to a template
 typedef sofa::defaulttype::Vec3dTypes DataTypes;
 using sofa::helper::vector;
 using sofa::defaulttype::Vec;
 using sofa::defaulttype::Mat;
 using sofa::core::objectmodel::Data;
+using sofa::core::topology::BaseMeshTopology;
 
 struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField : public virtual sofa::core::behavior::ForceField<DataTypes>  {
   SOFA_CLASS(TrilinearHexahedralCorotationalFEMForceField, SOFA_TEMPLATE(sofa::core::behavior::ForceField, DataTypes));
@@ -53,18 +81,18 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
   typedef DataTypes::VecCoord VecCoord;
   typedef DataTypes::Coord Coord;
   typedef DataTypes::Coord::value_type real;
-  typedef Data<DataTypes::VecDeriv> DataVecDeriv;
-  typedef Data<DataTypes::VecCoord> DataVecCoord;
-  typedef Mat<24,24,real> StiffnessMatrix;
+  // We only store the lower triangle part of the stiffness matrix
+  // as 8x8 matrix of transformation submatrices
   typedef Mat<3, 3, real> Transform;
-  typedef sofa::core::topology::BaseMeshTopology::SeqHexahedra VecElement;
-  
-  sofa::core::topology::BaseMeshTopology* _mesh;
+  typedef Vec<36, Transform> StiffnessMatrix;
+
+  BaseMeshTopology* _mesh;
   vector<Vec<8,Coord> > _rotatedRestElements;
   Vec<3,real> _materialStiffness;
   vector<StiffnessMatrix> _elemStiffness;
   vector<Transform> _elemRotations;
-  
+
+  // The only XML parameters in this module
   Data<real> _poissonRatio, _youngModulus;
   
   TrilinearHexahedralCorotationalFEMForceField() 
@@ -80,7 +108,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
   /* Read the topology, the rest is done in reinit */
   virtual void init(){
     sofa::core::behavior::ForceField<DataTypes>::init();
-    _mesh = dynamic_cast<sofa::core::topology::BaseMeshTopology*>(getContext()->getMeshTopology());
+    _mesh = getContext()->getMeshTopology();
     if(_mesh == NULL || _mesh->getNbHexahedra() <= 0) {
       serr << "Object must have a hexahedral topology" << sendl;
       return;
@@ -88,8 +116,12 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     
     reinit();
   }
-  
- 
+
+  Transform& stiffnessSubmatrixLookup(StiffnessMatrix& m, int i, int j) {
+    assert(i < 8 && j < 8 && j <= i);
+    return m[i * (i+1) /2 + j];
+  }
+
   /* Do the actual initialization */
   virtual void reinit(){
     
@@ -102,7 +134,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     }
     
     const VecCoord& restPose = mstate->read(sofa::core::ConstVecCoordId::restPosition())->getValue();
-    const VecElement &elems = _mesh->getHexahedra();
+    const BaseMeshTopology::SeqHexahedra &elems = _mesh->getHexahedra();
     // allocate some arrays that cache information about elements
     // including rotations, initial rotations, ...
     _rotatedRestElements.resize(elems.size());
@@ -112,7 +144,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     // Pre-calcluate information about each element
     for(size_t i = 0; i < elems.size(); i++) {
       Vec<8,Coord> v; 
-      for(int j = 0; j < 8; j++) v[j] = restPose[elems[i][j]];
+      for(int j = 0; j < 8; j++) v[j] = restPose[elems[i][index_perm[j]]];
       
       computeRotationPolar(_elemRotations[i], v);
       for(int j = 0; j < 8; j++) v[j] = _elemRotations[i] * v[j];
@@ -123,40 +155,53 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     }
     
   }
-  
-  virtual void addForce(const sofa::core::MechanicalParams*, DataVecDeriv& f, const DataVecCoord& x, const DataVecDeriv&) {
+
+  /// Apply sub-stiffness matrices to displacements to
+  /// calculate forces
+  /// Since the stiffness matrix only contains the lower triangle
+  /// we have to do the multiplcation symmetrically as we go on
+  /// as in we multiply K[l][m] and K[m][l] since they are the same.
+  void applyStiffnessMatrix(StiffnessMatrix& K, const Coord d[8], Deriv f[8]) {
+    for(int l = 0; l < 8; l++) {
+      f[l].fill(0);
+      for (int m = 0; m <= l; m++) {
+        const Transform &k = stiffnessSubmatrixLookup(K, l, m);
+        f[l] += k * d[m];
+        if(l != m) f[m] += k.multTranspose(d[l]);
+      }
+    }
+  }
+
+  virtual void addForce(const sofa::core::MechanicalParams*, Data<VecDeriv>& f, const Data<VecCoord>& x, const Data<VecDeriv>&) {
     
     sofa::helper::WriteAccessor<Data<VecDeriv> > fw = f;
     sofa::helper::ReadAccessor<Data<VecCoord> > xr = x;
     
-    // maybe reinit() in case topology has changed
-    
-    const VecElement &elems = _mesh->getHexahedra();
+    const BaseMeshTopology::SeqHexahedra &elems = _mesh->getHexahedra();
     for(size_t i = 0; i < elems.size(); i++) {
       Vec<8,Coord> v; 
-      for(int j = 0; j < 8; j++) v[j] = xr[elems[i][j]];
+      for(int j = 0; j < 8; j++) v[j] = xr[elems[i][index_perm[j]]];
       
       computeRotationPolar(_elemRotations[i], v);
       for(int j = 0; j < 8; j++) v[j] = _elemRotations[i] * v[j];
       
       // should we re-compute element stiffness
       computeElementStiffness(_elemStiffness[i], v);
-            
-      Vec<24, real> D, F;
-      for(int k = 0; k < 8; k++) for(int j = 0; j < 3; j++)
-        D[k*3+j] = _rotatedRestElements[i][k][j] - v[k][j];
-        
-      F = _elemStiffness[i] * D;
-      
-      
+
+      Coord D[8]; Deriv F[8];
+      for(int k = 0; k < 8; k++)
+          D[k] = _rotatedRestElements[i][k] - v[k];
+
+      applyStiffnessMatrix(_elemStiffness[i], D, F);
+
       for(int j = 0; j < 8; j++)
-        fw[elems[i][j]] += _elemRotations[i].multTranspose( Deriv(F[j * 3], F[j * 3 + 1], F[j * 3 + 2]) );
+        fw[elems[i][index_perm[j]]] += _elemRotations[i].multTranspose(F[j]);
         
     }
     
   
   }
-  virtual void addDForce(const sofa::core::MechanicalParams* mparams, DataVecDeriv& df, const DataVecDeriv& dx) {
+  virtual void addDForce(const sofa::core::MechanicalParams* mparams, Data<VecDeriv>& df, const Data<VecDeriv>& dx) {
     sofa::helper::WriteAccessor<Data<VecDeriv> > dfw = df;
     sofa::helper::ReadAccessor<Data<VecCoord> > dxr = dx;
     dfw.resize(dxr.size());
@@ -164,32 +209,23 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     real kFactor = mparams->kFactorIncludingRayleighDamping(rayleighStiffness.getValue());
     
     // apply force for all of the elements
-    const VecElement &elems = _mesh->getHexahedra();
+    const BaseMeshTopology::SeqHexahedra &elems = _mesh->getHexahedra();
     for(size_t i = 0; i < elems.size(); i++) {
-    
-      // for an element, apply the pre-computed rotation frame to 
-      // the displacement
-      // accumulate all 8 displacement in a flat vector D
-      Vec<24, real> D, F;
-      for(int j = 0; j < 8; j++) {
-        Coord v = - _elemRotations[i] * dxr[elems[i][j]];
-        D[j*3+0] = v[0];
-        D[j*3+1] = v[1];
-        D[j*3+2] = v[2];
-      }
-      
-      // apply stiffness matrix to displacements to find forces
-      F = _elemStiffness[i] * D;
-      
-      // rotate forces back into the original frame while extracting them 
-      // from the flat vector
+
+      Coord D[8]; Deriv F[8];
       for(int j = 0; j < 8; j++)
-        dfw[elems[i][j]] += _elemRotations[i].multTranspose( Deriv(F[j * 3], F[j * 3 + 1], F[j * 3 + 2]) ) * kFactor;
-    }    
+        D[j] = - _elemRotations[i] * dxr[elems[i][index_perm[j]]];
+
+
+      applyStiffnessMatrix(_elemStiffness[i], D, F);
+
+      for(int j = 0; j < 8; j++)
+        dfw[elems[i][index_perm[j]]] += _elemRotations[i].multTranspose(F[j]) * kFactor;
+    }
     
   }
   
-  virtual SReal getPotentialEnergy(const sofa::core::MechanicalParams*, const DataVecCoord&) const {
+  virtual SReal getPotentialEnergy(const sofa::core::MechanicalParams*, const Data<VecCoord>&) const {
     assert("not implemented, pot eng");
     return 0.0;
   }
@@ -203,39 +239,19 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
   
   void computeRotationPolar( Transform &R, Vec<8,Coord> v) {
     Transform A(
-      (v[1]-v[0]+v[2]-v[3]+v[5]-v[4]+v[6]-v[7])*0.25f,
-      (v[3]-v[0]+v[2]-v[1]+v[7]-v[4]+v[6]-v[5])*0.25f,
-      (v[4]-v[0]+v[5]-v[1]+v[7]-v[3]+v[6]-v[2])*0.25f
+      (v[1]-v[0]+v[3]-v[2]+v[5]-v[4]+v[7]-v[6])*0.25f, // 1-skip
+      (v[2]-v[0]+v[3]-v[1]+v[6]-v[4]+v[7]-v[5])*0.25f, // 2-skip
+      (v[4]-v[0]+v[5]-v[1]+v[6]-v[2]+v[7]-v[3])*0.25f  // 4-skip
     );
     sofa::helper::Decompose<real>::polarDecomposition(A, R);
   }
   
-//        7---------6
-//       /|        /|
-//      / |       / |
-//     3---------2  |
-//     |  |      |  |     
-//     |  4------|--5     Y  
-//     | /       | /      | Z 
-//     |/        |/       |/
-//     0---------1        o----X
- 
+
   void computeElementStiffness(StiffnessMatrix &K, const Vec<8, Coord> &v) {
-  
-    // coefficients for where the corner points are respective to the center of
-    // the element
-    const int coef[8][3] = {
-      { -1, -1, -1 },
-      {  1, -1, -1 },
-      {  1,  1, -1 },
-      { -1,  1, -1 },
-      { -1, -1,  1 },
-      {  1, -1,  1 },
-      {  1,  1,  1 },
-      { -1,  1,  1 }
-    };
-  
-    K.fill(0);
+
+    for(size_t i = 0; i < K.size(); i++)
+      K[i].fill(0);
+
     const real U = _materialStiffness[0], V = _materialStiffness[1], W = _materialStiffness[2];
     
     // Calculate the Jacobian of the transformation using quadrature points
@@ -251,9 +267,9 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       const real t3 = (x3 + 1)/2;
       
       J = Transform(
-        ( (v[1]-v[0])*(1-t2)*(1-t3)+ (v[2]-v[3])*t2*(1-t3) + (v[5]-v[4])*(1-t2)*t3 + (v[6]-v[7])*t2*t3 ) ,
-        ( (v[3]-v[0])*(1-t1)*(1-t3)+ (v[2]-v[1])*t1*(1-t3) + (v[7]-v[4])*(1-t1)*t3 + (v[6]-v[5])*t1*t3 ) ,
-        ( (v[4]-v[0])*(1-t1)*(1-t2)+ (v[5]-v[1])*t1*(1-t2) + (v[7]-v[3])*(1-t1)*t2 + (v[6]-v[2])*t1*t2 )        
+        ( (v[1]-v[0])*(1-t2)*(1-t3)+ (v[3]-v[2])*t2*(1-t3) + (v[5]-v[4])*(1-t2)*t3 + (v[7]-v[6])*t2*t3 ) ,
+        ( (v[2]-v[0])*(1-t1)*(1-t3)+ (v[3]-v[1])*t1*(1-t3) + (v[6]-v[4])*(1-t1)*t3 + (v[7]-v[5])*t1*t3 ) ,
+        ( (v[4]-v[0])*(1-t1)*(1-t2)+ (v[5]-v[1])*t1*(1-t2) + (v[6]-v[2])*(1-t1)*t2 + (v[7]-v[3])*t1*t2 )
       );
       J.transpose();
       J_1.invert(J);
@@ -266,10 +282,11 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       // domain and then multiply that by J_1 to get the dNi_dx
       Vec<3, real> q[8];
       for(int i = 0; i < 8; i++) {
+        int s0 = 2 * (i & 1) - 1, s1 = 2 * (i >> 1 & 1) - 1, s2 = 2 * (i >> 2 & 1) - 1;
         Vec<3, real> dNi_du(
-             coef[i][0]    *(1+coef[i][1]*x2)*(1+coef[i][2]*x3)/4 ,
-          (1+coef[i][0]*x1)*   coef[i][1]    *(1+coef[i][2]*x3)/4 ,
-          (1+coef[i][0]*x1)*(1+coef[i][1]*x2)*   coef[i][2]    /4 
+             s0    *(1+s1*x2)*(1+s2*x3)/4 ,
+          (1+s0*x1)*   s1    *(1+s2*x3)/4 ,
+          (1+s0*x1)*(1+s1*x2)*   s2    /4
         );
         q[i] = J_1t * dNi_du;
       }
@@ -282,30 +299,25 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
       //     [ 0 0 0 0 0 W ]
       
       // Now use the corner points to calculate stiffness matrices
-      for(int i = 0; i < 8; i++) for(int j = i; j < 8; j++) {
-        Mat<3, 3, real> k; // k = Bjt M Bi
-        k[0][0] = q[j][0] * U * q[i][0] + q[j][1] * W * q[i][1] + q[j][2] * W * q[i][2];
-        k[0][1] = q[j][0] * V * q[i][1] + q[j][1] * W * q[i][0]                        ;
-        k[0][2] = q[j][0] * V * q[i][2] +                         q[j][2] * W * q[i][0];
+      for(int i = 0; i < 8; i++) for(int j = 0; j <= i; j++) {
+        Transform k; // k = Bjt M Bi
+        k[0][0] = q[i][0] * U * q[j][0] + q[i][1] * W * q[j][1] + q[i][2] * W * q[j][2];
+        k[0][1] = q[i][0] * V * q[j][1] + q[i][1] * W * q[j][0]                        ;
+        k[0][2] = q[i][0] * V * q[j][2] +                         q[i][2] * W * q[j][0];
 
-        k[1][0] = q[j][1] * V * q[i][0] + q[j][0] * W * q[i][1];
-        k[1][1] = q[j][1] * U * q[i][1] + q[j][0] * W * q[i][0] + q[j][2] * W * q[i][2];
-        k[1][2] = q[j][1] * V * q[i][2] +                         q[j][2] * W * q[i][1];
+        k[1][0] = q[i][1] * V * q[j][0] + q[i][0] * W * q[j][1];
+        k[1][1] = q[i][1] * U * q[j][1] + q[i][0] * W * q[j][0] + q[i][2] * W * q[j][2];
+        k[1][2] = q[i][1] * V * q[j][2] +                         q[i][2] * W * q[j][1];
         
-        k[2][0] = q[j][2] * V * q[i][0] +                         q[j][0] * W * q[i][2];
-        k[2][1] = q[j][2] * V * q[i][1] + q[j][1] * W * q[i][2]                        ;
-        k[2][2] = q[j][2] * U * q[i][2] + q[j][1] * W * q[i][1] + q[j][0] * W * q[i][0];
+        k[2][0] = q[i][2] * V * q[j][0] +                         q[i][0] * W * q[j][2];
+        k[2][1] = q[i][2] * V * q[j][1] + q[i][1] * W * q[j][2]                        ;
+        k[2][2] = q[i][2] * U * q[j][2] + q[i][1] * W * q[j][1] + q[i][0] * W * q[j][0];
         
         k = k * detJ / 8;
-        
-        for(int m = 0; m < 3; m++) for(int l = 0; l < 3; l++) 
-          K[i*3+m][j*3+l] += k[l][m];
+
+        stiffnessSubmatrixLookup(K, i, j) += k;
       }
     }    
-    // We only filled the upper triangle of the K matrix
-    // copy the upper triangle to the lower triangle
-    for(int i = 0; i < 24; i++) for(int j = i+1; j < 24; j++)
-      K[j][i] = K[i][j];
   }
   
   
