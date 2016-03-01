@@ -26,14 +26,8 @@
 
 #include <sofa/core/behavior/ForceField.h>
 #include <sofa/core/topology/BaseMeshTopology.h>
-#include <sofa/helper/vector.h>
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/Mat.h>
 #include <sofa/helper/decompose.h>
-#include <sofa/defaulttype/Vec3Types.h>
 #include <sofa/core/ObjectFactory.h>
-#include <sofa/helper/decompose.h>
-#include <assert.h>
 
 #ifndef SOFA_NEW_HEXA
   #pragma error "New hexa is required"
