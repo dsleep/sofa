@@ -199,7 +199,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
         p(0, 0) = QQ[3][0] != 0 ? p(1, 0) : p(0, 1);
     }
 
-
+    /*
     for(size_t i = 0; i < _patches.size(); i++)
     {
       std::cerr << i << ":\n";
@@ -209,7 +209,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
       }
       std::cerr << "\n" << std::endl;
     }
-
+     */
   }
 
 
