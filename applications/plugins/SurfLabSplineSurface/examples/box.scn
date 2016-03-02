@@ -1,0 +1,16 @@
+<Node>
+    <RequiredPlugin name="SurfLabSplineSurface" />
+    <Node name="M1">
+        <MechanicalObject />
+        <RegularGrid name="Container" nx="2" ny="2" nz="2" xmin="-1" xmax="1" ymin="-5" ymax="5" zmin="-1" zmax="1" />
+        <Node name="visualNode">
+            <QuadSetTopologyContainer name="Container"/>
+            <QuadSetTopologyModifier/>
+            <QuadSetTopologyAlgorithms/>
+            <QuadSetGeometryAlgorithms/>
+            <Hexa2QuadTopologicalMapping input="@../Container" output="@Container" />
+            <BiCubicSplineSurface tesselationFactor="4"/>
+            <Triangle />
+        </Node>
+    </Node>
+</Node>
