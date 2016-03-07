@@ -69,16 +69,18 @@
 //     |/        |/       |/
 //     0---------1        o----X
 //
-//      Our layout
-//        6---------7
+//      Our layout with a right handed coordinate system
+//        2---------3
 //       /|        /|
 //      / |       / |
-//     2---------3  |
+//     6---------7  |
 //     |  |      |  |
-//     |  4------|--5     Y
-//     | /       | /      | Z
-//     |/        |/       |/
-//     0---------1        o----X
+//     |  0------|--1     Y
+//     | /       | /      |
+//     |/        |/       |
+//     4---------5        o----X
+//                       /
+//                      Z
 //
 //  So the permutation to convert from SOFA layout to ours is
 const int index_perm[8] = { 0, 1, 3, 2, 4, 5, 7, 6 };
@@ -95,7 +97,7 @@ using sofa::core::topology::BaseMeshTopology;
 
 struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicHexahedralCorotationalFEMForceField : public virtual sofa::core::behavior::ForceField<DataTypes> {
   SOFA_CLASS(TricubicHexahedralCorotationalFEMForceField, SOFA_TEMPLATE(sofa::core::behavior::ForceField, DataTypes));
-  
+
   typedef DataTypes::VecCoord VecCoord;
   typedef DataTypes::Coord Coord;
   typedef DataTypes::Coord::value_type real;
@@ -147,24 +149,24 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicHexahedralCorotationalFEMForceField :
     // First we have to convert each hexahedra to a patch. By discovering its
     // neighbors and assembling all of them into a 4x4x4 patch. But that is only
     // for the regular case. In case of extra-ordinary points we have to have a way
-    // to accomodate all the neighbors around the extra-ordinary vertex.
-    
+    // to accommodate all the neighbors around the extra-ordinary vertex.
+
     // How do we traverse, though. In case of surfaces, we use the edge map. Here we
     // don't have a traversal strategy around a vertex. But even on surfaces, the traversal
-    // strategy is around a line, so it is a boundary of the surface. So here for traversing 
+    // strategy is around a line, so it is a boundary of the surface. So here for traversing
     // around the vertex in 3D, we can go to the boundary of the 3D volume and traverse the surface
-    
+
     // One way around it would be the quarter-edge data structure. Just like half edge, it is
     // an edge with some orientation. One orientation is which face it is on, just like half-edge
-    // another is which side of the face it is on. 
+    // another is which side of the face it is on.
     // In a hexahedral mesh, every face belongs to two volumes. and every edge on it can be thought
     // of belonging to one side or the other. So we call this quarter edge, because every edge not only
     // shared between two adjacent faces, but is also shared between half-faces that form a complete face.
     // This way, every quarter edge has two twins. Or we could call them twin and mirror. The twin edge
     // Is the same as in surfaces, it is the other quarter edge going in opposite direction belonging to the adjacent
-    // face. The mirror is also a quarter edge going in oppsite direction, but it belongs to the face opposite
+    // face. The mirror is also a quarter edge going in opposite direction, but it belongs to the face opposite
     // from current face, the other side of the face, or the mirror.
-    
+
   }
 
   virtual void addForce(const sofa::core::MechanicalParams*, Data<VecDeriv>& f, const Data<VecCoord>& x, const Data<VecDeriv>&) {
@@ -211,5 +213,5 @@ SOFA_DECL_CLASS(TricubicHexahedralCorotationalFEMForceField);
 int TricubicHexahedralCorotationalFEMForceFieldClass =
     sofa::core::RegisterObject("Tricubic hexahedral corotational force field FEM")
         .add<TricubicHexahedralCorotationalFEMForceField>();
-  
+
 
