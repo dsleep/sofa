@@ -169,9 +169,21 @@ public:
     virtual void addContact(Deriv norm, Coord P, Coord Q, Real contactDistance,
                             int m1, int m2, Coord Pfree, Coord Qfree,
                             long id=0, PersistentID localid=0);
+	
+	void addContact(int m1, int m2) {
+		helper::WriteAccessor<Data<helper::vector<int> > > wm1 = this->m1;
+		helper::WriteAccessor<Data<helper::vector<int> > > wm2 = this->m2;
+		wm1.push_back(m1);
+		wm2.push_back(m2);
+	}
 
-    void addContact(Deriv norm, Coord P, Coord Q, Real contactDistance,
-                    int m1, int m2, long id=0, PersistentID localid=0) ;
+    void addContact(Deriv norm, Coord P, Coord Q, Real contactDistance, int m1, int m2, long id=0, PersistentID localid=0)
+    {
+		addContact(norm, P, Q, contactDistance, m1, m2,
+                this->getMState2()->read(core::ConstVecCoordId::freePosition())->getValue()[m2],
+                this->getMState1()->read(core::ConstVecCoordId::freePosition())->getValue()[m1],
+                id, localid);
+    }
 
     void addContact(Deriv norm, Real contactDistance, int m1, int m2,
                     long id=0, PersistentID localid=0) ;
