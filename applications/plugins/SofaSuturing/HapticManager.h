@@ -78,7 +78,7 @@ namespace sofa
 				Data < Real > grasp_stiffness;
 				Data < Real > attach_stiffness;
 				Data < Real > grasp_forcescale;
-
+				Data < Real > duration;
 				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> toolModel;
 				/* we need a link to the omni driver just so we can get the proper ID */
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
@@ -95,6 +95,7 @@ namespace sofa
 					helper::set<int> modelGroup;
 					sofa::component::constraintset::BilateralInteractionConstraint<DataTypes>::SPtr m_constraints;
 					sofa::component::interactionforcefield::VectorSpringForceField<DataTypes>::SPtr m_forcefield;
+					StiffSpringForceField3::SPtr ff;
 					ContactMapper* m1;
 					ContactMapper* m2;
 					/* First button is for grasping, second button is for Haptic */
@@ -133,7 +134,9 @@ namespace sofa
 				void unGrasp();
 				void updateBoundingBoxes();
 				const ContactVector* getContacts();
-
+				double start_time;
+				double delta_time;
+				
 			};
 
 		} // namespace collision

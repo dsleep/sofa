@@ -55,6 +55,7 @@ namespace sofa
 				: grasp_stiffness(initData(&grasp_stiffness, 10000.0, "graspStiffness", "how stiff surface is attached to the tool"))
 				, attach_stiffness(initData(&attach_stiffness, 10000000.0, "attachStiffness", "how stiff surface is attached together"))
 				, grasp_forcescale(initData(&grasp_forcescale, 0.001, "grasp_force_scale", "multiply the force with this coefficient"))
+				, duration(initData(&duration, 10.0, "duration", "multiply the force with this coefficient"))
 				, intersectionMethod(NULL)
 				, detectionNP(NULL)
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
@@ -473,11 +474,11 @@ namespace sofa
 						core::behavior::MechanicalState<DataTypes>* mstate2 = m2->createMapping("Mapper 2");
 						m2->resize(1);
 
-						StiffSpringForceField3::SPtr ff = sofa::core::objectmodel::New<StiffSpringForceField3>(mstate1, mstate2);
+						toolState.ff = sofa::core::objectmodel::New<StiffSpringForceField3>(mstate1, mstate2);
 
-						ff->setName("Suturing Spring");
-						ff->setArrowSize(0.1);
-						ff->setDrawMode(0); //Arrow mode if size > 0
+						toolState.ff->setName(GenerateStirngID::generate().c_str());
+						toolState.ff->setArrowSize(0.1);
+						toolState.ff->setDrawMode(0); //Arrow mode if size > 0
 
 						double r1 = 0.0;
 						double r2 = 0.0;
@@ -485,15 +486,16 @@ namespace sofa
 						int index1 = m1->addPointB(toolState.first_point[j], toolState.first_idx[j], r1);
 						int index2 = m2->addPointB(second_point[j], second_idx[j], r2);
 
-						ff->addSpring(index1, index2, attach_stiffness.getValue(), 0.0, 0.0);
-
-						mstate1->getContext()->addObject(ff);
+						toolState.ff->addSpring(index1, index2, grasp_stiffness.getValue(), 0.0, 0.0);
+						
+						mstate1->getContext()->addObject(toolState.ff);
 
 						m1->update();
 						m2->update();
 						m1->updateXfree();
 						m2->updateXfree();
 
+						start_time = this->getContext()->getTime(); 
 					}
 				}
 			}
@@ -529,6 +531,17 @@ namespace sofa
 
 					if ((toolState.buttonState & FIRST) != 0 && (toolState.buttonState & SECOND) == 0 && (newButtonState & SECOND) != 0)
 						doSuture();
+
+					delta_time = this->getContext()->getTime() - start_time;
+					
+					if (delta_time < duration.getValue()) {
+						if (toolState.ff != NULL) {
+							double scale = delta_time / duration.getValue();
+							double stiffness = grasp_stiffness.getValue()*(1 - scale) + attach_stiffness.getValue()*scale;
+							toolState.ff->setStiffness(stiffness);
+							toolState.ff->reinit();
+						}
+					}
 
 					break;
 				}
