@@ -7,6 +7,7 @@ set(SOURCE_FILES
         SurfLabHexahedralIGA.c
         TrilinearHexahedralCorotationalFEMForceField.cpp
         TricubicHexahedralCorotationalFEMForceField.cpp
+        TricubicBezierForceField.cpp
         )
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES SOFA_NO_CXX11 1)
