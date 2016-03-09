@@ -52,7 +52,7 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
   virtual const SeqHexahedra& getHexahedra(){ static SeqHexahedra empty; return empty; }
 };
 
-SOFA_DECL_CLASS(TriCubicBezierMeshTopologyImpl);
+SOFA_DECL_CLASS(TriCubicBezierMeshTopologyImpl)
 
 int TriCubicBezierMeshTopologyImplClass =
     sofa::core::RegisterObject("Tricubic Bezier topology")
