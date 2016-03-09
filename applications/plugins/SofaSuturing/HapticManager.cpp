@@ -215,25 +215,15 @@ namespace sofa
 			
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
 			{
-				/*if(!vparams->displayFlags().getShowVisualModels()) return;
-				if (!mesh) return;
-				sofa::helper::ReadAccessor<sofa::core::objectmodel::Data<sofa::defaulttype::Rigid3dTypes::VecCoord> > toolTip = toolState.modelTool->getContext()->get<sofa::component::container::MechanicalObject<sofa::defaulttype::Rigid3dTypes> >()->read(sofa::core::VecCoordId::position());
-				Coord tip = toolTip[0].getCenter();
-				sofa::core::topology::Triangle t = mesh->getTriangle(toolState.first_idx[0]);
-				const VecCoord& x = mesh->getContext()->get<sofa::component::container::MechanicalObject <defaulttype::Vec3Types> >()->read(sofa::core::ConstVecCoordId::position())->getValue();
-				Coord edge0 = tip - x[t[0]];
-				Coord edge1 = tip - x[t[1]];
-				Coord edge2 = tip - x[t[2]];
-				vparams->drawTool()->setLightingEnabled(false);
-				defaulttype::Vec4f color(1, 0, 0, 1);
-				glBegin(GL_TRIANGLES);
-				Coord normal = cross(edge0, edge1).normalized();
-				vparams->drawTool()->drawTriangle(tip, x[t[0]], x[t[1]], normal, normal, normal, color, color, color);
-				normal = cross(edge1, edge2).normalized();
-				vparams->drawTool()->drawTriangle(tip, x[t[1]], x[t[2]], normal, normal, normal, color, color, color);
-				normal = cross(edge2, edge0).normalized();
-				vparams->drawTool()->drawTriangle(tip, x[t[2]], x[t[0]], normal, normal, normal, color, color, color);
-				glEnd();*/
+				if(!vparams->displayFlags().getShowVisualModels()) return;
+				if (toolState.m_forcefield) {
+					const VecCoord& x1 = toolState.m_forcefield->getObject1()->read(core::ConstVecCoordId::position())->getValue();
+					const VecCoord& x2 = toolState.m_forcefield->getObject2()->read(core::ConstVecCoordId::position())->getValue();
+					std::vector< Vector3 > points;
+					points.push_back(Vector3(x1[0]));
+					points.push_back(Vector3(x2[0]));
+					vparams->drawTool()->drawLines(points, 3, sofa::defaulttype::Vec4f(0.8, 0.8, 0.8, 1));
+				}
 			}
 			
 			const HapticManager::ContactVector* HapticManager::getContacts()
@@ -377,9 +367,6 @@ namespace sofa
 							toolState.first_point.push_back(pnt);
 						}
 					}
-
-				
-
 				}
 
 			}
@@ -395,6 +382,7 @@ namespace sofa
 					toolState.m_forcefield->reset();
 					toolState.m1->cleanup();
 					toolState.m2->cleanup();
+					toolState.m_forcefield = NULL;
 				}
  				
 				bool suture_active = (toolState.buttonState & 2);
@@ -431,7 +419,6 @@ namespace sofa
 					for (unsigned int j = 0; j < ss; j++)
 					if (toolState.first_idx[j] != second_idx[j])
 					{
-						sout << "suturing for tool " << toolState.id << " actually happening " << sendl;
 						sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
 						surf->getContext()->get(triangleContainer);
 						sofa::component::topology::EdgeSetTopologyModifier* triangleModifier;
@@ -478,7 +465,7 @@ namespace sofa
 
 						toolState.ff->setName(GenerateStirngID::generate().c_str());
 						toolState.ff->setArrowSize(0.1);
-						toolState.ff->setDrawMode(0); //Arrow mode if size > 0
+						toolState.ff->setDrawMode(1); 
 
 						double r1 = 0.0;
 						double r2 = 0.0;
@@ -486,6 +473,7 @@ namespace sofa
 						int index1 = m1->addPointB(toolState.first_point[j], toolState.first_idx[j], r1);
 						int index2 = m2->addPointB(second_point[j], second_idx[j], r2);
 
+						sout << "suturing for tool " << toolState.id << " actually happening " << sendl;
 						toolState.ff->addSpring(index1, index2, grasp_stiffness.getValue(), 0.0, 0.0);
 						
 						mstate1->getContext()->addObject(toolState.ff);
