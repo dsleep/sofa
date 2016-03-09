@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(Sensable)
 
+if((${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU") OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()
 find_package(SofaHaptics REQUIRED)
 find_package(SofaOpenglVisual REQUIRED)
 find_package(SofaGeneral REQUIRED)
