@@ -34,22 +34,331 @@ using sofa::defaulttype::Mat;
 using sofa::core::objectmodel::Data;
 using sofa::core::topology::BaseMeshTopology;
 
+typedef sofa::core::topology::BaseMeshTopology::Edge Edge;
+typedef sofa::core::topology::BaseMeshTopology::Quad Face;
+typedef sofa::core::topology::BaseMeshTopology::PointID index_t;
+
+
+void normalizeEdge(Edge& e) {
+  if(e[0] > e[1])
+  {
+    index_t t = e[1];
+    e[1] = e[0];
+    e[0] = t;
+  }
+}
+
+/*!
+ * \brief noramlizeFace
+ * \param f
+ * Normalize face in a way that the first element is the smallest
+ * and the second is also smaller of the two.
+ *
+ * That is: 0 3 1 2 is converted to 0 2 1 3, swapping 2 and 3
+ */
+void normalizeFace(Face& f){
+  if(f[1] < f[0] && f[1] < f[2] && f[1] < f[3])
+  {
+    index_t f0 = f[0];
+    f[0] = f[1], f[1] = f[2], f[2] = f[3], f[3] = f0;
+  }
+  else if(f[2] < f[0] && f[2] < f[1] && f[2] < f[3])
+  {
+    std::swap(f[0], f[2]);
+  }
+  else if(f[3] < f[0] && f[3] < f[1] && f[3] < f[2])
+  {
+    index_t f0 = f[0];
+    f[0] = f[3], f[3] = f[2], f[2] = f[1], f[1] = f0;
+  }
+  if(f[1] > f[3]) std::swap(f[1], f[3]);
+}
+
+bool lessFace(const Face& a, const Face& b) {
+  return a[0] != b[0] ? a[0] < b[0] :
+      (a[1] != b[1] ? a[1] < b[1] :
+      (a[2] != b[2] ? a[2] < b[2] : a[3] < b[3]));
+}
+
+bool equalFace(const Face& a, const Face &b){
+  return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+}
+
+bool lessEdge(const Edge& a, const Edge& b) {
+  return a[0] != b[0] ? a[0] < b[0] : a[1] < b[1];
+}
+bool equalEdge(const Edge& a, const Edge& b) {
+  return a[0] == b[0] && a[1] == b[1];
+}
+
+//      Our layout with a right handed coordinate system
+//        2---------3
+//       /|        /|
+//      / |       / |
+//     6---------7  |
+//     |  |      |  |
+//     |  0------|--1     Y
+//     | /       | /      |
+//     |/        |/       |
+//     4---------5        o----X
+//                       /
+//                      Z
+//
+const int hexa_edges[12][2] = {
+  { 0, 1},
+  { 0, 2},
+  { 0, 4},
+  { 1, 3},
+  { 1, 5},
+  { 2, 3},
+  { 2, 6},
+  { 3, 7},
+  { 4, 5},
+  { 4, 6},
+  { 5, 7},
+  { 6, 7}
+};
+
+const int hexa_faces[6][4] = {
+  { 0, 1, 3, 2 },
+  { 0, 4, 5, 1 },
+  { 0, 2, 6, 4 },
+  { 7, 6, 2, 3 },
+  { 7, 3, 1, 5 },
+  { 7, 5, 4, 6 }
+};
+
+typedef float real;
+typedef Vec<3, real> vec3;
+
 struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
+
   /// @TODO: maybe we should add points to this topology as well
   Data<SeqTriCubicBezier> _beziers;
+  Data<SeqHexahedra> _hexahedra;
+  Data<vector<vec3> > _points;
+  SeqEdges _edges;
+  SeqQuads _faces;
+
+  //! vector of all DOF that are created during the conversion
+  vector<vec3> _positions;
+
   TriCubicBezierMeshTopologyImpl()
-      :_beziers(initData(&_beziers, "beziers", "Bezeier elements"))
+      :_beziers(initData(&_beziers, "beziers", "Bezier elements"))
+      ,_hexahedra(initData(&_hexahedra,"hexahedra","Input hexahedra to build Beziers out of"))
+      ,_points(initData(&_points,"points", "Input positions of the hexahedral vertices"))
   {}
 
   virtual const SeqTriCubicBezier& getTriCubicBeziers(){
     return _beziers.getValue();
   }
 
-  virtual const SeqEdges& getEdges(){ static SeqEdges empty; return empty; }
+
+  virtual const SeqEdges& getEdges(){ return _edges; }
   virtual const SeqTriangles& getTriangles(){ static SeqTriangles empty; return empty; }
-  virtual const SeqQuads& getQuads(){ static SeqQuads empty; return empty; }
+  virtual const SeqQuads& getQuads(){ return _faces; }
   virtual const SeqTetrahedra& getTetrahedra(){ static SeqTetrahedra empty; return empty; }
-  virtual const SeqHexahedra& getHexahedra(){ static SeqHexahedra empty; return empty; }
+  virtual const SeqHexahedra& getHexahedra(){ return _hexahedra.getValue(); }
+
+
+  virtual bool hasPos()const{
+    return true;
+  }
+  virtual SReal getPX(int i) const{
+    return _positions[i][0];
+  }
+  virtual SReal getPY(int i) const{
+    return _positions[i][1];
+  }
+  virtual SReal getPZ(int i) const{
+    return _positions[i][2];
+  }
+  virtual int getNbPoints() const{
+    return static_cast<int>(_positions.size());
+  }
+
+  virtual void init(){
+    if(_hexahedra.getValue().size() > 0)
+      buildBeziersFromHexahedra();
+    else
+      _positions = _points.getValue();
+  }
+
+
+  /// Normalize all edges, sort them and remove duplicates
+  /// so that we can use binary search on them now.
+  void sortEdges(SeqEdges& edges){
+    std::for_each(edges.begin(), edges.end(), normalizeEdge);
+    std::sort(edges.begin(), edges.end(), lessEdge);
+    SeqEdges::iterator new_end = std::unique(edges.begin(), edges.end(), equalEdge);
+    edges.resize(new_end - edges.begin());
+  }
+
+  void sortFaces(SeqQuads& faces){
+    std::for_each(faces.begin(), faces.end(), normalizeFace);
+    std::sort(faces.begin(), faces.end(), lessFace);
+    SeqQuads::iterator new_end = std::unique(faces.begin(), faces.end(), equalFace);
+    faces.resize(new_end - faces.begin());
+  }
+
+  /*!
+   * \brief getEdgePointIndex
+   * \param a
+   * \param b
+   * \return vertex index of the edge point
+   *
+   * Since every edge has two points on it, we orient it
+   * by the ordering of a and b.
+   *
+   *
+   */
+  index_t getEdgePointIndex(index_t a, index_t b){
+    Edge e(a, b); normalizeEdge(e);
+    int orientation = a < b ? 0 : 1;
+    SeqEdges::const_iterator q = std::lower_bound(_edges.begin(), _edges.end(), e, lessEdge);
+    assert(q != _edges.end() && *q == e);
+    return (q - _edges.begin())*2 + orientation + _points.getValue().size();
+  }
+
+  index_t getFacePointIndex(index_t a, index_t b, index_t c, index_t d) {
+    Face f(a, b, c, d); normalizeFace(f);
+    int orientation = 0;
+    if(a < b && a < c && a < d) orientation = 0;
+    if(b < a && b < c && b < d) orientation = 1;
+    if(c < a && c < b && c < d) orientation = 2;
+    if(d < a && d < b && d < c) orientation = 3;
+    SeqQuads::const_iterator q = std::lower_bound(_faces.begin(), _faces.end(), f, lessFace);
+    assert(q != _faces.end() && *q == f);
+    return (q - _faces.begin()) * 4 + orientation + _points.getValue().size() + _edges.size() * 2;
+  }
+
+
+  void buildBeziersFromHexahedra() {
+    sofa::helper::WriteAccessor<Data<SeqTriCubicBezier> > beziers = _beziers;
+    sofa::helper::WriteAccessor<Data<vector<vec3> > > points = _points;
+
+    const SeqHexahedra& hexa = getHexahedra();
+    beziers.resize(hexa.size());
+
+    // Enumerate all edges and faces
+    index_t hexahedraVertexCount = 0;
+    for(size_t i = 0; i < hexa.size(); i++) {
+      const Hexahedron& h = hexa[i];
+      for(int j = 0; j < 12; j++)
+        _edges.push_back(Edge(h[hexa_edges[j][0]],h[hexa_edges[j][1]]));
+      for(int j = 0; j < 6; j++)
+        _faces.push_back(Face(h[hexa_faces[j][0]],h[hexa_faces[j][1]],h[hexa_faces[j][2]],h[hexa_faces[j][3]]));
+      for(int j = 0; j < 8; j++)
+        hexahedraVertexCount = std::min(hexahedraVertexCount, h[j]);
+    }
+
+    if(hexahedraVertexCount > points.size())
+      points.resize(hexahedraVertexCount);
+
+    // Remove duplicates and sort them
+    sortEdges(_edges);
+    sortFaces(_faces);
+
+    // go through all hexa and find indices for faces and edges
+    for(size_t i = 0; i < hexa.size(); i++){
+      // create the Bezier from the Hexa
+      const Hexahedron &h = hexa[i]; TriCubicBezier &b = beziers[i];
+      b[0] = h[0], b[3] = h[1], b[12] = h[2], b[15] = h[3];
+      b[48] = h[4], b[51] = h[5], b[60] = h[6], b[63] = h[7];
+
+      // go through all 12 edges both ways and set the edge points
+      for(int u = 0; u < 2; u++)
+        for(int v = 0; v < 2; v++)
+        {
+          // along X direction
+          b[u*16+v*4+1] = getEdgePointIndex(h[u*4+v*2+0],h[u*4+v*2+1]);
+          b[u*16+v*4+2] = getEdgePointIndex(h[u*4+v*2+1],h[u*4+v*2+0]);
+          // along Y direction
+          b[u*16+1*4+v] = getEdgePointIndex(h[u*4+0*2+v],h[u*4+1*2+v]);
+          b[u*16+2*4+v] = getEdgePointIndex(h[u*4+1*2+v],h[u*4+0*2+v]);
+          // along Z direction
+          b[1*16+u*4+v] = getEdgePointIndex(h[0*4+u*2+v],h[1*4+u*2+v]);
+          b[2*16+u*4+v] = getEdgePointIndex(h[1*4+u*2+v],h[0*4+u*2+v]);
+        }
+
+      // go through all 6 faces 4 ways and set the face points
+      for(int u = 0; u < 2; u++)
+      {
+        // XY plane
+        b[u*48+1*4+1] = getFacePointIndex(h[u*4+0],h[u*4+1],h[u*4+3],h[u*4+2]);
+        b[u*48+1*4+2] = getFacePointIndex(h[u*4+1],h[u*4+3],h[u*4+2],h[u*4+0]);
+        b[u*48+2*4+1] = getFacePointIndex(h[u*4+2],h[u*4+0],h[u*4+1],h[u*4+3]);
+        b[u*48+2*4+2] = getFacePointIndex(h[u*4+3],h[u*4+2],h[u*4+0],h[u*4+1]);
+        // XZ plane
+        b[1*16+u*12+1] = getFacePointIndex(h[u*2+0],h[u*2+4],h[u*2+5],h[u*2+1]);
+        b[1*16+u*12+2] = getFacePointIndex(h[u*2+1],h[u*2+0],h[u*2+4],h[u*2+5]);
+        b[2*16+u*12+1] = getFacePointIndex(h[u*2+4],h[u*2+5],h[u*2+1],h[u*2+0]);
+        b[2*16+u*12+2] = getFacePointIndex(h[u*2+5],h[u*2+1],h[u*2+0],h[u*2+4]);
+        // YZ plane
+        b[1*16+1*4+u*3] = getFacePointIndex(h[u+0],h[u+2],h[u+6],h[u+4]);
+        b[1*16+2*4+u*3] = getFacePointIndex(h[u+2],h[u+6],h[u+4],h[u+0]);
+        b[2*16+1*4+u*3] = getFacePointIndex(h[u+4],h[u+0],h[u+2],h[u+6]);
+        b[2*16+2*4+u*3] = getFacePointIndex(h[u+6],h[u+4],h[u+0],h[u+2]);
+      }
+
+      for(int u = 1; u <= 2; u++)
+        for(int v = 1; v <=2; v++)
+          for(int w = 1; w <= 2; w++)
+              b[u*16+v*4+w] = getInternalPointIndex(i, u, v, w);
+    }
+
+    // Average out the hexahedral points to create initial positions
+    // for the cubic Bezires
+
+    _positions.resize(points.size() + _edges.size() * 2 + _faces.size() * 4 + hexa.size() * 8);
+
+    for(size_t i = 0; i < points.size(); i++)
+      _positions[i] = points[i];
+    for(size_t i = 0; i < _edges.size(); i++)
+    {
+      const Edge& e = _edges[i];
+      _positions[getEdgePointIndex(e[0],e[1])] = 2.0/3.0 * points[e[0]] + points[e[1]] / 3.0;
+      _positions[getEdgePointIndex(e[1],e[0])] = 2.0/3.0 * points[e[1]] + points[e[0]] / 3.0;
+    }
+    for(size_t i = 0; i < _faces.size(); i++)
+    {
+      const Face& f = _faces[i]; index_t a = f[0], b = f[1], c = f[2], d = f[3];
+      _positions[getFacePointIndex(a,b,c,d)] = 4.0/9.0 * points[a] + 2.0/9.0 * (points[b]+points[d]) + 1.0/9.0 * points[c];
+      _positions[getFacePointIndex(b,c,d,a)] = 4.0/9.0 * points[b] + 2.0/9.0 * (points[c]+points[a]) + 1.0/9.0 * points[d];
+      _positions[getFacePointIndex(c,d,a,b)] = 4.0/9.0 * points[c] + 2.0/9.0 * (points[d]+points[b]) + 1.0/9.0 * points[a];
+      _positions[getFacePointIndex(d,a,b,c)] = 4.0/9.0 * points[d] + 2.0/9.0 * (points[a]+points[c]) + 1.0/9.0 * points[b];
+    }
+    for(size_t i = 0; i < hexa.size(); i++)
+    {
+      const Hexahedron& h = hexa[i];
+      for(int u = 1; u <= 2; u++) for(int v = 1; v <=2; v++) for(int w = 1; w <= 2; w++)
+      {
+        vec3 x;
+        for(int k = 0; k < 2; k++) for(int l = 0; l < 2; l++) for(int m = 0; m < 2; m++)
+          x += points[h[k*4+l*2+m]] * (3-u + k*(2*u-3)) * (3-v + l*(2*v-3)) * (3-w + m*(2*w-3) ) / 27.0;
+        _positions[getInternalPointIndex(i, u, v, w)] = x;
+      }
+    }
+  }
+
+
+  /*!
+   * \brief Get the DOF number of the internal point of hexahedron i,
+   * (u,v,w) is the index vector, because it is internal each of
+   * u,v and w are either 1 or 2. Since the whole range is 0..3, the
+   * internal point has to be 1..2.
+   * \param i
+   * \param u
+   * \param v
+   * \param w
+   * \return index of the vertex in the big positions array
+   *
+   *
+   */
+  index_t getInternalPointIndex(index_t i, int u, int v, int w) {
+    return _points.getValue().size() + _edges.size()*2 + _faces.size()*4 + i*8 + (u-1)*4 + (v-1)*2 + w;
+  }
+
 };
 
 SOFA_DECL_CLASS(TriCubicBezierMeshTopologyImpl)

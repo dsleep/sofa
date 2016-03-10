@@ -262,6 +262,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
       case 1: return (1-t)*(1-t)*t;
       case 2: return (1-t)*(1-t)*t*t;
       case 3: return t*t*t;
+      default: assert("index out of range"!=0); return NAN;
       }
   }
 
@@ -272,6 +273,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
       case 1: return (1-t)*(1-3*t);
       case 2: return (2-3*t)*t;
       case 3: return 3*t*t;
+      default: assert("index out of range"!=0); return NAN;
       }
   }
 
