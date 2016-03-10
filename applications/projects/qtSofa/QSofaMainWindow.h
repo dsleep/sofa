@@ -27,7 +27,7 @@
 using std::string;
 #include <vector>
 using std::vector;
-#include <QSofaScene.h>
+#include "QSofaScene.h"
 #include <sofa/helper/system/PluginManager.h>
 class QSofaViewer;
 

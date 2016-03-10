@@ -16,12 +16,22 @@ set(HEADER_FILES
 )
 
 find_package(SofaSimpleGUI REQUIRED)
-find_package(GLUT REQUIRED)
 
-qt4_wrap_cpp(MOC_FILES ${HEADER_FILES})
+find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL REQUIRED)
+
+
+
+if(Qt5Core_FOUND)
+  qt5_wrap_cpp(MOC_FILES ${HEADER_FILES})
+  qt5_add_resources(RESOURCE_FILES "./icons.qrc")
+  set(QT_DEPS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL)
+else()
+  find_package(Qt4)
+  qt4_wrap_cpp(MOC_FILES ${HEADER_FILES})
+  qt4_add_resources(RESOURCE_FILES "./icons.qrc")
+endif()
+
 set(RESOURCE_FILES_GROUP "Generated")
-
-qt4_add_resources(RESOURCE_FILES "./icons.qrc")
 set(MOC_FILES_GROUP "Generated")
 
 add_executable(${PROJECT_NAME} ${HEADER_FILES} ${MOC_FILES} ${SOURCE_FILES} ${RESOURCE_FILES})
