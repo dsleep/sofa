@@ -31,10 +31,9 @@
 
 struct TriCubicBezierMeshTopology : public sofa::core::topology::BaseMeshTopology {
   SOFA_CLASS(TriCubicBezierMeshTopology, sofa::core::topology::BaseMeshTopology);
-  typedef sofa::helper::fixed_array<PointID, 16> TriCubicBezier;
+  typedef sofa::helper::fixed_array<PointID, 64> TriCubicBezier;
   typedef sofa::helper::vector<TriCubicBezier> SeqTriCubicBezier;
   virtual const SeqTriCubicBezier& getTriCubicBeziers() = 0;
-  virtual ~TriCubicBezierMeshTopology() = 0;
 };
 
 #endif //SURFLABHEXAHEDRALIGA_TRICUBICBEZIERMESHTOPOLOGY_H

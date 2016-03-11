@@ -149,6 +149,9 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
       ,_points(initData(&_points,"points", "Input positions of the hexahedral vertices"))
   {}
 
+  virtual ~TriCubicBezierMeshTopologyImpl()
+  {}
+
   virtual const SeqTriCubicBezier& getTriCubicBeziers(){
     return _beziers.getValue();
   }
@@ -252,8 +255,8 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
         hexahedraVertexCount = std::min(hexahedraVertexCount, h[j]);
     }
 
-    if(hexahedraVertexCount > points.size())
-      points.resize(hexahedraVertexCount);
+    //if(hexahedraVertexCount > points.size())
+    //  points.resize(hexahedraVertexCount);
 
     // Remove duplicates and sort them
     sortEdges(_edges);
@@ -267,38 +270,40 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
       b[48] = h[4], b[51] = h[5], b[60] = h[6], b[63] = h[7];
 
       // go through all 12 edges both ways and set the edge points
-      for(int u = 0; u < 2; u++)
-        for(int v = 0; v < 2; v++)
+      for(int t = 0; t < 2; t++)
+        for(int s = 0; s < 2; s++)
         {
+          int u = t * 3, v = s * 3;
           // along X direction
-          b[u*16+v*4+1] = getEdgePointIndex(h[u*4+v*2+0],h[u*4+v*2+1]);
-          b[u*16+v*4+2] = getEdgePointIndex(h[u*4+v*2+1],h[u*4+v*2+0]);
+          b[u*16+v*4+1] = getEdgePointIndex(h[t*4+s*2+0],h[t*4+s*2+1]);
+          b[u*16+v*4+2] = getEdgePointIndex(h[t*4+s*2+1],h[t*4+s*2+0]);
           // along Y direction
-          b[u*16+1*4+v] = getEdgePointIndex(h[u*4+0*2+v],h[u*4+1*2+v]);
-          b[u*16+2*4+v] = getEdgePointIndex(h[u*4+1*2+v],h[u*4+0*2+v]);
+          b[u*16+1*4+v] = getEdgePointIndex(h[t*4+0*2+s],h[t*4+1*2+s]);
+          b[u*16+2*4+v] = getEdgePointIndex(h[t*4+1*2+s],h[t*4+0*2+s]);
           // along Z direction
-          b[1*16+u*4+v] = getEdgePointIndex(h[0*4+u*2+v],h[1*4+u*2+v]);
-          b[2*16+u*4+v] = getEdgePointIndex(h[1*4+u*2+v],h[0*4+u*2+v]);
+          b[1*16+u*4+v] = getEdgePointIndex(h[0*4+t*2+s],h[1*4+t*2+s]);
+          b[2*16+u*4+v] = getEdgePointIndex(h[1*4+t*2+s],h[0*4+t*2+s]);
         }
 
       // go through all 6 faces 4 ways and set the face points
-      for(int u = 0; u < 2; u++)
+      for(int t = 0; t < 2; t++)
       {
+        int u = t * 3;
         // XY plane
-        b[u*48+1*4+1] = getFacePointIndex(h[u*4+0],h[u*4+1],h[u*4+3],h[u*4+2]);
-        b[u*48+1*4+2] = getFacePointIndex(h[u*4+1],h[u*4+3],h[u*4+2],h[u*4+0]);
-        b[u*48+2*4+1] = getFacePointIndex(h[u*4+2],h[u*4+0],h[u*4+1],h[u*4+3]);
-        b[u*48+2*4+2] = getFacePointIndex(h[u*4+3],h[u*4+2],h[u*4+0],h[u*4+1]);
+        b[u*16+1*4+1] = getFacePointIndex(h[t*4+0],h[t*4+1],h[t*4+3],h[t*4+2]);
+        b[u*16+1*4+2] = getFacePointIndex(h[t*4+1],h[t*4+3],h[t*4+2],h[t*4+0]);
+        b[u*16+2*4+1] = getFacePointIndex(h[t*4+2],h[t*4+0],h[t*4+1],h[t*4+3]);
+        b[u*16+2*4+2] = getFacePointIndex(h[t*4+3],h[t*4+2],h[t*4+0],h[t*4+1]);
         // XZ plane
-        b[1*16+u*12+1] = getFacePointIndex(h[u*2+0],h[u*2+4],h[u*2+5],h[u*2+1]);
-        b[1*16+u*12+2] = getFacePointIndex(h[u*2+1],h[u*2+0],h[u*2+4],h[u*2+5]);
-        b[2*16+u*12+1] = getFacePointIndex(h[u*2+4],h[u*2+5],h[u*2+1],h[u*2+0]);
-        b[2*16+u*12+2] = getFacePointIndex(h[u*2+5],h[u*2+1],h[u*2+0],h[u*2+4]);
+        b[1*16+u*4+1] = getFacePointIndex(h[t*2+0],h[t*2+4],h[t*2+5],h[t*2+1]);
+        b[1*16+u*4+2] = getFacePointIndex(h[t*2+1],h[t*2+0],h[t*2+4],h[t*2+5]);
+        b[2*16+u*4+1] = getFacePointIndex(h[t*2+4],h[t*2+5],h[t*2+1],h[t*2+0]);
+        b[2*16+u*4+2] = getFacePointIndex(h[t*2+5],h[t*2+1],h[t*2+0],h[t*2+4]);
         // YZ plane
-        b[1*16+1*4+u*3] = getFacePointIndex(h[u+0],h[u+2],h[u+6],h[u+4]);
-        b[1*16+2*4+u*3] = getFacePointIndex(h[u+2],h[u+6],h[u+4],h[u+0]);
-        b[2*16+1*4+u*3] = getFacePointIndex(h[u+4],h[u+0],h[u+2],h[u+6]);
-        b[2*16+2*4+u*3] = getFacePointIndex(h[u+6],h[u+4],h[u+0],h[u+2]);
+        b[1*16+1*4+u] = getFacePointIndex(h[t+0],h[t+2],h[t+6],h[t+4]);
+        b[1*16+2*4+u] = getFacePointIndex(h[t+2],h[t+6],h[t+4],h[t+0]);
+        b[2*16+1*4+u] = getFacePointIndex(h[t+4],h[t+0],h[t+2],h[t+6]);
+        b[2*16+2*4+u] = getFacePointIndex(h[t+6],h[t+4],h[t+0],h[t+2]);
       }
 
       for(int u = 1; u <= 2; u++)
@@ -356,7 +361,7 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
    *
    */
   index_t getInternalPointIndex(index_t i, int u, int v, int w) {
-    return _points.getValue().size() + _edges.size()*2 + _faces.size()*4 + i*8 + (u-1)*4 + (v-1)*2 + w;
+    return _points.getValue().size() + _edges.size()*2 + _faces.size()*4 + i*8 + (u-1)*4 + (v-1)*2 + (w-1);
   }
 
 };
@@ -365,4 +370,4 @@ SOFA_DECL_CLASS(TriCubicBezierMeshTopologyImpl)
 
 int TriCubicBezierMeshTopologyImplClass =
     sofa::core::RegisterObject("Tricubic Bezier topology")
-        .add<TriCubicBezierMeshTopologyImpl>().addAlias("TricubicBezierMeshTopology");
+        .add<TriCubicBezierMeshTopologyImpl>().addAlias("TriCubicBezierMeshTopology");

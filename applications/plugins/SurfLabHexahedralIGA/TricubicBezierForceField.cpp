@@ -55,7 +55,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
 
   // We only store the lower triangle part of the stiffness matrix
   // as 8x8 matrix of transformation submatrices
-  typedef Vec<36, Transform> StiffnessMatrix;
+  typedef Vec<64*(64+1)/2, Transform> StiffnessMatrix;
 
   
   TriCubicBezierMeshTopology* _mesh;
@@ -106,7 +106,10 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     }
     
     const VecCoord &restPose = mstate->read(sofa::core::ConstVecCoordId::restPosition())->getValue();
+    const VecCoord &pos = mstate->read(sofa::core::ConstVecCoordId::position())->getValue();
     const TriCubicBezierMeshTopology::SeqTriCubicBezier &elems = _mesh->getTriCubicBeziers();
+
+    assert(restPose.size() == pos.size());
 
     _rotatedRestElements.resize(elems.size());
     _elemRotations.resize(elems.size());
@@ -115,6 +118,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     for(size_t i = 0; i < elems.size(); i++){
       TriCubicCP v;
       for(int j = 0; j < 64; j++) v[j] = restPose[elems[i][j]];
+
 
       computeRotationPolar(_elemRotations[i], v);
 
@@ -183,7 +187,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   
   //// Auxiliary functions ////////////////////////////////////////////////////////////////////
   
-  void computeRotationPolar( Transform &R, const TriCubicCP& v) {
+  static void computeRotationPolar( Transform &R, const TriCubicCP& v) {
     Transform A; A.fill(0);
     for(int i = 0; i < 4; i++)
       for(int j = 0; j < 4; j++)
@@ -196,7 +200,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     sofa::helper::Decompose<real>::polarDecomposition(A, R);
   }
 
-  Coord cubicDeCasteljau(Coord a, Coord b, Coord c, Coord d, real u) {
+  static Coord cubicDeCasteljau(Coord a, Coord b, Coord c, Coord d, real u) {
       Coord a1 = a * (1-u) + b * u;
       Coord b1 = b * (1-u) + c * u;
       Coord c1 = c * (1-u) + d * u;
@@ -207,7 +211,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
       return a2 * (1-u) + b2 * u;
   }
 
-  Coord cubicDeCasteljauDerivative(Coord a, Coord b, Coord c, Coord d, real u) {
+  static Coord cubicDeCasteljauDerivative(Coord a, Coord b, Coord c, Coord d, real u) {
       Coord a1 = a * (1-u) + b * u;
       Coord b1 = b * (1-u) + c * u;
       Coord c1 = c * (1-u) + d * u;
@@ -215,7 +219,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
       Coord a2 = a1 * (1-u) + b1 * u;
       Coord b2 = b1 * (1-u) + c1 * u;
 
-      return b2 - a2;
+      return 3.0*(b2 - a2);
   }
 
   /*!
@@ -230,7 +234,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
    * In an imprecise way we could say the innermost direction is X and the outermost
    * direction is Z, if the Bezier cube was mapped to unit cube at the origin.
    */
-  Transform jacobianOfCubicBezier(const TriCubicCP& cp, Coord t) {
+  static Transform jacobianOfCubicBezier(const TriCubicCP& cp, Coord t) {
     Transform J;
     Coord dd[3][4];
     for(int i = 0; i < 4; i++)
@@ -259,8 +263,8 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   {
     switch(i) {
       case 0: return (1-t)*(1-t)*(1-t);
-      case 1: return (1-t)*(1-t)*t;
-      case 2: return (1-t)*(1-t)*t*t;
+      case 1: return 3*(1-t)*(1-t)*t;
+      case 2: return 3*(1-t)*(1-t)*t*t;
       case 3: return t*t*t;
       default: assert("index out of range"!=0); return NAN;
       }
@@ -270,8 +274,8 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   {
     switch(i) {
       case 0: return -3*(1-t)*(1-t);
-      case 1: return (1-t)*(1-3*t);
-      case 2: return (2-3*t)*t;
+      case 1: return 3*(1-t)*(1-3*t);
+      case 2: return 3*(2-3*t)*t;
       case 3: return 3*t*t;
       default: assert("index out of range"!=0); return NAN;
       }
@@ -316,9 +320,9 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
               for(int k = 0; k < 4; k++)
                 {
                   Coord dNi_du(
-                      dcompow(t[0], k) *  compow(t[1], i) *  compow(t[2], j),
-                       compow(t[0], k) * dcompow(t[1], i) *  compow(t[2], j),
-                       compow(t[0], k) *  compow(t[1], i) * dcompow(t[2], j)
+                      dcompow(t[0], k) *  compow(t[1], j) *  compow(t[2], i),
+                       compow(t[0], k) * dcompow(t[1], j) *  compow(t[2], i),
+                       compow(t[0], k) *  compow(t[1], j) * dcompow(t[2], i)
                       );
                   q[i*16+j*4+k] = J_1t * dNi_du;
                 }
@@ -349,13 +353,16 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
 
               k = k * detJ / 64;
 
+
               stiffnessSubmatrixLookup(K, i, j) += k;
 
             }
         }
+
+
   }
 
-  Transform& stiffnessSubmatrixLookup(StiffnessMatrix& m, int i, int j) {
+  static Transform& stiffnessSubmatrixLookup(StiffnessMatrix& m, int i, int j) {
     assert(i < 64 && j < 64 && j <= i);
     return m[i * (i+1) /2 + j];
   }
@@ -365,7 +372,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   /// Since the stiffness matrix only contains the lower triangle
   /// we have to do the multiplcation symmetrically as we go on
   /// as in we multiply K[l][m] and K[m][l] since they are the same.
-  void applyStiffnessMatrix(StiffnessMatrix& K, const Coord d[64], Deriv f[64]) {
+  static void applyStiffnessMatrix(StiffnessMatrix& K, const Coord d[64], Deriv f[64]) {
     for(int l = 0; l < 64; l++) {
       f[l].fill(0);
       for (int m = 0; m <= l; m++) {
