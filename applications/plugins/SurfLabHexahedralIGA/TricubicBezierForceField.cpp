@@ -106,10 +106,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     }
     
     const VecCoord &restPose = mstate->read(sofa::core::ConstVecCoordId::restPosition())->getValue();
-    const VecCoord &pos = mstate->read(sofa::core::ConstVecCoordId::position())->getValue();
     const TriCubicBezierMeshTopology::SeqTriCubicBezier &elems = _mesh->getTriCubicBeziers();
-
-    assert(restPose.size() == pos.size());
 
     _rotatedRestElements.resize(elems.size());
     _elemRotations.resize(elems.size());
@@ -197,6 +194,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
           A[1] += v[i*16+(k+1)*4+j] - v[i*16+k*4+j];
           A[2] += v[(k+1)*16+i*4+j] - v[k*16+i*4+j];
         }
+    A = A * (1.0/48.0);
     sofa::helper::Decompose<real>::polarDecomposition(A, R);
   }
 
@@ -264,7 +262,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     switch(i) {
       case 0: return (1-t)*(1-t)*(1-t);
       case 1: return 3*(1-t)*(1-t)*t;
-      case 2: return 3*(1-t)*(1-t)*t*t;
+      case 2: return 3*(1-t)*t*t;
       case 3: return t*t*t;
       default: assert("index out of range"!=0); return NAN;
       }

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <Node name="root" dt="0.02" gravity="0 -10 0">
-    <VisualStyle displayFlags="showBehaviorModels showCollisionModels" />
+    <VisualStyle displayFlags="showBehaviorModels hideCollisionModels" />
     <CollisionPipeline depth="6" verbose="0" draw="0" />
     <BruteForceDetection name="N2" />
     <MinProximityIntersection name="Proximity" alarmDistance="0.5" contactDistance="0.3" />
@@ -10,7 +10,7 @@
     <Node name="M1">
         <EulerImplicit name="cg_odesolver" printLog="false" />
         <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
-        <MechanicalObject />
+        <MechanicalObject name="MO" />
         <UniformMass mass="1" />
         <RegularGrid nx="4" ny="4" nz="20" xmin="-9" xmax="-6" ymin="0" ymax="-3" zmin="0" zmax="19" />
         <FixedConstraint indices="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15" />
@@ -18,5 +18,7 @@
         <Triangle />
         <Line />
         <Point />
+        <OglModel name="Visual"/>
+        <IdentityMapping input="@MO" output="@Visual" />
     </Node>
 </Node>
