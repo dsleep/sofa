@@ -4,6 +4,8 @@
 #include <QFileDialog>
 #include <QIcon>
 #include <QProgressDialog>
+#include <sofa/helper/system/PluginManager.h>
+#include <QDir>
 
 int openWindow(std::string argFile) {
     // Loading the scene
@@ -36,6 +38,12 @@ int openWindow(std::string argFile) {
     sofa::component::initComponentGeneral();
     sofa::component::initComponentAdvanced();
     sofa::component::initComponentMisc();
+
+    // Set search path for plugins to the binary dir and one above it
+    std::vector<std::string> &sp = sofa::helper::system::PluginManager::getInstance().getSearchPaths();
+    std::string appPath = QApplication::applicationDirPath().toStdString();
+    sp.push_back(appPath);
+    sp.push_back(appPath + "/../lib");
     sofa::simulation::setSimulation(new sofa::simulation::graph::DAGSimulation());
 
     progress.setLabelText("Loading scene file ...");
