@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(Surflab-TIPS)
+project(SurflabTIPS)
 
 set(SOURCE_FILES
-  SurfLab-TIPS.cpp
+  SurfLabTIPS.cpp
   Visualizer.cpp
 )
 
