@@ -5,7 +5,9 @@
 #include <QAction>
 #include <QMatrix4x4>
 #include <QMenu>
-#include <QSignalMapper>
+#include <QProgressDialog>
+#include <QApplication>
+
 static QGLFormat openglFormat(){
     QGLFormat format;
     format.setVersion(3, 2);
@@ -22,6 +24,8 @@ Visualizer::Visualizer(Node::SPtr sceneRoot) : QGLWidget(openglFormat()), _scene
 
     _visualParameters = sofa::core::visual::VisualParams::defaultInstance();
     _visualParameters->drawTool() = &_drawTool;
+
+    _simulation = sofa::simulation::getSimulation();
 
     createContextMenu();
 }
@@ -69,8 +73,12 @@ void Visualizer::createContextMenu() {
     d3->setChecked(_visualParameters->displayFlags().getShowCollisionModels());
     d3->setData(3);
 
-
     addAction(display);
+
+    QAction *reload = new QAction("Reload scene from disk", this);
+    reload->setShortcut(QKeySequence("Ctrl+R"));
+    connect(reload, SIGNAL(triggered()), this, SLOT(reloadScene()));
+    addAction(reload);
 
     QAction *close = new QAction("Close", this);
     close->setShortcut(QKeySequence("Escape"));
@@ -78,6 +86,39 @@ void Visualizer::createContextMenu() {
     addAction(close);
 
     setContextMenuPolicy(Qt::ActionsContextMenu);
+}
+
+
+/*!
+ * \brief Visualizer::reloadScene
+ * Reload the scene file from disk
+ *
+ * We rely on the fact that the scene always has a valid file path.
+ */
+void Visualizer::reloadScene(){
+    QString fileName = windowFilePath();
+    QProgressDialog progress(this);
+    progress.show();
+    progress.setRange(0, 3);
+    progress.setWindowTitle("Reloading the scene");
+    progress.setLabelText("Unloading current scene...");
+    QApplication::processEvents();
+    _simulation->unload(_sceneRoot);
+    progress.setValue(1);
+    progress.setLabelText("Loading the scene from disk...");
+    QApplication::processEvents();
+    _sceneRoot = _simulation->load(fileName.toUtf8().data());
+    assert(_sceneRoot != NULL);
+    progress.setValue(2);
+    progress.setLabelText("Initializing the scene...");
+    QApplication::processEvents();
+    _simulation->init(_sceneRoot.get());
+    progress.setValue(3);
+    progress.setLabelText("Loading done");
+    QApplication::processEvents();
+    setMessage("Reload from disk finished");
+    QApplication::processEvents();
+    updateGL();
 }
 
 void Visualizer::toggleDisplayFlag(bool b){
@@ -126,9 +167,7 @@ void Visualizer::resizeGL(int w, int h) {
 }
 
 void Visualizer::paintGL() {
-    GLfloat lightPosition[4] = { 1.0, 1.0, 1.0, 1.0 };
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     QMatrix4x4 proj;
     proj.perspective(30, _aspectRatio, 1, 100);
@@ -143,8 +182,9 @@ void Visualizer::paintGL() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glColor4f(0.5f, 0.5f, 0.6f, 1.0f);
     sofa::simulation::getSimulation()->draw(_visualParameters, _sceneRoot.get());
+
+    // Write the message text in the corner of the window
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     int margin = 10;
     renderText(margin, height() - margin, _message);
@@ -154,6 +194,8 @@ void Visualizer::initializeGL() {
     glewInit();
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    GLfloat lightPosition[4] = { 1.0, 1.0, 1.0, 1.0 };
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
     glEnable(GL_DEPTH_TEST);
     sofa::simulation::getSimulation()->initTextures(_sceneRoot.get());
 }

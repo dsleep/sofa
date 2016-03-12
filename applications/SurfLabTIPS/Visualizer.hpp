@@ -40,6 +40,7 @@ public slots:
 
   void setFullscreen(bool f);
   void toggleDisplayFlag(bool b);
+  void reloadScene();
 protected:
   virtual void resizeGL(int w, int h);
   virtual void paintGL();
@@ -61,6 +62,7 @@ private:
   QTimer _animationTimer;
   QString _message;
   sofa::core::visual::VisualParams* _visualParameters;
+  sofa::simulation::Simulation *_simulation;
   void createContextMenu();
   QVector3D mapToHemiSphere(int x, int y);
 };
