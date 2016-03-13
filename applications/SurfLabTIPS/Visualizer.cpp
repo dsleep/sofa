@@ -8,16 +8,9 @@
 #include <QProgressDialog>
 #include <QApplication>
 
-static QGLFormat openglFormat(){
-    QGLFormat format;
-    format.setVersion(3, 2);
-    format.setDoubleBuffer(true);
-    format.setSamples(8);
-    return format;
-}
 
 
-Visualizer::Visualizer(Node::SPtr sceneRoot) : QGLWidget(openglFormat()), _sceneRoot(sceneRoot), _zoom(1.0f), _animationSpeed(1.0f)
+Visualizer::Visualizer(Node::SPtr sceneRoot) :  _sceneRoot(sceneRoot), _zoom(1.0f), _animationSpeed(1.0f)
 {
     connect(&_animationTimer,SIGNAL(timeout()), this, SLOT(stepAnimation()));
     _animationTimer.setInterval(10);
@@ -52,28 +45,86 @@ void Visualizer::createContextMenu() {
     QMenu *displayMenu = new QMenu(this);
     display->setMenu(displayMenu);
 
+    sofa::component::visualmodel::VisualStyle* visualStyle = NULL;
+    _sceneRoot->get(visualStyle);
+    const sofa::core::visual::DisplayFlags &df = visualStyle ? visualStyle->displayFlags.getValue() :  _visualParameters->displayFlags();
+
     QAction* d1 = displayMenu->addAction("Visual Models");
     connect(d1,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
     d1->setShortcut(QKeySequence("Ctrl+1"));
     d1->setCheckable(true);
-    d1->setChecked(_visualParameters->displayFlags().getShowVisualModels());
+    d1->setChecked(true);
     d1->setData(1);
 
     QAction* d2 = displayMenu->addAction("Behavioral Models");
     connect(d2,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
     d2->setShortcut(QKeySequence("Ctrl+2"));
     d2->setCheckable(true);
-    d2->setChecked(_visualParameters->displayFlags().getShowBehaviorModels());
+    d2->setChecked(df.getShowBehaviorModels());
     d2->setData(2);
 
     QAction* d3 = displayMenu->addAction("Collision Models");
     connect(d3,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
     d3->setShortcut(QKeySequence("Ctrl+3"));
     d3->setCheckable(true);
-    d3->setChecked(_visualParameters->displayFlags().getShowCollisionModels());
+    d3->setChecked(df.getShowCollisionModels());
     d3->setData(3);
 
+    QAction* d4 = displayMenu->addAction("Bounding Collision Models");
+    connect(d4,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d4->setShortcut(QKeySequence("Ctrl+4"));
+    d4->setCheckable(true);
+    d4->setChecked(df.getShowBoundingCollisionModels());
+    d4->setData(4);
+
+    QAction* d5 = displayMenu->addAction("Mappings");
+    connect(d5,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d5->setShortcut(QKeySequence("Ctrl+5"));
+    d5->setCheckable(true);
+    d5->setChecked(df.getShowMappings());
+    d5->setData(5);
+
+    QAction* d6 = displayMenu->addAction("Mechanical Mappings");
+    connect(d6,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d6->setShortcut(QKeySequence("Ctrl+6"));
+    d6->setCheckable(true);
+    d6->setChecked(df.getShowMechanicalMappings());
+    d6->setData(6);
+
+    QAction* d7 = displayMenu->addAction("Force Fields");
+    connect(d7,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d7->setShortcut(QKeySequence("Ctrl+7"));
+    d7->setCheckable(true);
+    d7->setChecked(df.getShowForceFields());
+    d7->setData(7);
+
+    QAction* d8 = displayMenu->addAction("Interaction Force Fields");
+    connect(d8,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d8->setShortcut(QKeySequence("Ctrl+8"));
+    d8->setCheckable(true);
+    d8->setChecked(df.getShowInteractionForceFields());
+    d8->setData(8);
+
+    QAction* d9 = displayMenu->addAction("Wireframe");
+    connect(d9,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d9->setShortcut(QKeySequence("Ctrl+9"));
+    d9->setCheckable(true);
+    d9->setChecked(df.getShowWireFrame());
+    d9->setData(9);
+
+    QAction* d0 = displayMenu->addAction("Normals");
+    connect(d0,SIGNAL(toggled(bool)),this, SLOT(toggleDisplayFlag(bool)));
+    d0->setShortcut(QKeySequence("Ctrl+0"));
+    d0->setCheckable(true);
+    d0->setChecked(df.getShowNormals());
+    d0->setData(0);
+
     addAction(display);
+
+    QAction *reset = new QAction("Reset scene", this);
+    reset->setShortcut(QKeySequence("Ctrl+L"));
+    connect(reset, SIGNAL(triggered()), this, SLOT(resetScene()));
+    addAction(reset);
 
     QAction *reload = new QAction("Reload scene from disk", this);
     reload->setShortcut(QKeySequence("Ctrl+R"));
@@ -96,6 +147,8 @@ void Visualizer::createContextMenu() {
  * We rely on the fact that the scene always has a valid file path.
  */
 void Visualizer::reloadScene(){
+    hide();
+    setAnimationRunning(false);
     QString fileName = windowFilePath();
     QProgressDialog progress(this);
     progress.show();
@@ -118,12 +171,18 @@ void Visualizer::reloadScene(){
     QApplication::processEvents();
     setMessage("Reload from disk finished");
     QApplication::processEvents();
+    show();
     updateGL();
+}
+
+void Visualizer::resetScene(){
+    _simulation->reset(_sceneRoot.get());
 }
 
 void Visualizer::toggleDisplayFlag(bool b){
     QAction *sender = qobject_cast<QAction*>(QObject::sender());
     if(!sender) return;
+    if(sender->data().type() != QVariant::Int) return;
 
     sofa::component::visualmodel::VisualStyle* visualStyle = NULL;
     _sceneRoot->get(visualStyle);
@@ -140,8 +199,26 @@ void Visualizer::toggleDisplayFlag(bool b){
     case 3:
         df.setShowCollisionModels(b);
         break;
+    case 4:
+        df.setShowBoundingCollisionModels(b);
+        break;
+    case 5:
+        df.setShowMappings(b);
+        break;
+    case 6:
+        df.setShowMechanicalMappings(b);
+        break;
     case 7:
         df.setShowForceFields(b);
+        break;
+    case 8:
+        df.setShowInteractionForceFields(b);
+        break;
+    case 9:
+        df.setShowWireFrame(b);
+        break;
+    case 0:
+        df.setShowNormals(b);
         break;
     }
     if(visualStyle) visualStyle->displayFlags.endEdit();
@@ -156,8 +233,8 @@ void Visualizer::setFullscreen(bool f){
 }
 
 void Visualizer::stepAnimation() {
-    sofa::simulation::getSimulation()->animate(_sceneRoot.get(), _animationSpeed * _animationTimer.interval() / 1000.0f);
-    sofa::simulation::getSimulation()->updateVisual(_sceneRoot.get());
+    _simulation->animate(_sceneRoot.get(), _animationSpeed * _animationTimer.interval() / 1000.0f);
+    _simulation->updateVisual(_sceneRoot.get());
     updateGL();
 }
 
@@ -182,7 +259,7 @@ void Visualizer::paintGL() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    sofa::simulation::getSimulation()->draw(_visualParameters, _sceneRoot.get());
+    _simulation->draw(_visualParameters, _sceneRoot.get());
 
     // Write the message text in the corner of the window
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -197,7 +274,7 @@ void Visualizer::initializeGL() {
     GLfloat lightPosition[4] = { 1.0, 1.0, 1.0, 1.0 };
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
     glEnable(GL_DEPTH_TEST);
-    sofa::simulation::getSimulation()->initTextures(_sceneRoot.get());
+    _simulation->initTextures(_sceneRoot.get());
 }
 
 

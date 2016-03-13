@@ -80,6 +80,14 @@ int main(int argc, char** argv) {
   app.setApplicationVersion("0.1");
   app.setWindowIcon(QIcon(":/icons/application-icon.png"));
 
+  // Set OpenGL format options
+  QGLFormat format = QGLFormat::defaultFormat();
+  format.setVersion(3, 2);
+  format.setDoubleBuffer(true);
+  format.setSampleBuffers(true);
+  QGLFormat::setDefaultFormat(format);
+
+
   if(argc < 2) {
       QString fileName = QFileDialog::getOpenFileName(NULL, "Open SOFA scene", QString(), "Scene files (*.scn);;SaLua files (*.salua);;XML files (*.xml);; All files (*.*)");
       if(!fileName.isEmpty())

@@ -41,6 +41,7 @@ public slots:
   void setFullscreen(bool f);
   void toggleDisplayFlag(bool b);
   void reloadScene();
+  void resetScene();
 protected:
   virtual void resizeGL(int w, int h);
   virtual void paintGL();
