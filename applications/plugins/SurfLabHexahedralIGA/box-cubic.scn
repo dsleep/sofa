@@ -15,7 +15,7 @@
         <EulerImplicit name="cg_odesolver" printLog="false" />
         <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
         <MechanicalObject />
-        <UniformMass mass="1" />
+        <UniformMass mass="10" />
         <BoxConstraint box="-1 -1 .9 1 1 1" />
         <Line />
         <Point />

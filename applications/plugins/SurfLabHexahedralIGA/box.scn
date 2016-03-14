@@ -7,7 +7,6 @@
     <CollisionResponse name="Response" response="default" />
     <CollisionGroup name="Group" />
     <RequiredPlugin name="SurfLabHexahedralIGA" />
-    <OglSceneFrame />
     <Node name="M1">
         <HexahedronSetTopologyContainer hexahedra="0 1 3 2 4 5 7 6" quads="0 2 3 1  1 3 7 5  0 1 5 4  0 4 6 2  6 4 5 7  2 6 7 3" />
         <EulerImplicit name="cg_odesolver" printLog="false" />
