@@ -226,10 +226,10 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
   index_t getFacePointIndex(index_t a, index_t b, index_t c, index_t d) {
     Face f(a, b, c, d); normalizeFace(f);
     int orientation = 0;
-    if(a < b && a < c && a < d) orientation = 0;
-    if(b < a && b < c && b < d) orientation = 1;
-    if(c < a && c < b && c < d) orientation = 2;
-    if(d < a && d < b && d < c) orientation = 3;
+    if(a < b && a < c && a < d) orientation = 0; // the smallest is first
+    else if(a < c && (a < b || a < d)) orientation = 1; // second to smallest is first
+    else if(c < a && c < b && c < d) orientation = 2; // third one is first, it is diagonal from the smallest so the smallest is c
+    else orientation = 3; // 4th case
     SeqQuads::const_iterator q = std::lower_bound(_faces.begin(), _faces.end(), f, lessFace);
     assert(q != _faces.end() && *q == f);
     return (q - _faces.begin()) * 4 + orientation + _points.getValue().size() + _edges.size() * 2;
