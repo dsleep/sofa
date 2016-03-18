@@ -162,7 +162,7 @@ private:
 #endif
 
 #ifdef SOFA_DUMP_VISITOR_INFO
-    WindowVisitor* windowTraceVisitor;    
+    WindowVisitor* windowTraceVisitor;
     GraphVisitor* handleTraceVisitor;
 #endif
     SofaMouseManager* m_sofaMouseManager;
@@ -202,7 +202,6 @@ protected:
     std::map< helper::SofaViewerFactory::Key, QAction* > viewerMap;
     InformationOnPickCallBack informationOnPickCallBack;
 
-    QWidget* currentTab;
     QSofaStatWidget* statWidget;
     QTimer* timerStep;
     QTimer* timerIdle;
@@ -400,6 +399,8 @@ public slots:
     virtual void toolsDockMoved();
 
     void setViewToolbar(bool);
+    void tabGraphVisibilityChanged(bool);
+    void tabStatsVisiblityChanged(bool);
 protected slots:
     /// Allow to dynamicly change viewer. Called when click on another viewer in GUI Qt viewer list (see viewerMap).
     /// TODO: find a better way to propagate the argument when we construct the viewer
