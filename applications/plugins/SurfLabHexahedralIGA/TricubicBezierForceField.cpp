@@ -349,7 +349,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
               k[2][1] = q[i][2] * V * q[j][1] + q[i][1] * W * q[j][2];
               k[2][2] = q[i][2] * U * q[j][2] + q[i][1] * W * q[j][1] + q[i][0] * W * q[j][0];
 
-              k = k * detJ / 64;
+              k = k * detJ / 8;
 
 
               stiffnessSubmatrixLookup(K, i, j) += k;

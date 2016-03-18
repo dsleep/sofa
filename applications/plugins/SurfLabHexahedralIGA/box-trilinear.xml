@@ -9,7 +9,7 @@
     <RequiredPlugin name="SurfLabHexahedralIGA" />
     <OglSceneFrame />
     <Node name="M1">
-        <TriCubicBezierMeshTopology hexahedra="0 1 2 3 4 5 6 7" points="-1 -1 -1  +1 -1 -1  -1 +1 -1  +1 +1 -1   -1 -1 +1  +1 -1 +1  -1 +1 +1  +1 +1 +1 " />
+        <RegularGrid nx="4" ny="4" nz="4" xmin="-1" ymin="-1" zmin="-1" xmax="1" ymax="1" zmax="1" />
         <EulerImplicit name="cg_odesolver" printLog="false" />
         <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
         <MechanicalObject name="MO" />
@@ -17,7 +17,8 @@
         <BoxConstraint box="-1 -1 .9 1 1 1" />
         <Line />
         <Point />
-        <TricubicBezierForceField name="FEM" youngModulus="1000" poissonRatio="0.45" rayleighStiffness="0" />
+<!--         <TrilinearHexahedralCorotationalFEMForceField name="FEM" youngModulus="1000" poissonRatio="0.45" rayleighStiffness="0"/> -->
+         <HexahedronFEMForceField name="FEM" youngModulus="1000" poissonRatio="0.45" rayleighStiffness="0"/>
         <OglModel name="Visual" />
         <IdentityMapping input="@MO" output="@Visual" />
     </Node>
