@@ -69,8 +69,8 @@ using sofa::defaulttype::Mat;
 using sofa::core::objectmodel::Data;
 using sofa::core::topology::BaseMeshTopology;
 
-struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField : public virtual sofa::core::behavior::ForceField<DataTypes>  {
-  SOFA_CLASS(TrilinearHexahedralCorotationalFEMForceField, SOFA_TEMPLATE(sofa::core::behavior::ForceField, DataTypes));
+struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearFEMForceField : public virtual sofa::core::behavior::ForceField<DataTypes>  {
+  SOFA_CLASS(TrilinearFEMForceField, SOFA_TEMPLATE(sofa::core::behavior::ForceField, DataTypes));
   
   typedef DataTypes::VecCoord VecCoord;
   typedef DataTypes::Coord Coord;
@@ -89,7 +89,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
   // The only XML parameters in this module
   Data<real> _poissonRatio, _youngModulus;
   
-  TrilinearHexahedralCorotationalFEMForceField() 
+  TrilinearFEMForceField()
     : _poissonRatio(initData(&_poissonRatio,(real)0.45,"poissonRatio",""))
     , _youngModulus(initData(&_youngModulus,(real)5000,"youngModulus",""))
   {
@@ -97,7 +97,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
     _youngModulus.setRequired(true);
   }
   
-  virtual ~TrilinearHexahedralCorotationalFEMForceField() {}
+  virtual ~TrilinearFEMForceField() {}
   
   /* Read the topology, the rest is done in reinit */
   virtual void init(){
@@ -318,10 +318,10 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TrilinearHexahedralCorotationalFEMForceField 
 };
 
 
-SOFA_DECL_CLASS(TrilinearHexahedralCorotationalFEMForceField);
+SOFA_DECL_CLASS(TrilinearFEMForceField)
 
 int TrilinearHexahedralCorotationalFEMForceFieldClass = 
-  sofa::core::RegisterObject("Trilinear hexahedral corotational force field FEM")
-  .add<TrilinearHexahedralCorotationalFEMForceField>();
+  sofa::core::RegisterObject("Trilinear hexahedral corotational FEM force field")
+  .add<TrilinearFEMForceField>();
   
 

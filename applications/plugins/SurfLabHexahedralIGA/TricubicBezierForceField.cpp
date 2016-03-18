@@ -1,6 +1,6 @@
 /******************************************************************************
-*       SOFA, Simulation Open-Framework Architecture, version 1.0 RC 1        *
-*                (c) 2006-2011 MGH, INRIA, USTL, UJF, CNRS                    *
+*   SurfLab TIPS                                                              *
+*   (c) 2016 SurfLab, University of Florida                                   *
 *                                                                             *
 * This library is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -29,7 +29,7 @@
 #include <sofa/helper/decompose.h>
 #include <sofa/core/ObjectFactory.h>
 
-#include "TriCubicBezierMeshTopology.h"
+#include "TricubicBezierMeshTopology.h"
 
 // Instead of template, we just define DataTypes, this can later be
 // converted to a template
@@ -38,10 +38,6 @@ using sofa::helper::vector;
 using sofa::defaulttype::Vec;
 using sofa::defaulttype::Mat;
 using sofa::core::objectmodel::Data;
-using sofa::core::topology::BaseMeshTopology;
-
-
-
 
 
 struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sofa::core::behavior::ForceField<DataTypes> {
@@ -51,16 +47,16 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   typedef DataTypes::Coord Coord;
   typedef DataTypes::Coord::value_type real;
   typedef Mat<3, 3, real> Transform;
-  typedef Vec<64,Coord> TriCubicCP;
+  typedef Vec<64,Coord> TricubicCP;
 
   // We only store the lower triangle part of the stiffness matrix
   // as 8x8 matrix of transformation submatrices
   typedef Vec<64*(64+1)/2, Transform> StiffnessMatrix;
 
   
-  TriCubicBezierMeshTopology* _mesh;
+  TricubicBezierMeshTopology* _mesh;
   Vec<3,real> _materialStiffness;
-  vector<TriCubicCP> _rotatedRestElements;
+  vector<TricubicCP> _rotatedRestElements;
   vector<StiffnessMatrix> _elemStiffness;
   vector<Transform> _elemRotations;
 
@@ -79,11 +75,18 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   
   virtual ~TricubicBezierForceField() {}
   
-  /* Read the topology, the rest is done in reinit */
+  /*!
+   * \brief Initialize the force field by pre-computing the rest pose
+   *
+   * Real initialization is done in reinit. This method only retrieves
+   * the topology and checks that the topology is indeed Tricubic Bezier
+   * topology
+   *
+   */
   virtual void init(){
     if(!_validState) return;
     sofa::core::behavior::ForceField<DataTypes>::init();
-    _mesh = dynamic_cast<TriCubicBezierMeshTopology*>(getContext()->getMeshTopology());
+    _mesh = dynamic_cast<TricubicBezierMeshTopology*>(getContext()->getMeshTopology());
     if(_mesh == NULL) {
       serr << "Object must have a cubic Bezier topology" << sendl;
       _validState = false;
@@ -92,8 +95,16 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     
     reinit();
   }
-  
-  /* Do the actual initialization */
+
+  /*!
+   * \brief The actual initialization, re-calculating the rest-pose
+   *
+   * The elasticity parameters are converted to (U,V,W) vector that is
+   * actually used in stiffness matrix calculations.
+   *
+   * The rest-pose is analyzed here and the initial stiffness matrix and
+   * initial rotations are calculated here.
+   */
   virtual void reinit() {
     if(!_validState) return;
 
@@ -106,14 +117,14 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     }
     
     const VecCoord &restPose = mstate->read(sofa::core::ConstVecCoordId::restPosition())->getValue();
-    const TriCubicBezierMeshTopology::SeqTriCubicBezier &elems = _mesh->getTriCubicBeziers();
+    const TricubicBezierMeshTopology::SeqTricubicBezier &elems = _mesh->getTricubicBeziers();
 
     _rotatedRestElements.resize(elems.size());
     _elemRotations.resize(elems.size());
     _elemStiffness.resize(elems.size());
 
     for(size_t i = 0; i < elems.size(); i++){
-      TriCubicCP v;
+      TricubicCP v;
       for(int j = 0; j < 64; j++) v[j] = restPose[elems[i][j]];
 
 
@@ -131,9 +142,9 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     sofa::helper::WriteAccessor<Data<VecDeriv> > fw = f;
     sofa::helper::ReadAccessor<Data<VecCoord> > xr = x;
 
-    const TriCubicBezierMeshTopology::SeqTriCubicBezier& elems = _mesh->getTriCubicBeziers();
+    const TricubicBezierMeshTopology::SeqTricubicBezier& elems = _mesh->getTricubicBeziers();
     for(size_t i = 0; i < elems.size(); i++) {
-      TriCubicCP v;
+      TricubicCP v;
       for(int j = 0; j < 64; j++) v[j] = xr[elems[i][j]];
 
       computeRotationPolar(_elemRotations[i], v);
@@ -159,7 +170,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     dfw.resize(dxr.size());
     
     real kFactor = mparams->kFactorIncludingRayleighDamping(rayleighStiffness.getValue());
-    const TriCubicBezierMeshTopology::SeqTriCubicBezier& elems = _mesh->getTriCubicBeziers();
+    const TricubicBezierMeshTopology::SeqTricubicBezier& elems = _mesh->getTricubicBeziers();
     for(size_t i = 0; i < elems.size(); i++) {
       Coord D[64]; Deriv F[64];
       for(int k = 0; k < 64; k++)
@@ -184,7 +195,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   
   //// Auxiliary functions ////////////////////////////////////////////////////////////////////
   
-  static void computeRotationPolar( Transform &R, const TriCubicCP& v) {
+  static void computeRotationPolar( Transform &R, const TricubicCP& v) {
     Transform A; A.fill(0);
     for(int i = 0; i < 4; i++)
       for(int j = 0; j < 4; j++)
@@ -232,7 +243,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
    * In an imprecise way we could say the innermost direction is X and the outermost
    * direction is Z, if the Bezier cube was mapped to unit cube at the origin.
    */
-  static Transform jacobianOfCubicBezier(const TriCubicCP& cp, Coord t) {
+  static Transform jacobianOfCubicBezier(const TricubicCP& cp, Coord t) {
     Transform J;
     Coord dd[3][4];
     for(int i = 0; i < 4; i++)
@@ -279,7 +290,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
       }
   }
 
-  void computeElementStiffness(StiffnessMatrix& K, const TriCubicCP& v) {
+  void computeElementStiffness(StiffnessMatrix& K, const TricubicCP& v) {
     for (size_t i = 0; i < K.size(); i++)
       K[i].fill(0);
 

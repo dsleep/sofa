@@ -9,7 +9,7 @@
     <RequiredPlugin name="SurfLabHexahedralIGA" />
     <OglSceneFrame />
     <Node name="M1">
-        <TriCubicBezierMeshTopology hexahedra="0 1 2 3 4 5 6 7" points="-1 -1 -1  +1 -1 -1  -1 +1 -1  +1 +1 -1   -1 -1 +1  +1 -1 +1  -1 +1 +1  +1 +1 +1 " />
+        <TricubicBezierSetTopologyContainer hexahedra="0 1 2 3 4 5 6 7" points="-1 -1 -1  +1 -1 -1  -1 +1 -1  +1 +1 -1   -1 -1 +1  +1 -1 +1  -1 +1 +1  +1 +1 +1 " />
         <EulerImplicit name="cg_odesolver" printLog="false" />
         <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
         <MechanicalObject name="MO" />

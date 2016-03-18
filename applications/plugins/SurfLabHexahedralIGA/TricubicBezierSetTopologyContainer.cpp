@@ -23,7 +23,7 @@
 * Contact information: saleh@cise.ufl.edu                                     *
 ******************************************************************************/
 
-#include "TriCubicBezierMeshTopology.h"
+#include "TricubicBezierMeshTopology.h"
 
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/defaulttype/Mat.h>
@@ -131,10 +131,10 @@ const int hexa_faces[6][4] = {
 typedef float real;
 typedef Vec<3, real> vec3;
 
-struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
+struct TricubicBezierSetTopologyContainer : public TricubicBezierMeshTopology {
 
   /// @TODO: maybe we should add points to this topology as well
-  Data<SeqTriCubicBezier> _beziers;
+  Data<SeqTricubicBezier> _beziers;
   Data<SeqHexahedra> _hexahedra;
   Data<vector<vec3> > _points;
   SeqEdges _edges;
@@ -143,16 +143,16 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
   //! vector of all DOF that are created during the conversion
   vector<vec3> _positions;
 
-  TriCubicBezierMeshTopologyImpl()
+  TricubicBezierSetTopologyContainer()
       :_beziers(initData(&_beziers, "beziers", "Bezier elements"))
       ,_hexahedra(initData(&_hexahedra,"hexahedra","Input hexahedra to build Beziers out of"))
       ,_points(initData(&_points,"points", "Input positions of the hexahedral vertices"))
   {}
 
-  virtual ~TriCubicBezierMeshTopologyImpl()
+  virtual ~TricubicBezierSetTopologyContainer()
   {}
 
-  virtual const SeqTriCubicBezier& getTriCubicBeziers(){
+  virtual const SeqTricubicBezier& getTricubicBeziers(){
     return _beziers.getValue();
   }
 
@@ -237,7 +237,7 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
 
 
   void buildBeziersFromHexahedra() {
-    sofa::helper::WriteAccessor<Data<SeqTriCubicBezier> > beziers = _beziers;
+    sofa::helper::WriteAccessor<Data<SeqTricubicBezier> > beziers = _beziers;
     sofa::helper::WriteAccessor<Data<vector<vec3> > > points = _points;
 
     const SeqHexahedra& hexa = getHexahedra();
@@ -265,7 +265,7 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
     // go through all hexa and find indices for faces and edges
     for(size_t i = 0; i < hexa.size(); i++){
       // create the Bezier from the Hexa
-      const Hexahedron &h = hexa[i]; TriCubicBezier &b = beziers[i];
+      const Hexahedron &h = hexa[i]; TricubicBezier &b = beziers[i];
       b[0] = h[0], b[3] = h[1], b[12] = h[2], b[15] = h[3];
       b[48] = h[4], b[51] = h[5], b[60] = h[6], b[63] = h[7];
 
@@ -366,8 +366,8 @@ struct TriCubicBezierMeshTopologyImpl : public TriCubicBezierMeshTopology {
 
 };
 
-SOFA_DECL_CLASS(TriCubicBezierMeshTopologyImpl)
+SOFA_DECL_CLASS(TricubicBezierSetTopologyContainer)
 
-int TriCubicBezierMeshTopologyImplClass =
+int TricubicBezierSetTopologyContainerClass =
     sofa::core::RegisterObject("Tricubic Bezier topology")
-        .add<TriCubicBezierMeshTopologyImpl>().addAlias("TriCubicBezierMeshTopology");
+        .add<TricubicBezierSetTopologyContainer>();
