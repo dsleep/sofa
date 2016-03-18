@@ -298,14 +298,24 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
 
     Transform J, J_1, J_1t;
     real detJ;
+    /* two point quadrature
     const real isq3 = (real) (1.0 / sqrt(3.0));
-    for (int i1 = 0; i1 < 2; i1++)
-      for (int i2 = 0; i2 < 2; i2++)
-        for (int i3 = 0; i3 < 2; i3++) {
-          const real x1 = (2 * i1 - 1) * isq3;
-          const real x2 = (2 * i2 - 1) * isq3;
-          const real x3 = (2 * i3 - 1) * isq3;
-          const Coord t((x1 + 1) / 2,(x2 + 1) / 2,(x3 + 1) / 2);
+    const real quadraturePoints[2] = { (1 - isq3) / 2, (1 + isq3) / 2 };
+    const real quadratureWeights[2] = { 0.5, 0.5 };
+    const int quadraturePointCount = 2;
+    //*/
+    /* five point quadrature */
+    const real w0 = 128.0/255, w1 = (322+13*sqrt(70))/900, w2 = (322-13*sqrt(70))/900;
+    const real q1 = sqrt(5.0 - 2.0 * sqrt(0.7))/3.0, q2 = sqrt(5.0 + 2.0 * sqrt(0.7))/3.0;
+    const real quadraturePoints[5] = { (1 - q2)/2, (1 - q1) / 2, 0, (1 + q1) / 2, (1 + q2) /2 };
+    const real quadratureWeights[5] = { w2, w1, w0, w1, w2 };
+    const int quadraturePointCount = 5;
+    //*/
+    for (int i1 = 0; i1 < quadraturePointCount; i1++)
+      for (int i2 = 0; i2 < quadraturePointCount; i2++)
+        for (int i3 = 0; i3 < quadraturePointCount; i3++) {
+          const Coord t(quadraturePoints[i1],quadraturePoints[i2],quadraturePoints[i3]);
+          const real w = quadratureWeights[i1] * quadratureWeights[i2] * quadratureWeights[i3];
 
           /// The jacobian of the transformation is calculated by taking the first derivative
           /// of the spline function in parameter directions
@@ -360,7 +370,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
               k[2][1] = q[i][2] * V * q[j][1] + q[i][1] * W * q[j][2];
               k[2][2] = q[i][2] * U * q[j][2] + q[i][1] * W * q[j][1] + q[i][0] * W * q[j][0];
 
-              k = k * detJ / 8;
+              k = k * (detJ * w);
 
 
               stiffnessSubmatrixLookup(K, i, j) += k;

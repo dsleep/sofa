@@ -142,8 +142,8 @@ struct HexahedronToTricubicConversion {
     // Input data structures
     const vector<vec3> &points;
     vector<vec3> &_positions;
-    SeqTricubicBezier beziers;
-    const SeqHexahedra hexa;
+    SeqTricubicBezier& beziers;
+    const SeqHexahedra& hexa;
 
     // Auxiliary data structures
     SeqEdges _edges;
