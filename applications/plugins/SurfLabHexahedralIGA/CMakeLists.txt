@@ -13,3 +13,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES SOFA_NO_CXX11 1)
 target_link_libraries(${PROJECT_NAME} SofaCore SofaSimulationCommon)
 
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
