@@ -307,7 +307,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     /* five point quadrature */
     const real w0 = 128.0/255, w1 = (322+13*sqrt(70))/900, w2 = (322-13*sqrt(70))/900;
     const real q1 = sqrt(5.0 - 2.0 * sqrt(0.7))/3.0, q2 = sqrt(5.0 + 2.0 * sqrt(0.7))/3.0;
-    const real quadraturePoints[5] = { (1 - q2)/2, (1 - q1) / 2, 0, (1 + q1) / 2, (1 + q2) /2 };
+    const real quadraturePoints[5] = { (1 - q2)/2, (1 - q1) / 2, 0.5, (1 + q1) / 2, (1 + q2) /2 };
     const real quadratureWeights[5] = { w2, w1, w0, w1, w2 };
     const int quadraturePointCount = 5;
     //*/

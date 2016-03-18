@@ -141,9 +141,9 @@ struct HexahedronToTricubicConversion {
 
     // Input data structures
     const vector<vec3> &points;
+    const SeqHexahedra& hexa;
     vector<vec3> &_positions;
     SeqTricubicBezier& beziers;
-    const SeqHexahedra& hexa;
 
     // Auxiliary data structures
     SeqEdges _edges;
@@ -328,11 +328,10 @@ struct HexahedronToTricubicConversion {
 
 struct TricubicBezierSetTopologyContainer : public TricubicBezierMeshTopology {
 
-  /// @TODO: maybe we should add points to this topology as well
   Data<SeqTricubicBezier> _beziers;
+  Data<vector<vec3> > _position;
   Data<SeqHexahedra> _hexahedra;
   Data<vector<vec3> > _hexahedralPoints;
-  Data<vector<vec3> > _position;
   SeqEdges _edges;
   SeqQuads _faces;
 

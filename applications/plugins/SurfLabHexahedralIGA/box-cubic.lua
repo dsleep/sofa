@@ -10,7 +10,7 @@ root:newObject{ 'BruteForceDetection'  }
 root:newObject{ 'MinProximityIntersection' , alarmDistance = '0.5', contactDistance = '0.3' }
 root:newObject{ 'CollisionResponse', response='default' }
 root:newObject{ 'RequiredPlugin' , name = 'SurfLabHexahedralIGA' }
-root:newObject{ 'EulerImplicit' }
+root:newObject{ 'EulerImplicit', rayleighStiffness = 0.0, rayleighMass = 0.0 }
 root:newObject{ 'CGLinearSolver', iterations='25', tolerance='1.e-9', threshold = '1.e-9' }
 
 function uniformGrid(lower,upper,step)
@@ -66,7 +66,7 @@ function makeTricubic(parent,layers,length,width,translation)
     fc.indices = c
     cube:newObject{ 'Point' }
     cube:newObject{ 'Line' }
-    cube:newObject{ 'TricubicBezierForceField', youngModulus = '1000', poissonRatio = '0.45', rayleighStiffness='0' }
+    cube:newObject{ 'TricubicBezierForceField', youngModulus = '400', poissonRatio = '0.45', rayleighStiffness='0' }
     cube:newObject{ 'OglModel', name='Visual'}
     cube:newObject{ 'IdentityMapping', input='@MO',output='@Visual' }
     return cube
@@ -112,13 +112,13 @@ function makeTrilinear(parent,layers,width,length,translation)
     fc.indices = c
     cube:newObject{ 'Point' }
     cube:newObject{ 'Line' }
-    cube:newObject{ 'TrilinearFEMForceField', youngModulus = '1000', poissonRatio = '0.45', rayleighStiffness='0' }
+    cube:newObject{ 'TrilinearFEMForceField', youngModulus = '700', poissonRatio = '0.45', rayleighStiffness='0' }
     cube:newObject{ 'OglModel', name='Visual'}
     cube:newObject{ 'IdentityMapping', input='@MO',output='@Visual' }
     return cube
 end
 
     
-makeTricubic(root,3,2,2,{-5, 0, 0})
-makeTrilinear(root,3,2,2,{5,0,0})
+makeTricubic(root,3,1,1,{-5, 0, 0})
+makeTrilinear(root,3,1,1,{5,0,0})
 return root
