@@ -66,6 +66,8 @@ namespace sofa
 				SOFA_CLASS2(HapticManager, sofa::component::controller::Controller, sofa::core::visual::VisualModel);
 
 				typedef defaulttype::Vec3Types DataTypes;
+				typedef defaulttype::Vec3f Vec3f;
+				typedef defaulttype::RigidTypes RigidTypes;
 				typedef DataTypes::Coord Coord;
 				typedef DataTypes::VecCoord VecCoord;
 				typedef DataTypes::Real Real;
@@ -79,7 +81,12 @@ namespace sofa
 				Data < Real > attach_stiffness;
 				Data < Real > grasp_forcescale;
 				Data < Real > duration;
+				Data < Vec3f > clampScale;
+
 				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> toolModel;
+				/*these two links are used for clamping tool*/
+				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> upperJaw;
+				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> lowerJaw;
 				/* we need a link to the omni driver just so we can get the proper ID */
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
 
@@ -87,6 +94,7 @@ namespace sofa
 				enum ToolFunction {
 					TOOLFUNCTION_SUTURE, 
 					TOOLFUNCTION_CARVE,
+					TOOLFUNCTION_CLAMP,
 					TOOLFUNCTION_GRASP
 				};
 				struct Tool
@@ -132,8 +140,10 @@ namespace sofa
 				void stopSuture();
 				void doSuture();
 				void unGrasp();
-				void updateBoundingBoxes();
+				void doClamp();
 				const ContactVector* getContacts();
+				void createObstacle(simulation::Node::SPtr  parent, const std::string &filenameCollision, const std::string filenameVisual, const std::string& color,
+					const Vector3& translation, const Vector3 &rotation, const Deriv3 &scale);
 				double start_time;
 				double delta_time;
 				
