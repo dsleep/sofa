@@ -22,6 +22,7 @@ typedef DataTypes::Coord::value_type real;
 using sofa::defaulttype::ResizableExtVector;
 using sofa::core::objectmodel::Data;
 using sofa::helper::WriteOnlyAccessor;
+using sofa::defaulttype::Vec;
 
 /**
  * Draw a bi-cubic B-spline surface from the quad structure of the local mesh.
@@ -52,10 +53,18 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
   std::vector<GLuint> _indices;
   std::vector<Coord> _evaluatedNormals;
 
+  typedef Vec<4, float> Color;
+
+  Data<Color> _diffuse, _specular;
+  Data<float> _ambient, _shininess;
 
   BiCubicSplineSurface()
       : _positions(initData(&_positions, "position", "vertex coordinates"))
       , _tesselationFactor(initData(&_tesselationFactor, 8, "tesselationFactor", "tesselation factor of the patches"))
+      , _diffuse(initData(&_diffuse,Color(0.3f,0.2f,0.2f,1.0f), "diffuseColor",  "Diffuse Color"))
+      , _specular(initData(&_specular,Color(0.3f, 0.2f, 0.1f, 1.0f),"specularColor",  "Specular Color"))
+      , _ambient(initData(&_ambient, 0.2f,"ambientIntensity", "Ambient intensity"))
+      , _shininess(initData(&_shininess, 10.0f,"shininess", "Shininess of the specular"))
   {
     _positions.setGroup("Vector");
     _tesselationFactor.setRequired(true);
@@ -232,7 +241,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
     deBoorsMethodU(x[p(3,0)], x[p(3,1)], x[p(3,2)], x[p(3,3)], u, d, dd);
     deBoorsMethodU(ad,bd,cd,dd, v, edu, edd);
     deBoorsMethodU(a,b,c,d, v, ex, edv);
-    en = edd.cross(edv).normalized();
+    en = - edu.cross(edv).normalized();
   }
   void evaluatePatches() {
     if(_positions.getValue().size() != (size_t)_mesh->getNbPoints()) {
@@ -309,28 +318,35 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
     glBufferData(GL_ARRAY_BUFFER, _evaluatedNormals.size() * sizeof(Coord), _evaluatedNormals.data(), GL_STATIC_DRAW);
   }
 
-  virtual void drawVisual(const VisualParams* /*vparams*/) {
-    float color[3] = { 0.8, 0.6, 1.0 };
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, color);
+  virtual void drawVisual(const VisualParams* vparams) {
+    if(vparams->displayFlags().getShowVisualModels())
+    {
 
-    glEnable(GL_LIGHTING);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glBindBuffer(GL_ARRAY_BUFFER, _vbuffers[0]);
-    glVertexPointer(3, GL_FLOAT, 0, 0);
+        Color ambient = _ambient.getValue() * _diffuse.getValue();
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, _diffuse.getValue().data());
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, _specular.getValue().data());
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient.data());
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, _shininess.getValue());
 
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glBindBuffer(GL_ARRAY_BUFFER, _vbuffers[1]);
-    glNormalPointer(GL_FLOAT, 0, 0);
+        glEnable(GL_LIGHTING);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, _vbuffers[0]);
+        glVertexPointer(3, GL_FLOAT, 0, 0);
 
-    const int L = _tesselationFactor.getValue();
-    for(size_t i = 0; i < _patches.size(); i++)
-      glDrawElementsBaseVertex(GL_TRIANGLES, _indices.size(), GL_UNSIGNED_INT, _indices.data(), i * L * L);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, _vbuffers[1]);
+        glNormalPointer(GL_FLOAT, 0, 0);
 
-    //glDrawArrays(GL_POINTS, 0, _evaluatedPoints.size());
+        const int L = _tesselationFactor.getValue();
+        for(size_t i = 0; i < _patches.size(); i++)
+          glDrawElementsBaseVertex(GL_TRIANGLES, _indices.size(), GL_UNSIGNED_INT, _indices.data(), i * L * L);
+
+        //glDrawArrays(GL_POINTS, 0, _evaluatedPoints.size());
+    }
   }
 };
 
-SOFA_DECL_CLASS(BiCubicSplineSurface);
+SOFA_DECL_CLASS(BiCubicSplineSurface)
 
 int BiCubicSplineSurfaceClass = sofa::core::RegisterObject("Bi-cubic spline surface")
   .add<BiCubicSplineSurface>();
