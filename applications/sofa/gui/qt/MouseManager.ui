@@ -96,9 +96,33 @@
      </property>
     </spacer>
    </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>MouseManager</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>147</x>
+     <y>591</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>147</x>
+     <y>305</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
