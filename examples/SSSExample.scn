@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Node 	 name="root"  dt="0.02"  >
+	<BackgroundSetting color="0.8 0.8 0.8" />
+	<LightManager name="lightManager1"  printLog="1"  listening="1"  shadows="1"  softShadows="1"  sssTextureUnit="6" />
+	<SpotLight name="spotLight1"  shadowTextureSize="4096"  drawSource="1"  zFar="50"  position="0 10 -22"  direction="0 0 1"  cutoff="45" />
+	<!-- <Node 	 name="1"  >
+		<OglShadowShader name="oglShadowShader1"  printLog="1"  turnOn="1"  />
+		<OglModel template="ExtVec3f" name="VisualModel"  printLog="1"  fileMesh="mesh/dragon.obj"  translation="0 5 -5"  scale3d="1 1 1" material="Default Diffuse 1 0 1 0 1 Ambient 1 0 0.2 0 1 Specular 1 0.9 0.9 1 1 Emissive 0 0 1 0 1 Shininess 1 2 " primitiveType="DEFAULT"  blendEquation="GL_FUNC_ADD"  sfactor="GL_SRC_ALPHA"  dfactor="GL_ONE_MINUS_SRC_ALPHA" />
+	</Node> -->
+	<Node 	 name="2"  >
+		<OglShadowShader name="oglShadowShader2"  printLog="1"  turnOn="1"  />
+		<OglFloatVariable name="sssWidth" value="0.005" indexShader="1" />
+		<OglFloatVariable name="translucency" value="0.90" indexShader="1" />
+		<OglShaderDefineMacro id="USE_SSS" indexShader="1" />
+		<OglModel template="ExtVec3f" name="VisualModel"  printLog="1"  fileMesh="mesh/dragon.obj"  translation="0 5 40" useSSS="1"  textureUnit="6"  sssTextureSize="4096" scale3d="2 2 2" material="Default Diffuse 1 1 .8 .6 1 Ambient 1 0 0.2 0 1 Specular 1 0.9 0.9 1 1 Emissive 0 0 1 0 1 Shininess 1 2 "  primitiveType="DEFAULT"  blendEquation="GL_FUNC_ADD"  sfactor="GL_SRC_ALPHA"  dfactor="GL_ONE_MINUS_SRC_ALPHA" />
+	</Node>
+	<!-- <Node 	 name="3"  >
+		<OglShadowShader name="oglShadowShader3"  printLog="1"  turnOn="1"  passive="1"  />
+
+
+		<OglModel template="ExtVec3f" name="VisualModel"  printLog="1"  fileMesh="mesh/box.obj"  translation="0 5 65" rotation="90 0 0"  scale3d="5 5 5" useSSS="0"  textureUnit="6"  sssTextureSize="4096"  material="Default Diffuse 1 1 .8 .6 1 Ambient 1 0 0.2 0 1 Specular 1 0.9 0.9 1 1 Emissive 0 0 1 0 1 Shininess 1 2 " primitiveType="DEFAULT"  blendEquation="GL_FUNC_ADD"  sfactor="GL_SRC_ALPHA"  dfactor="GL_ONE_MINUS_SRC_ALPHA" />
+	</Node> -->
+</Node>
