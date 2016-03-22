@@ -28,6 +28,7 @@
 #include <sofa/core/topology/BaseMeshTopology.h>
 #include <sofa/helper/decompose.h>
 #include <sofa/core/ObjectFactory.h>
+#include <sofa/core/visual/VisualParams.h>
 
 #include "TricubicBezierMeshTopology.h"
 
@@ -61,12 +62,17 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
   vector<Transform> _elemRotations;
 
   // The only XML parameters in this module
-  Data<real> _poissonRatio, _youngModulus;
+  Data<real> _poissonRatio, _youngModulus, _elementScale;
+  /// If false, all the virtual functions become NOP
+  /// This is essential to have since in case that the input parameters
+  /// are invalid, there is no way to stop the framework from
+  /// calling addForce and other functions
   bool _validState;
   
   TricubicBezierForceField()
       : _poissonRatio(initData(&_poissonRatio,(real)0.45,"poissonRatio",""))
       , _youngModulus(initData(&_youngModulus,(real)5000,"youngModulus",""))
+      , _elementScale(initData(&_elementScale,(real)0.95f,"elementScale", "Scaling of the element when visualized"))
       , _validState(true)
   {
     _poissonRatio.setRequired(true);
@@ -84,16 +90,16 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
    *
    */
   virtual void init(){
-    if(!_validState) return;
     sofa::core::behavior::ForceField<DataTypes>::init();
     _mesh = dynamic_cast<TricubicBezierMeshTopology*>(getContext()->getMeshTopology());
     if(_mesh == NULL) {
+      warnings = "Object must have a cubic Bezier topology";
       serr << "Object must have a cubic Bezier topology" << sendl;
       _validState = false;
-      return;
+    } else {
+      _validState = true;
+      reinit();
     }
-    
-    reinit();
   }
 
   /*!
@@ -192,8 +198,89 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
     assert("not implemented, pot eng");
     return 0.0;
   }
+
+  void draw(const sofa::core::visual::VisualParams* vparams) {
+      if(!_validState) return;
+      if(vparams->displayFlags().getShowForceFields()) {
+          const VecCoord &x = mstate->read(sofa::core::ConstVecCoordId::position())->getValue();
+          const TricubicBezierMeshTopology::SeqTricubicBezier& elems = _mesh->getTricubicBeziers();
+          for(size_t i = 0; i < elems.size(); i++) {
+              TricubicCP v;
+              for(int j = 0; j < 64; j++) v[j] = x[elems[i][j]];
+              // Scaling down of the element to see the space between the elements
+              // 1.0f means that there is no scaling down. 0.8f means that 0.2 spacing
+              // between elements
+              const real elementScale = _elementScale.getValue();
+              Coord C(0,0,0);
+              for(size_t i = 0; i < v.size(); i++) C += v[i] /(real(v.size()));
+              for(size_t i = 0; i < v.size(); i++) v[i] = C + (v[i] - C) * elementScale;
+
+              const Coord *cp = v.data();
+              drawPatch(cp, 1, 4); // XY lower
+              drawPatch(cp+48, 1, 4); // XY higher
+              drawPatch(cp, 4, 16); // YZ lower
+              drawPatch(cp+3, 4, 16); // YZ higher
+              drawPatch(cp, 1, 16); // ZX lower
+              drawPatch(cp+12, 1, 16); // ZX higher
+          }
+      }
+  }
   
+private:
   //// Auxiliary functions ////////////////////////////////////////////////////////////////////
+
+  void evalBicubic(const Coord *cp, int su, int sv, real u, real v, Coord& p, Coord& n) {
+      Coord a, b, c, d, ad, bd, cd, dd, edv, edu;
+      cubicDeCasteljauWithDerivative(cp[0*sv+0*su],cp[0*sv+1*su],cp[0*sv+2*su],cp[0*sv+3*su], u, a, ad);
+      cubicDeCasteljauWithDerivative(cp[1*sv+0*su],cp[1*sv+1*su],cp[1*sv+2*su],cp[1*sv+3*su], u, b, bd);
+      cubicDeCasteljauWithDerivative(cp[2*sv+0*su],cp[2*sv+1*su],cp[2*sv+2*su],cp[2*sv+3*su], u, c, cd);
+      cubicDeCasteljauWithDerivative(cp[3*sv+0*su],cp[3*sv+1*su],cp[3*sv+2*su],cp[3*sv+3*su], u, d, dd);
+      edu = cubicDeCasteljau(ad, bd, cd, dd, v);
+      cubicDeCasteljauWithDerivative(a, b, c, d, v, p, edv);
+      n = edu.cross(edv).normalized();
+  }
+
+  void drawPatch(const Coord* cp, int strideU, int strideV) {
+      const int L = 8;
+      vector<Coord> evalP, evalN; evalP.resize(L * L); evalN.resize(L * L);
+      vector<GLuint> ind; ind.resize((L-1)*(L-1)*6);
+      for(int ui = 0; ui < L; ui++)
+          for(int vi = 0; vi < L; vi++)
+          {
+              real u = ui/(real(L-1)), v = vi/(real(L-1));
+              evalBicubic(cp, strideU, strideV, u, v, evalP[vi*L+ui], evalN[vi*L+ui]);
+          }
+      for(int ui = 0; ui < L-1; ui++)
+          for(int vi = 0; vi < L-1; vi++)
+          {
+              int b = vi*L+ui, B = vi*(L-1)+ui;
+              ind[B*6+0] = b;
+              ind[B*6+1] = b + 1;
+              ind[B*6+2] = b + L + 1;
+              ind[B*6+3] = b;
+              ind[B*6+4] = b + L + 1;
+              ind[B*6+5] = b + L;
+          }
+
+
+
+      float diff[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
+      float spec[4] = { 0.4f, 0.5f, 0.2f, 1.0f };
+      float amb[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
+      glEnable(GL_LIGHTING);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diff);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, spec);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, amb);
+      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 40);
+
+      glVertexPointer(3, GL_DOUBLE, 0, evalP.data());
+      glNormalPointer(GL_DOUBLE, 0, evalN.data());
+      glEnableClientState(GL_VERTEX_ARRAY);
+      glEnableClientState(GL_NORMAL_ARRAY);
+      glDrawElements(GL_TRIANGLES, ind.size(), GL_UNSIGNED_INT, ind.data());
+      //glDrawArrays(GL_POINTS, 0, evalP.size());
+
+  }
   
   static void computeRotationPolar( Transform &R, const TricubicCP& v) {
     Transform A; A.fill(0);
@@ -207,6 +294,18 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY TricubicBezierForceField : public virtual sof
         }
     A = A * (1.0/48.0);
     sofa::helper::Decompose<real>::polarDecomposition(A, R);
+  }
+
+  static void cubicDeCasteljauWithDerivative(Coord a, Coord b, Coord c, Coord d, real u, Coord &x, Coord &dx) {
+      Coord a1 = a * (1-u) + b * u;
+      Coord b1 = b * (1-u) + c * u;
+      Coord c1 = c * (1-u) + d * u;
+
+      Coord a2 = a1 * (1-u) + b1 * u;
+      Coord b2 = b1 * (1-u) + c1 * u;
+
+      x = a2 * (1-u) + b2 * u;
+      dx = 3.0*(b2 - a2);
   }
 
   static Coord cubicDeCasteljau(Coord a, Coord b, Coord c, Coord d, real u) {
