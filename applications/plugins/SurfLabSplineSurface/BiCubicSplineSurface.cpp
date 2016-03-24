@@ -57,6 +57,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
 
   Data<Color> _diffuse, _specular;
   Data<float> _ambient, _shininess;
+  Data<bool> _extrapolation;
 
   BiCubicSplineSurface()
       : _positions(initData(&_positions, "position", "vertex coordinates"))
@@ -65,6 +66,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
       , _specular(initData(&_specular,Color(0.3f, 0.2f, 0.1f, 1.0f),"specularColor",  "Specular Color"))
       , _ambient(initData(&_ambient, 0.2f,"ambientIntensity", "Ambient intensity"))
       , _shininess(initData(&_shininess, 10.0f,"shininess", "Shininess of the specular"))
+      , _extrapolation(initData(&_extrapolation, true, "extrapolation", "Perform exrapolation on the control points"))
   {
     _positions.setGroup("Vector");
     _tesselationFactor.setRequired(true);
@@ -84,7 +86,6 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
 
   /// Get a write data pointer
   virtual sofa::core::objectmodel::BaseData* baseWrite(sofa::core::VecId v) {
-    std::cerr << "someone tried to write " << v.getIndex() << std::endl;
     if(v.getType() == sofa::core::V_COORD && v.getIndex() == 1){
       return &_positions;
     }
@@ -272,7 +273,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
   void updatePoints() {
     using sofa::core::behavior::BaseMechanicalState;
     int N = _mesh->getNbPoints();
-    WriteOnlyAccessor<Data<ExtVecCoord> > X(_positions);
+    std::vector<Coord> X;
     X.resize(N);
     if(_mesh->hasPos()) {
       for (int i = 0; i < N; i++) {
@@ -286,6 +287,27 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
         X[i][1] = mstate->getPY(i);
         X[i][2] = mstate->getPZ(i);
       }
+    }
+    WriteOnlyAccessor<Data<ExtVecCoord> > positions(_positions);
+    positions.resize(N);
+    for(size_t i = 0; i < positions.size(); i++)
+        positions[i] = X[i];
+
+    /* now do the extrapolation if enabled */
+    if(_extrapolation.getValue()){
+        const real stencil[] = { -0.25, 1.5, -0.25 };
+        for(size_t i = 0; i < _patches.size(); i++) {
+          const BiCubicPatch& p = _patches[i];
+          for(int ai = 0; ai < 2; ai++)
+              for(int bi = 0; bi < 2; bi++)
+              {
+                  Coord x(0,0,0);
+                  for(int ui = 0; ui < 3; ui++)
+                      for(int vi = 0; vi < 3; vi++)
+                          x += X[p(ai+vi,bi+ui)] * stencil[vi] * stencil[ui];
+                  positions[p(ai+1,bi+1)] = x;
+              }
+        }
     }
   }
 
