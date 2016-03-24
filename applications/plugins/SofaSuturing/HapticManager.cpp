@@ -644,7 +644,7 @@ namespace sofa
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
 					{
 						/* the state of the first button is changing */
-						if (newButtonState & FIRST != 0)
+                        if ( (newButtonState & FIRST) != 0)
 							doGrasp(); /* button down */
 						else
 							unGrasp(); /* button up */
@@ -654,10 +654,10 @@ namespace sofa
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
 					{
 						/* the state of the first button is changing */
-						if (newButtonState & FIRST != 0)
-							startSuture(); /* button down */
+                        if ( (newButtonState & FIRST) != 0)
+                            startSuture(); /* button down */
 						else
-							stopSuture(); /* button up */
+                            stopSuture(); /* button up */
 					}
 
 					if ((toolState.buttonState & FIRST) != 0 && (toolState.buttonState & SECOND) == 0 && (newButtonState & SECOND) != 0)
