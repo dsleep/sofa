@@ -603,7 +603,7 @@ namespace sofa
 							
 							const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
 							for (int i = 0; i < 6; i++) {
-								sofa::core::topology::Quad& q = hexContainer->getLocalQuadsInHexahedron(i);
+                                const sofa::core::topology::Quad& q = hexContainer->getLocalQuadsInHexahedron(i);
 								int j;
 								for (j = 0; j < 4; j++) {
 									if (q[j] == v1 || q[j] == v2 || q[j] == v3) {
