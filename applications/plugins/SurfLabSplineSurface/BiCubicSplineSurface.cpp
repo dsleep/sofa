@@ -242,7 +242,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
     deBoorsMethodU(x[p(3,0)], x[p(3,1)], x[p(3,2)], x[p(3,3)], u, d, dd);
     deBoorsMethodU(ad,bd,cd,dd, v, edu, edd);
     deBoorsMethodU(a,b,c,d, v, ex, edv);
-    en = - edu.cross(edv).normalized();
+    en = edu.cross(edv).normalized();
   }
   void evaluatePatches() {
     if(_positions.getValue().size() != (size_t)_mesh->getNbPoints()) {
