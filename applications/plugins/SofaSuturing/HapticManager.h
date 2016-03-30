@@ -50,6 +50,17 @@
 #include <sofa/component/typedef/Sofa_typedef.h>
 #include <SofaConstraint/StickContactConstraint.h>
 
+#include <sofa/core/topology/TopologicalMapping.h>
+#include <sofa/helper/gl/template.h>
+#include <SofaUserInteraction/TopologicalChangeManager.h>
+#include <SofaBaseTopology/TriangleSetTopologyAlgorithms.h>
+#include <SofaBaseTopology/EdgeSetTopologyModifier.h>
+#include <sofa/helper/AdvancedTimer.h>
+#include <SofaLoader/MeshObjLoader.h>
+#include <SofaMeshCollision/TriangleModel.h>
+#include <SofaMeshCollision/LineModel.h>
+#include <SofaMeshCollision/PointModel.h>
+
 #include "GraspingForceFeedback.h"
 namespace sofa
 {
@@ -67,6 +78,7 @@ namespace sofa
 
 				typedef defaulttype::Vec3Types DataTypes;
 				typedef defaulttype::Vec3f Vec3f;
+				typedef defaulttype::Vec4f Vec4f;
 				typedef defaulttype::RigidTypes RigidTypes;
 				typedef DataTypes::Coord Coord;
 				typedef DataTypes::VecCoord VecCoord;
@@ -82,6 +94,7 @@ namespace sofa
 				Data < Real > grasp_forcescale;
 				Data < Real > duration;
 				Data < Vec3f > clampScale;
+				sofa::core::objectmodel::DataFileName clampMesh;
 
 				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> toolModel;
 				/*these two links are used for clamping tool*/
@@ -142,10 +155,12 @@ namespace sofa
 				void unGrasp();
 				void doClamp();
 				const ContactVector* getContacts();
-				void createObstacle(simulation::Node::SPtr  parent, const std::string &filenameCollision, const std::string filenameVisual, const std::string& color,
-					const Vector3& translation, const Vector3 &rotation, const Deriv3 &scale);
 				double start_time;
 				double delta_time;
+				// the following variables used in clamping
+				std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;
+				core::behavior::MechanicalState<DataTypes>* clipperState;
+				boost::scoped_ptr<sofa::helper::io::Mesh> clipperMesh;
 				
 			};
 

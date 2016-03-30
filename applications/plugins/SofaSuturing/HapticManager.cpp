@@ -24,16 +24,6 @@
 ******************************************************************************/
 #include "HapticManager.h"
 
-#include <sofa/core/topology/TopologicalMapping.h>
-#include <sofa/helper/gl/template.h>
-#include <SofaUserInteraction/TopologicalChangeManager.h>
-#include <SofaBaseTopology/TriangleSetTopologyAlgorithms.h>
-#include <SofaBaseTopology/EdgeSetTopologyModifier.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <SofaLoader/MeshObjLoader.h>
-#include <SofaMeshCollision/TriangleModel.h>
-#include <SofaMeshCollision/LineModel.h>
-#include <SofaMeshCollision/PointModel.h>
 #define int2string(a) std::to_string(a)
 namespace sofa
 {
@@ -65,7 +55,8 @@ namespace sofa
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))
 				, upperJaw(initLink("upperJaw", "Collision model for the upper jaw used as clamping tool"))
 				, lowerJaw(initLink("lowerJaw", "Collision model for the lower jaw used as clamping tool"))
-				, clampScale(initData(&clampScale, Vec3f(0.05, 0.2, 0.2), "clampScale", "scale of the object created during clamping"))
+				, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
+				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
 			}
@@ -79,7 +70,6 @@ namespace sofa
 			{
 				if (toolModel) {
 					ToolModel *tm = toolModel.get();
-
 					toolState.buttonState = 0;
 					toolState.newButtonState = 0;
 					toolState.id = 0;
@@ -95,6 +85,14 @@ namespace sofa
 				} else if (upperJaw && lowerJaw) {
 					sout << "clamping tool is found " <<sendl;
 					toolState.function = TOOLFUNCTION_CLAMP;
+					std::string meshFilename("mesh/cube.obj");
+					if (sofa::helper::system::DataRepository.findFile(meshFilename)) {
+						clipperMesh.reset(sofa::helper::io::Mesh::Create(meshFilename));
+						if (clipperMesh.get() == 0)
+							sout << "Clipper mesh not found !" << sendl;
+						else
+							sout << "Clipper mesh size:" << clipperMesh->getVertices().size() << sendl;
+					}
 				}
 				else {
 					warnings.append("No collision model for the tool is found ");
@@ -112,33 +110,16 @@ namespace sofa
 				}
 
 				/* looking for Haptic surfaces */
-				//modelSurface = getContext()->get<TriangleSetModel>(core::objectmodel::BaseContext::SearchDown);
-				std::vector<core::CollisionModel*> models;
-				getContext()->get<core::CollisionModel>(&models, core::objectmodel::Tag("HapticSurface"), core::objectmodel::BaseContext::SearchRoot);
-				if (models.empty())
-				{
-					getContext()->get<core::CollisionModel>(&models, core::objectmodel::BaseContext::SearchRoot);
-					sofa::core::topology::TopologicalMapping * topoMapping;
-					for (unsigned int i = 0; i < models.size(); ++i)
-					{
-						core::CollisionModel* m = models[i];
-						m->getContext()->get(topoMapping);
-						if (topoMapping == NULL) continue;
-						modelSurfaces.push_back(m); // we found a good object
-					}
-				}
-				else
-				{
-					modelSurfaces = models;
-				}
-
+				
+				getContext()->get<core::CollisionModel>(&modelSurfaces, core::objectmodel::Tag("HapticSurface"), core::objectmodel::BaseContext::SearchRoot);
+				
 				/* Looking for intersection and NP */
 				intersectionMethod = getContext()->get<core::collision::Intersection>();
 				detectionNP = getContext()->get<core::collision::NarrowPhaseDetection>();
 
 				/* Set up warnings if these stuff are not found */
 				if (!toolModel) warnings.append("toolModel is missing");
-				if (modelSurfaces.empty()) warnings.append("modelSurface not found");
+				if (modelSurfaces.empty()) warnings.append("Haptic Surface not found");
 				if (intersectionMethod == NULL) warnings.append("intersectionMethod not found");
 				if (detectionNP == NULL) warnings.append("NarrowPhaseDetection not found");
 
@@ -239,6 +220,76 @@ namespace sofa
 					points.push_back(Vector3(x2[0]));
 					vparams->drawTool()->drawLines(points, 3, sofa::defaulttype::Vec4f(0.8, 0.8, 0.8, 1));
 				}
+				for (int i = 0; i < clampPairs.size(); i++) {
+					component::topology::Hexahedron hex = clampPairs[i].first;
+					int quad = clampPairs[i].second;
+					const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
+					const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
+					
+					const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();
+					Vector3 P1 = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4;
+					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized();
+					Vector3 n2 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized();
+					Vector3 n3 = n2.cross(n1).normalized();
+					n2 = n3.cross(n1);
+					const vector< Vector3 > &vertices = clipperMesh->getVertices();
+					const vector< Vector3 > &normals = clipperMesh->getNormals();
+					const vector< vector< vector<int> > > &facets = clipperMesh->getFacets();
+					vector< Vector3 > vv(vertices.size());
+					vector< Vector3 > nn(normals.size());
+					Vec3f sc = clampScale.getValue();
+					for (int t = 0; t < vertices.size(); t++) {
+						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P1[0];
+						vv[t][1] = sc[0] * n1[1] * vertices[t][0] + sc[1] * n2[1] * vertices[t][1] + sc[2] * n3[1] * vertices[t][2] + P1[1];
+						vv[t][2] = sc[0] * n1[2] * vertices[t][0] + sc[1] * n2[2] * vertices[t][1] + sc[2] * n3[2] * vertices[t][2] + P1[2];
+
+						nn[t][0] = n1[0] * normals[t][0] +  n2[0] * normals[t][1] +  n3[0] * normals[t][2];
+						nn[t][1] = n1[1] * normals[t][0] +  n2[1] * normals[t][1] +  n3[1] * normals[t][2];
+						nn[t][2] = n1[2] * normals[t][0] +  n2[2] * normals[t][1] +  n3[2] * normals[t][2];
+					}
+
+					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+					//glEnable(GL_COLOR_MATERIAL);
+					glBegin(GL_TRIANGLES);
+					for (int t = 0; t < facets.size(); t++) {
+						glNormal3d(nn[facets[t][1][0]][0], nn[facets[t][1][0]][1], nn[facets[t][1][0]][2]);
+						glVertex3d(vv[facets[t][0][0]][0], vv[facets[t][0][0]][1], vv[facets[t][0][0]][2]);
+						glNormal3d(nn[facets[t][1][1]][0], nn[facets[t][1][1]][1], nn[facets[t][1][1]][2]);
+						glVertex3d(vv[facets[t][0][1]][0], vv[facets[t][0][1]][1], vv[facets[t][0][1]][2]);
+						glNormal3d(nn[facets[t][1][2]][0], nn[facets[t][1][2]][1], nn[facets[t][1][2]][2]);
+						glVertex3d(vv[facets[t][0][2]][0], vv[facets[t][0][2]][1], vv[facets[t][0][2]][2]);						
+					}
+					glEnd();
+
+					//glDisable(GL_COLOR_MATERIAL);
+					Vector3 P2 = (x[hex[vertexMap[quad][0]]] + x[hex[vertexMap[quad][1]]] + x[hex[vertexMap[quad][2]]] + x[hex[vertexMap[quad][3]]]) / 4;
+					n1 = (x[hex[vertexMap[quad][1]]] - x[hex[vertexMap[quad][0]]]).normalized();
+					n2 = (x[hex[vertexMap[quad][2]]] - x[hex[vertexMap[quad][1]]]).normalized();
+					n3 = n1.cross(n2).normalized();
+					n2 = n3.cross(n1);
+					
+					for (int t = 0; t < vertices.size(); t++) {
+						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P2[0];
+						vv[t][1] = sc[0] * n1[1] * vertices[t][0] + sc[1] * n2[1] * vertices[t][1] + sc[2] * n3[1] * vertices[t][2] + P2[1];
+						vv[t][2] = sc[0] * n1[2] * vertices[t][0] + sc[1] * n2[2] * vertices[t][1] + sc[2] * n3[2] * vertices[t][2] + P2[2];
+						nn[t][0] = n1[0] * normals[t][0] + n2[0] * normals[t][1] + n3[0] * normals[t][2];
+						nn[t][1] = n1[1] * normals[t][0] + n2[1] * normals[t][1] + n3[1] * normals[t][2];
+						nn[t][2] = n1[2] * normals[t][0] + n2[2] * normals[t][1] + n3[2] * normals[t][2];
+					}
+
+					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+					//glEnable(GL_COLOR_MATERIAL);
+					glBegin(GL_TRIANGLES);
+					for (int t = 0; t < facets.size(); t++) {
+						glNormal3d(normals[facets[t][1][0]][0], normals[facets[t][1][0]][1], normals[facets[t][1][0]][2]);
+						glVertex3d(vv[facets[t][0][0]][0], vv[facets[t][0][0]][1], vv[facets[t][0][0]][2]);
+						glNormal3d(normals[facets[t][1][1]][0], normals[facets[t][1][1]][1], normals[facets[t][1][1]][2]);
+						glVertex3d(vv[facets[t][0][1]][0], vv[facets[t][0][1]][1], vv[facets[t][0][1]][2]);
+						glNormal3d(normals[facets[t][1][2]][0], normals[facets[t][1][2]][1], normals[facets[t][1][2]][2]);
+						glVertex3d(vv[facets[t][0][2]][0], vv[facets[t][0][2]][1], vv[facets[t][0][2]][2]);
+					}
+					glEnd();
+				}
 			}
 			
 			const HapticManager::ContactVector* HapticManager::getContacts()
@@ -272,6 +323,9 @@ namespace sofa
 				for (unsigned int j = 0; j < contacts->size(); ++j)
 				{
 					const ContactVector::value_type& c = (*contacts)[j];
+					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+					sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
+					if (topoMapping == NULL) return;
 					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
 					elemsToRemove.push_back(triangleIdx);
 				}
@@ -504,9 +558,7 @@ namespace sofa
 					const ContactVector* contacts = dynamic_cast<const ContactVector*>(it1->second);
 					const ContactVector::value_type& c = (*contacts)[0];
 					unsigned int idx1 = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getIndex() : c.elem.first.getIndex());
-					Vector3 P1 = (c.elem.first.getCollisionModel() == upperJawModel ? c.point[1] : c.point[0]);
-					Vector3 normal1 = (c.elem.first.getCollisionModel() == upperJawModel ? -c.normal : c.normal);
-
+										
 					CMPair = std::make_pair(modelSurfaces[0]->getFirst(), lowerJawModel->getFirst());
 					detectionNP->beginNarrowPhase();
 					detectionNP->addCollisionPair(CMPair);
@@ -518,32 +570,22 @@ namespace sofa
 						const ContactVector* cv = dynamic_cast<const ContactVector*>(it2->second);
 						const ContactVector::value_type& ct = (*cv)[0];
 						unsigned int idx2 = (ct.elem.first.getCollisionModel() == lowerJawModel ? ct.elem.second.getIndex() : ct.elem.first.getIndex());
-						Vector3 P2 = (ct.elem.first.getCollisionModel() == lowerJawModel ? ct.point[1] : ct.point[0]);
-						Vector3 normal2 = (ct.elem.first.getCollisionModel() == lowerJawModel ? -ct.normal : ct.normal);
-
-						core::behavior::MechanicalState<RigidTypes>* mlow = lowerJawModel->getContext()->get<core::behavior::MechanicalState<RigidTypes> >();
-						sofa::helper::ReadAccessor<sofa::core::objectmodel::Data<RigidTypes::VecCoord> > xlow = mlow->read(sofa::core::VecCoordId::position());
-						core::behavior::MechanicalState<RigidTypes>* mup = upperJawModel->getContext()->get<core::behavior::MechanicalState<RigidTypes> >();
-						sofa::helper::ReadAccessor<sofa::core::objectmodel::Data<RigidTypes::VecCoord> > xup = mup->read(sofa::core::VecCoordId::position());
-						simulation::Node *root = dynamic_cast<simulation::Node*>(this->getContext()->getRootContext());
-						Vector3 Pnt1 = (P1 + P2) / 2 + intersectionMethod->getContactDistance()*normal1;
-						Vector3 Pnt2 = (P1 + P2) / 2 + intersectionMethod->getContactDistance()*normal2;
-						createObstacle(root, "mesh/cube.obj", "mesh/cube.obj", "0.7 0.7 0.7", Pnt1, xlow[0].getOrientation().quatToRotationVector(), clampScale.getValue());
-						createObstacle(root, "mesh/cube.obj", "mesh/cube.obj", "0.7 0.7 0.7", Pnt2, xup[0].getOrientation().quatToRotationVector(), clampScale.getValue());
 						
 						if (idx1 >= 0 && idx2 >= 0 && idx1 != idx2)
 						{
-							core::CollisionModel* surf = (ct.elem.first.getCollisionModel() == lowerJawModel ? ct.elem.second.getCollisionModel() : ct.elem.first.getCollisionModel());
 							sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
+							core::CollisionModel* surf = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getCollisionModel() : ct.elem.first.getCollisionModel());
 							surf->getContext()->get(triangleContainer);
 							const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);
 							const component::topology::Triangle Triangle2 = triangleContainer->getTriangle(idx2);
-
-							StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();
-							surf->getContext()->addObject(spring);
 							
 							sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
 							surf->getContext()->get(hexContainer);
+							hexContainer->getContext()->get(clipperState);
+
+							StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();
+							hexContainer->getContext()->addObject(spring);
+
 							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(Triangle1[0]);
 							sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(Triangle1[1]);
 							sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(Triangle1[2]);
@@ -554,10 +596,12 @@ namespace sofa
 							std::sort(e3.begin(), e3.end());
 							std::set_intersection(e1.begin(), e1.end(),	e2.begin(), e2.end(), std::back_inserter(ie1));
 							std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
+							
 							const component::topology::Hexahedron hex = hexContainer->getHexahedron(ie[0]);
 							int v1 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[0]);
 							int v2 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[1]);
 							int v3 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[2]);
+							
 							const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
 							for (int i = 0; i < 6; i++) {
 								sofa::core::topology::Quad& q = hexContainer->getLocalQuadsInHexahedron(i);
@@ -567,82 +611,20 @@ namespace sofa
 										break;
 									}
 								}
-								
-								if (j == 4) { // found 
-									spring->addSpring(hex[q[0]], hex[vertexMap[i][q[0]]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[1]], hex[vertexMap[i][q[1]]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[2]], hex[vertexMap[i][q[2]]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[3]], hex[vertexMap[i][q[3]]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
+								if (j == 4) { // found
+									clampPairs.push_back(std::make_pair(hex, i));
+									spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
+									spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
+									spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
+									spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
 									break;
 								}
 							}
-						}
+						} // endif
 					}
 				}
 			}
-			void HapticManager::createObstacle(simulation::Node::SPtr  parent, const std::string &filenameCollision, const std::string filenameVisual, const std::string& color,
-				const Deriv3& translation, const Deriv3 &rotation, const Deriv3 &scale)
-			{
-				simulation::Node::SPtr  nodeFixed = parent->createChild("Fixed");
-
-				sofa::component::loader::MeshObjLoader::SPtr loaderFixed = sofa::core::objectmodel::New<sofa::component::loader::MeshObjLoader>();
-				loaderFixed->setName("loader");
-				loaderFixed->setFilename(sofa::helper::system::DataRepository.getFile(filenameCollision));
-				loaderFixed->load();
-				nodeFixed->addObject(loaderFixed);
-
-				component::topology::MeshTopology::SPtr meshNodeFixed = sofa::core::objectmodel::New<component::topology::MeshTopology>();
-				meshNodeFixed->setSrc("@" + loaderFixed->getName(), loaderFixed.get());
-				nodeFixed->addObject(meshNodeFixed);
-				meshNodeFixed->init();
-
-				MechanicalObject3::SPtr dofFixed = sofa::core::objectmodel::New<MechanicalObject3>(); 
-				dofFixed->setName("Fixed Object");
-				dofFixed->setSrc("@" + loaderFixed->getName(), loaderFixed.get());
-				dofFixed->setTranslation(translation[0], translation[1], translation[2]);
-				dofFixed->setRotation(rotation[0], rotation[1], rotation[2]);
-				dofFixed->setScale(scale[0], scale[1], scale[2]);
-				nodeFixed->addObject(dofFixed);
-				dofFixed->init();
-				//component::collision::TriangleModel::SPtr triangleFixed = sofa::core::objectmodel::New<component::collision::TriangleModel>(); triangleFixed->setName("Collision Fixed");
-				//triangleFixed->setSimulated(false); //Not simulated, fixed object
-				//triangleFixed->setMoving(false);    //No extern events
-				//nodeFixed->addObject(triangleFixed);
-				//triangleFixed->init();
-				//component::collision::LineModel::SPtr LineFixed = sofa::core::objectmodel::New<component::collision::LineModel>(); LineFixed->setName("Collision Fixed");
-				//LineFixed->setSimulated(false); //Not simulated, fixed object
-				//LineFixed->setMoving(false);    //No extern events
-				//nodeFixed->addObject(LineFixed);
-				//LineFixed->init();
-				//component::collision::PointModel::SPtr PointFixed = sofa::core::objectmodel::New<component::collision::PointModel>(); PointFixed->setName("Collision Fixed");
-				//PointFixed->setSimulated(false); //Not simulated, fixed object
-				//PointFixed->setMoving(false);    //No extern events
-				//nodeFixed->addObject(PointFixed);
-				//PointFixed->init();
-				simulation::Node::SPtr  nodeVisualFixed = nodeFixed->createChild("VM");
-				component::visualmodel::OglModel::SPtr visualFixed = sofa::core::objectmodel::New<component::visualmodel::OglModel>();
-				nodeVisualFixed->addObject(visualFixed);
-				visualFixed->setName("visual");
-				//visualFixed->setFilename(sofa::helper::system::DataRepository.getFile(filenameVisual));
-				visualFixed->setColor(color);
-				//visualFixed->setTranslation(translation[0], translation[1], translation[2]);
-				//visualFixed->setRotation(rotation[0], rotation[1], rotation[2]);
-				//visualFixed->setScale(scale[0], scale[1], scale[2]);
-				visualFixed->init();
-				visualFixed->initVisual();
-				visualFixed->updateVisual();
-				
-				sofa::component::mapping::IdentityMapping< DataTypes, defaulttype::ExtVec3fTypes>::SPtr imap = sofa::core::objectmodel::New<sofa::component::mapping::IdentityMapping< DataTypes, defaulttype::ExtVec3fTypes> >();
-				nodeVisualFixed->addObject(imap);
-				imap->setModels(dofFixed.get(), visualFixed.get());
-				imap->init();
-
-				nodeFixed->addChild(nodeVisualFixed);
-				
-				parent->addChild(nodeFixed);
-				nodeFixed->updateContext();
-				
-			}
+			
 			void HapticManager::updateTool()
 			{
 				unsigned char newButtonState = toolState.newButtonState;
