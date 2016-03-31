@@ -9,7 +9,7 @@
             <QuadSetTopologyAlgorithms/>
             <QuadSetGeometryAlgorithms/>
             <Hexa2QuadTopologicalMapping input="@../Container" output="@Container" />
-            <BiCubicSplineSurface tesselationFactor="4"/>
+            <BiCubicSplineSurface tesselationFactor="16"/>
             <Triangle />
         </Node>
     </Node>
