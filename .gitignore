@@ -48,3 +48,6 @@ custom.cmake
 # to .git/info/exclude instead of .gitignore. Also, .gitignore files
 # can be placed in sub-directories to avoid polluting the root one.
 
+/include
+/lib
+*.view
