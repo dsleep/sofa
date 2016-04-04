@@ -133,7 +133,6 @@ namespace sofa
 			{
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
-				//sout << "Contact size: " << contacts->size() << sendl;
 				for (unsigned int j = 0; j < 1; ++j)
 				{
 					const ContactVector::value_type& c = (*contacts)[j];
