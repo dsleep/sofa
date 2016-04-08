@@ -52,18 +52,22 @@ Section "Application binaries and examples"
   
   ; Put file there
   File /r /x *.ilk /x *.pdb "bin" 
-  File /r /x *.comp "examples" "share"
+  File /r /x *.comp "share"
+  File /r "config" "etc"
+  ; only for a development package
+  ;File /r "include" "lib" "git.version" "CMakeCache.txt"
   
-  CreateDirectory "$INSTDIR\etc"
-  FileOpen $0 "$INSTDIR\etc\sofa.ini" w
-  FileWrite $0 "SHARE_DIR=$INSTDIR\share"
-  FileWriteByte $0 "13"
-  FileWriteByte $0 "10"
-  FileWrite $0 "EXAMPLES_DIR=$INSTDIR\examples"
-  FileWriteByte $0 "13"
-  FileWriteByte $0 "10"
-  FileClose $0
-  
+  ;CreateDirectory "$INSTDIR\etc"
+  ;FileOpen $0 "$INSTDIR\etc\sofa.ini" w
+  ;FileWrite $0 "SHARE_DIR=$INSTDIR\share"
+  ;FileWriteByte $0 "13"
+  ;FileWriteByte $0 "10"
+  ;FileWrite $0 "EXAMPLES_DIR=$INSTDIR\examples"
+  ;FileWriteByte $0 "13"
+  ;FileWriteByte $0 "10"
+  ;FileClose $0
+   
+   
   ; Write the installation path into the registry
   WriteRegStr HKCU SOFTWARE\SurfLab\SOFA "Install_Dir" "$INSTDIR"
   
@@ -129,7 +133,7 @@ Section "Uninstall"
 
   DeleteRegKey HKCU "Software\Classes\SurfLabSOFA.Scene"
   DeleteRegKey HKCU "Software\Classes\SurfLabSOFA.LuaScene"
-  
+    
   ; Remove files and uninstaller
   RMDir /r $INSTDIR\bin
   RMDir /r $INSTDIR\examples
