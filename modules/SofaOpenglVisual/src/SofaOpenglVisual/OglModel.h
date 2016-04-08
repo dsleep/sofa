@@ -32,6 +32,8 @@
 #include <sofa/defaulttype/Vec.h>
 #include <sofa/defaulttype/VecTypes.h>
 #include <SofaBaseVisual/VisualModelImpl.h>
+#include <sofa/helper/gl/FrameBufferObject.h>
+#include <SofaOpenglVisual/LightManager.h>
 
 #define   NB_MAX_TEXTURES 16
 
