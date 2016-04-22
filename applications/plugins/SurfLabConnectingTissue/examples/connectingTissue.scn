@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<Node 	 name="root"  gravity="0 -9.8 0"   dt="0.01"  >
+	<VisualStyle displayFlags="showVisualModels" />
+    <FreeMotionAnimationLoop/>
+    <!-- <LCPConstraintSolver tolerance="1e-3" maxIt="1000" mu = "1e-6"/> -->
+	<GenericConstraintSolver tolerance="0.001" maxIterations="1000"/>
+    <CollisionPipeline depth="6" verbose="0" draw="0"/>
+    <BruteForceDetection name="N2"/>
+    <LocalMinDistance name="Proximity" alarmDistance=".5" contactDistance=".1" angleCone="0.0"/>
+    <CollisionResponse name="Response" response="FrictionContact"/>
+    <CollisionGroup />
+    <DefaultVisualManagerLoop />
+	<RequiredPlugin pluginName="SurfLabConnectingTissue" />
+	<Node name="H">
+        <EulerImplicit name="cg_odesolver" printLog="false" />
+        <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
+        <MeshGmshLoader name="loader" filename="mesh/nine_hexa.msh" />
+        <MechanicalObject src="@loader" name="Hexa" showIndices = "1" showIndicesScale = "0.01"/>
+        <include href="Objects/HexahedronSetTopology.xml" src="@loader" />
+        <HexahedralFEMForceField name="FEM" youngModulus="1000" poissonRatio="0.3" method="large" />
+        <DiagonalMass massDensity="0.2" />
+        <FixedConstraint indices="12 15 28 31" />
+        <Node name="Q">
+            <include href="Objects/QuadSetTopology.xml" src="@" />
+            <Hexa2QuadTopologicalMapping input="@../Container" output="@Container" />
+            <Node name="Visu">
+                <OglModel name="Visual" color="yellow" />
+                <IdentityMapping input="@../../Hexa" output="@Visual" />
+            </Node>
+            <Node name="T">
+                <include href="Objects/TriangleSetTopology.xml" src="@" />
+                <Quad2TriangleTopologicalMapping input="@../Container" output="@Container" />
+            </Node>
+        </Node>
+		<UncoupledConstraintCorrection compliance="0.001   0.00003 0 0   0.00003 0   0.00003" />       
+    </Node>
+	<Node name="SquareGravity">
+        <EulerImplicit name="cg_odesolver" printLog="false" />
+        <CGLinearSolver iterations="50" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
+        <MeshGmshLoader name="meshLoader" filename="mesh/square3.msh" scale="10" createSubelements="true" translation = "0 0.2 -0.1"/>
+        <include href="Objects/TriangleSetTopology.xml" src="@meshLoader" />
+        <MechanicalObject showIndices = "1" showIndicesScale = "0.01" name = "MO"/>
+        <DiagonalMass massDensity="0.15" />
+        <FixedConstraint indices="0 1" />
+        <TriangularFEMForceField name="FEM" youngModulus="600" poissonRatio="0.3" method="large" />
+        <TriangularBendingSprings name="FEM-Bend" stiffness="300" damping="1.0" />
+        <OglModel name="Visual" color="red" />
+        <IdentityMapping input="@MO" output="@Visual" />
+		<UncoupledConstraintCorrection compliance="0.001   0.00003 0 0   0.00003 0   0.00003" />       
+    </Node>
+	<ConnectingTissue object2 = "@H/Hexa" object1 = "@SquareGravity/MO" indices1 = "3 70 67" indices2 = "0 1 2" useConstraint = "0"/>
+</Node>
