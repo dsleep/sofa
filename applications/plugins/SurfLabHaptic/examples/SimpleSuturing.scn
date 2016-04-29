@@ -1,0 +1,113 @@
+<?xml version="1.0" ?>
+<Node name="root" dt="0.005" showBoundingTree="0" gravity="0 -9.8 0">
+  <VisualStyle displayFlags="showBehaviorModels showInteractionForceFields showCollisionModels"/> 
+  <RequiredPlugin name="Suturing" pluginName="SofaSuturing" />
+	
+  <FreeMotionAnimationLoop />
+    <GenericConstraintSolver />
+
+    <CollisionPipeline depth="8" />
+    <BruteForceDetection name="N2" />
+    <LocalMinDistance name="Proximity" alarmDistance="0.6" contactDistance="0.3" />
+    <RuleBasedContactManager name="Response" response="FrictionContact"
+                             rules="1 * FrictionContact?mu=0.01
+                                    " />
+  <CollisionGroup />
+  <SuturingManager  printLog="1" attachStiffness = "2000000" sutureKey ="["/>
+	<RequiredPlugin name="Sensable Plugin"  printLog="1"  pluginName="Sensable" />
+	<NewOmniDriver name="Omni Driver"  tags="Omni" forceScale="0.5"  scale="500"  permanent="1" useScheduler = "1"/>
+  	<Node name="SquareGravity">
+        <EulerImplicit name="cg_odesolver" printLog="false" />
+        <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
+        <MeshGmshLoader name="meshLoader" filename="mesh/square3.msh" scale="10" />
+        <include href="Objects/TriangleSetTopology.xml" src="@meshLoader" />
+        <MechanicalObject src="@meshLoader"/>
+		
+        <DiagonalMass massDensity="0.15" />
+        <FixedConstraint indices="0 1" />
+        <TriangularFEMForceField name="FEM" youngModulus="60" poissonRatio="0.3" method="large" />
+        <TriangularBendingSprings name="FEM-Bend" stiffness="300" damping="1.0" />
+        <TriangleSet tags="SuturingSurface"/>
+        <OglModel name="Visual" color="blue" />
+		<!-- <IdentityTopologicalMapping object1=".." object2="Container"/> -->
+        <IdentityMapping object1=".." object2="Visual" />
+		<UncoupledConstraintCorrection />
+    </Node>
+	<GraspingManager name="graspingManager0"  printLog = "0" angle = "0.5"/>
+	<Node name="Instrument1"  >
+		<EulerImplicit name="cg odesolver" printLog="false" />
+        <CGLinearSolver iterations="100" name="linear solver" threshold="1e-20" tolerance="1e-20" />
+		<MechanicalObject name="Articulations1" template="Vec1d" tags = "GraspingDOFs" position="1 -1 0" />
+		<UncoupledConstraintCorrection />
+		<Node name = "Tool">
+			<MechanicalObject template="Rigid3d" name="instrumentState"  tags="Omni"  position="0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 " />  
+			<UniformMass template="Rigid3d" name="mass"  totalmass="0.05" />
+			<ArticulatedSystemMapping input1="@../Articulations1" output="@instrumentState" />
+			<LCPForceFeedback activate="true" tags="Omni" forceCoef="0.001" /> 			
+			<Node 	 name="ShaftVM"  >
+				<OglModel template="ExtVec3f" name="VM"  fileMesh="mesh/shaft.obj"  translation="0 0 0"  rotation="90 0 0"  scale3d="10 10 10"  material="Default Diffuse 1 1 0.2 0.2 1 Ambient 1 0.2 0.04 0.04 1 Specular 0 1 0.2 0.2 1 Emissive 0 1 0.2 0.2 1 Shininess 0 45 "  primitiveType="DEFAULT"  blendEquation="GL_FUNC_ADD"  sfactor="GL_SRC_ALPHA"  dfactor="GL_ONE_MINUS_SRC_ALPHA" />
+				<RigidMapping template="Rigid3d,ExtVec3f" name="MM->VM mapping"  input="@../instrumentState"  output="@VM" index ="0"/>
+			</Node>
+			<Node 	 name="ShaftCM"  >
+				<MechanicalObject template="Vec3d" name="Particle"  position="0 0 0"  velocity="0 0 0"  force="0 0 0"  externalForce="0 0 0"  derivX="0 0 0"  restScale="1" />
+				<TPointModel template="Vec3d" name="ParticleModel" tags="SuturingTool" contactStiffness="0.01" bothSide="true"/>
+				<RigidMapping template="Rigid3d,Vec3d" name="MM->CM mapping"  input="@../instrumentState"  output="@Particle" />
+						
+			</Node>
+			
+			<Node 	 name="LeftJawVM"  >
+				<OglModel template="ExtVec3f" name="VM1"  fileMesh="mesh/left-jaw.obj"  translation="0 0 0"  rotation="90 0 0"  scale3d="10 10 10"  material="Default Diffuse 1 1 0.2 0.2 1 Ambient 1 0.2 0.04 0.04 1 Specular 0 1 0.2 0.2 1 Emissive 0 1 0.2 0.2 1 Shininess 0 45 "  primitiveType="DEFAULT"  blendEquation="GL_FUNC_ADD"  sfactor="GL_SRC_ALPHA"  dfactor="GL_ONE_MINUS_SRC_ALPHA" />
+				<RigidMapping input="@../instrumentState"  output="@VM1" index ="1"/>
+			</Node>
+						
+			<Node 	 name="RightJawVM"  >
+				<OglModel template="ExtVec3f" name="VM2"  fileMesh="mesh/right-jaw.obj"  translation="0 0 0"  rotation="90 0 0"  scale3d="10 10 10"  material="Default Diffuse 1 1 0.2 0.2 1 Ambient 1 0.2 0.04 0.04 1 Specular 0 1 0.2 0.2 1 Emissive 0 1 0.2 0.2 1 Shininess 0 45 "  primitiveType="DEFAULT"  blendEquation="GL_FUNC_ADD"  sfactor="GL_SRC_ALPHA"  dfactor="GL_ONE_MINUS_SRC_ALPHA" />
+				<RigidMapping  input="@../instrumentState"  output="@VM2" index ="2"/>
+			</Node>
+			<RestShapeSpringsForceField template="Rigid" stiffness="1000000" angularStiffness="2000000" external_rest_shape="instrumentState" />
+			<UncoupledConstraintCorrection compliance="0.001   0.00003 0 0   0.00003 0   0.00003" />
+			
+		</Node>
+		<ArticulatedHierarchyContainer />
+		<Node name="articulationCenters">
+			<Node name="articulationCenter1">
+				<ArticulationCenter parentIndex="0" childIndex="1" posOnParent="0 0 0" posOnChild="0 0 0" />
+				<Node name="articulations">
+					<Articulation translation="0" rotation="1" rotationAxis="1 0 0" articulationIndex="0" />
+				</Node>
+			</Node>
+			<Node name="articulationCenter2">
+				<ArticulationCenter parentIndex="0" childIndex="2" posOnParent="0 0 0" posOnChild="0 0 0" />
+				<Node name="articulations">
+					<Articulation translation="0" rotation="1" rotationAxis="1 0 0" articulationIndex="1" />
+				</Node>
+			</Node>
+			
+			<Node name="articulationCenter3">
+				<ArticulationCenter parentIndex="0" childIndex="0" posOnParent="0 0 0" posOnChild="0 0 0" />
+				<Node name="articulations">
+					<Articulation translation="0" rotation="0" rotationAxis="1 0 0" articulationIndex="2" />
+				</Node>
+			</Node>
+		</Node>
+		
+	</Node>
+  <!-- <Node 	name="Instrument"  >
+    <EulerImplicit name="cg_odesolver" printLog="false" />
+    <CGLinearSolver iterations="25" name="linear solver" tolerance="1.0e-9" threshold="1.0e-9" />
+    <MechanicalObject template="Rigid" name="instrumentState" tags="Omni"  />
+    <UniformMass template="Rigid" name="mass"  totalmass="0.05" />
+    <Node 	name="VisualModel" >
+      <OglModel template="ExtVec3f"  name="InstrumentVisualModel"  fileMesh="data/mesh/dental_instrument.obj" scale3d="1 1 1" translation="-0.412256 -0.067639 3.35" rotation="180 0 150" material="Default Diffuse 1 1 0.2 0.2 1 Ambient 1 0.2 0.04 0.04 1 Specular 0 1 0.2 0.2 1 Emissive 0 1 0.2 0.2 1 Shininess 0 45" />
+      <RigidMapping template="Rigid,ExtVec3f" name="MM->VM mapping"  object1="instrumentState"  object2="InstrumentVisualModel" />
+    </Node>
+    <Node 	name="CollisionModel"  >
+      <MechanicalObject template="Vec3d" name="Particle"  position="-0.2 -0.2 -0.2" />
+      <Point name="ParticleModel" tags="SuturingTool" contactStiffness="2" />
+      <RigidMapping template="Rigid,Vec3d" name="MM->CM mapping"  object1="instrumentState"  object2="Particle" />
+	  <EnslavementForceFeedback name="forcefeedback" tags="Omni" collisionModel1="@ParticleModel" collisionModel2="" relativeStiffness="4" attractionDistance="0.3" normalsPointOut="false"/>	
+    </Node>
+
+  </Node> -->
+
+</Node>

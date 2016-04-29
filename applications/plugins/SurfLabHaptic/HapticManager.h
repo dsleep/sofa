@@ -25,7 +25,7 @@
 #ifndef SOFA_COMPONENT_COLLISION_HAPTICMANAGER_H
 #define SOFA_COMPONENT_COLLISION_HAPTICMANAGER_H
 
-#include "initSofaSuturing.h"
+#include "initSurfLabHaptic.h"
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/collision/Intersection.h>
 #include <sofa/core/collision/NarrowPhaseDetection.h>
@@ -71,7 +71,7 @@ namespace sofa
 		namespace collision
 		{
 
-			class SOFA_SOFASUTURING_API HapticManager : public sofa::component::controller::Controller, sofa::core::visual::VisualModel
+			class SOFA_SURFLABHAPTIC_API HapticManager : public sofa::component::controller::Controller, sofa::core::visual::VisualModel
 			{
 			public:
 				SOFA_CLASS2(HapticManager, sofa::component::controller::Controller, sofa::core::visual::VisualModel);

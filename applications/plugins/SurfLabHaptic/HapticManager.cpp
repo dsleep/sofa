@@ -540,9 +540,11 @@ namespace sofa
 			}
 
 			void HapticManager::doClamp(){
+				if (modelSurfaces.empty()) return;
+
 				ToolModel *upperJawModel = upperJaw.get();
 				ToolModel *lowerJawModel = lowerJaw.get();
-
+				
 				std::pair<core::CollisionModel*, core::CollisionModel*> CMPair = std::make_pair(modelSurfaces[0]->getFirst(), upperJawModel->getFirst());
 
 				detectionNP->setInstance(this);
@@ -580,6 +582,7 @@ namespace sofa
 							
 							sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
 							surf->getContext()->get(hexContainer);
+							if (hexContainer == NULL) return;
 							hexContainer->getContext()->get(clipperState);
 
 							StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();

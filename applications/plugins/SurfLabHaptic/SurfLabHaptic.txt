@@ -1,0 +1,19 @@
+
+************************************
+*         SurfLabHaptic.txt        *
+************************************
+
+
+
+AUTHOR :
+ - Thien Nguyen
+
+
+
+
+LICENCE :
+ - None
+
+
+
+OTHER COMMENTS :
