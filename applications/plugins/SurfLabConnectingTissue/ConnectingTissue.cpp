@@ -44,9 +44,11 @@ namespace sofa
 			ConnectingTissue::ConnectingTissue ()
 				: m_indices1(initData(&m_indices1, "indices1", "vertices of the first model "))
 				, m_indices2(initData(&m_indices2, "indices2", "corresponding vertices of the second model "))
+				, threshold(initData(&threshold, 0.1, "threshold", "if indices1 is empty, we consider all pair with distance less than the threshold"))
 				, object1(initLink("object1", "First object to connect to"))
 				, object2(initLink("object2", "Second object to connect to"))
 				, useConstraint(initData(&useConstraint,true,"useConstraint", "Second object to connect to"))
+				, connectingStiffness(initData(&connectingStiffness, 1000000000000.0, "connectingStiffness", "stiffness of springs if useConstraint is false"))
 			{
 				this->f_listening.setValue(true);
 			}
@@ -73,7 +75,6 @@ namespace sofa
 					}
 					sofa::simulation::Node::SPtr child = parent->createChild("ObjectMapping");
 					sofa::component::container::MechanicalObject<DataTypes>::SPtr mstate = sofa::core::objectmodel::New<sofa::component::container::MechanicalObject<DataTypes> >();
-					mstate->resize(3);
 					child->addObject(mstate);					
 					sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
 					obj2->getContext()->get(triangleContainer, core::objectmodel::BaseContext::SearchDown);
@@ -99,16 +100,56 @@ namespace sofa
 															
 					helper::vector<unsigned int>  idx1 = m_indices1.getValue();
 					helper::vector<unsigned int>  idx2 = m_indices2.getValue();
+					if (idx1.empty()) {
+						idx2.clear();
+						Real th = threshold.getValue();
+						for (int i = 0; i < x1.size(); i++) {
+							Coord P = x1[i];
+							double min_dist = 1e6;
+							int qidx = 0;
+							for (int j = 0; j < x2.size(); j++){
+								double len2 = (P - x2[j])*(P - x2[j]);
+								if (len2 < min_dist) {
+									min_dist = len2;
+									qidx = j;
+								}
+							}
+							if (min_dist < th) {
+								idx1.push_back(i);
+								idx2.push_back(qidx);
+							}
+						}
+					}
+					
 					for (int i = 0; i < idx1.size(); i++) {
 						int index1 = idx1[i];
-						Coord Q;
 						Coord P = x1[index1];
+						// find the closest point on object 2 to P
+						int qidx;
+						if (idx2.empty()) {
+							qidx = 0;
+							double min_dist = 1e6;
+							for (int j = 0; j < x2.size(); j++){
+								double len2 = (P - x2[j])*(P - x2[j]);
+								if (len2 < min_dist) {
+									min_dist = len2;
+									qidx = j;
+								}
+							}
+						}
+						else {
+							qidx = idx2[i];
+						}
+						// get triangle list around the found vertex
+						const sofa::helper::vector< unsigned int > tlist = triangleContainer->getTrianglesAroundVertex(qidx);
+
+						// compute the shortest distance and barycentric coordinates
 						Vec3d normal;
-						int index2;
-						double bary[3];
+						Coord Q;
+						int index2 = -1;
+						double bary[] = { 0, 0, 0 };
 						double dist;
-						const sofa::helper::vector< unsigned int > tlist = triangleContainer->getTrianglesAroundVertex(idx2[i]);
-						
+
 						for (int j = 0; j < tlist.size(); j++) {
 							// Find the projection
 							const component::topology::Triangle t = triangleContainer->getTriangle(tlist[j]);
@@ -122,33 +163,48 @@ namespace sofa
 							bary[1] = normal*(AB.cross(AP)) / (normal*normal);
 							bary[0] = normal*(AP.cross(AC)) / (normal*normal);
 							bary[2] = 1 - bary[1] - bary[0];
-							if (!(bary[0] < 0 || bary[1] < 0 || bary[0]+bary[1] > 1))
+							if (!(bary[0] < 0 || bary[1] < 0 || bary[0] + bary[1] > 1))
 							{
 								normal.normalize();
 								dist = (AP*normal);
 								Q = P - dist*normal;
 								index2 = tlist[j];
-								/*std::cout << P<<" "<<t<<" " <<bary[0] << " " << bary[1] << " " << bary[2] << " " << ":" << Q << std::endl;
-								std::cout << x2[t[0]] << " " << x2[t[1]] << " " << x2[t[2]] << " " << std::endl;*/
 								break;
-							}							
+							}
 						}
-						
+						//sout << P << "->" << Q << sendl;
 						// Add constraint
-						int mapIdx = mapper->addPointInTriangle(index2, bary);
-						
-						if (useConstraint.getValue())
-							constraints->addContact(-normal, P, Q, dist, index1, mapIdx, P, Q);
-						else
-							ff->addSpring(index1, mapIdx, 1e12, 0.0, Q - P);
+						if (index2 >= 0) {
+							int mapIdx = mapper->addPointInTriangle(index2, bary);
 
-						projPnts.push_back(Q);
+							if (useConstraint.getValue())
+								constraints->addContact(-normal, P, Q, dist, index1, mapIdx, P, Q);
+							else
+								ff->addSpring(index1, mapIdx, connectingStiffness.getValue(), 0.0, Q - P);
+
+							projPnts.push_back(Q);
+						}
+						else {
+							const component::topology::Triangle t = triangleContainer->getTriangle(tlist[0]);
+							int localIndex = triangleContainer->getVertexIndexInTriangle(t, qidx);
+							bary[0] = 0; bary[1] = 0; bary[2] = 0;
+							bary[(localIndex + 2) % 3] = 1.0;
+							int mapIdx = mapper->addPointInTriangle(tlist[0], bary);
+							Q = x2[qidx];
+							if (useConstraint.getValue())
+								constraints->addContact(-normal, P, Q, dist, index1, mapIdx, P, Q);
+							else
+								ff->addSpring(index1, mapIdx, connectingStiffness.getValue(), 0.0, Q - P);
+
+							projPnts.push_back(Q);
+						}
 					}
 					
+					
 					if (useConstraint.getValue())
-						obj2->getContext()->addObject(constraints);
+						this->getContext()->addObject(constraints);
 					else
-						obj2->getContext()->addObject(ff);
+						this->getContext()->addObject(ff);
 				}
 
 			}

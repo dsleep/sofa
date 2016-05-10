@@ -69,6 +69,8 @@ namespace sofa
 
 				Data<helper::vector<unsigned int> > m_indices1;
 				Data<helper::vector<unsigned int> > m_indices2;
+				Data<Real> threshold;
+				Data<Real> connectingStiffness;
 				Data<bool> useConstraint;
 				SingleLink<ConnectingTissue, MechanicalModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object1;
 				SingleLink<ConnectingTissue, MechanicalModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object2;
