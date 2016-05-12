@@ -1603,7 +1603,7 @@ void QtViewer::resetView()
     // and with a Up vector in the same axis as the gravity
     if (!fileRead)
     {
-        newView();
+        //newView();
     }
 
     update();
