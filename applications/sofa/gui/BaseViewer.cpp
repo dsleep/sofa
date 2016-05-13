@@ -264,6 +264,8 @@ bool BaseViewer::load()
             //currentCamera->p_position.forceSet();
             //currentCamera->p_orientation.forceSet();
             currentCamera->bwdInit();
+            currentCamera->setBoundingBox(groot->f_bbox.getValue().minBBox(), groot->f_bbox.getValue().maxBBox());
+            newView();
         }
         component::visualmodel::VisualStyle::SPtr visualStyle = NULL;
         groot->get(visualStyle);
