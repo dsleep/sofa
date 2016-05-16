@@ -72,8 +72,8 @@ namespace sofa
 				Data<Real> threshold;
 				Data<Real> connectingStiffness;
 				Data<bool> useConstraint;
-				SingleLink<ConnectingTissue, MechanicalModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object1;
-				SingleLink<ConnectingTissue, MechanicalModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object2;
+				SingleLink<ConnectingTissue, simulation::Node, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object1;
+				SingleLink<ConnectingTissue, simulation::Node, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object2;
 				
 			protected:
 				ConnectingTissue();

@@ -64,39 +64,44 @@ namespace sofa
 			void ConnectingTissue::bwdInit()
 			{	
 				if (object1 && object2) {
-					MechanicalModel* obj1 = object1.get();
-					MechanicalModel* obj2 = object2.get();
-					
-					sofa::simulation::Node* parent = dynamic_cast<sofa::simulation::Node*>(obj2->getContext());
-					if (parent == NULL)
-					{
-						std::cerr << "ERROR: Can't find node \n";
-						return;
-					}
-					sofa::simulation::Node::SPtr child = parent->createChild("ObjectMapping");
-					sofa::component::container::MechanicalObject<DataTypes>::SPtr mstate = sofa::core::objectmodel::New<sofa::component::container::MechanicalObject<DataTypes> >();
-					child->addObject(mstate);					
+					simulation::Node* obj1 = object1.get();
+					simulation::Node* obj2 = object2.get();
+												
 					sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
 					obj2->getContext()->get(triangleContainer, core::objectmodel::BaseContext::SearchDown);
 					if (triangleContainer == NULL) {
-						std::cerr << "ERROR: No triangle container in scope of " << obj2->getClassName();
+						std::cerr << "ERROR: No triangle container in scope of " << obj2->getName();
 						return;
 					}
+					MechanicalModel *mstate2;
+					triangleContainer->getContext()->get(mstate2);
+					if (mstate2 == NULL) {
+						std::cerr << "ERROR: No MechanicalState in scope of " << triangleContainer->getContext()->getName();
+						return;
+					}
+					MechanicalModel *mstate1;
+					obj1->getContext()->get(mstate1);
+
+					sofa::simulation::Node::SPtr child = obj2->createChild("ObjectMapping");
+					sofa::component::container::MechanicalObject<DataTypes>::SPtr mstate = sofa::core::objectmodel::New<sofa::component::container::MechanicalObject<DataTypes> >();
+					child->addObject(mstate);					
+
 					MMapper::SPtr mapper = sofa::core::objectmodel::New<sofa::component::mapping::BarycentricMapperMeshTopology<DataTypes, DataTypes> >(triangleContainer, (topology::PointSetTopologyContainer*)NULL);
-					mapper->maskFrom = &obj2->forceMask;
+					mapper->maskFrom = &mstate2->forceMask;
 					mapper->maskTo = &mstate->forceMask;
-					MMapping::SPtr mapping = sofa::core::objectmodel::New<MMapping>(obj2, mstate.get(), mapper);
+					MMapping::SPtr mapping = sofa::core::objectmodel::New<MMapping>(mstate2, mstate.get(), mapper);
 					child->addObject(mapping);
 
 					TConstraint::SPtr constraints;
 					TSpringFF::SPtr ff;
 					if (useConstraint.getValue())
-						constraints = sofa::core::objectmodel::New<TConstraint>(obj1, mstate.get());
+						constraints = sofa::core::objectmodel::New<TConstraint>(mstate1, mstate.get());
 					else
-						ff = sofa::core::objectmodel::New<TSpringFF>(obj1, mstate.get());
+						ff = sofa::core::objectmodel::New<TSpringFF>(mstate1, mstate.get());
 					
-					const VecCoord& x1 = obj1->read(core::ConstVecCoordId::position())->getValue();
-					const VecCoord& x2 = obj2->read(core::ConstVecCoordId::position())->getValue();
+					
+					const VecCoord& x1 = mstate1->read(core::ConstVecCoordId::position())->getValue();
+					const VecCoord& x2 = mstate2->read(core::ConstVecCoordId::position())->getValue();
 															
 					helper::vector<unsigned int>  idx1 = m_indices1.getValue();
 					helper::vector<unsigned int>  idx2 = m_indices2.getValue();
