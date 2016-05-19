@@ -48,7 +48,7 @@ namespace sofa
 				: grasp_stiffness(initData(&grasp_stiffness, 10000.0, "graspStiffness", "how stiff surface is attached to the tool"))
 				, attach_stiffness(initData(&attach_stiffness, 10000000.0, "attachStiffness", "how stiff surface is attached together"))
 				, grasp_forcescale(initData(&grasp_forcescale, 0.001, "grasp_force_scale", "multiply the force with this coefficient"))
-				, duration(initData(&duration, 10.0, "duration", "multiply the force with this coefficient"))
+				, duration(initData(&duration, 10.0, "duration", "time to increase stiffness of suturing springs"))
 				, intersectionMethod(NULL)
 				, detectionNP(NULL)
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
