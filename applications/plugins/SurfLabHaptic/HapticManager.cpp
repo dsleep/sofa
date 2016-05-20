@@ -542,9 +542,10 @@ namespace sofa
 			void HapticManager::doClamp(){
 				if (modelSurfaces.empty()) return;
 
+				// two collision models set in the xml tag, they are link type
 				ToolModel *upperJawModel = upperJaw.get();
 				ToolModel *lowerJawModel = lowerJaw.get();
-				
+				// Set the collision pair between the upper jaw and the interacting surface 
 				std::pair<core::CollisionModel*, core::CollisionModel*> CMPair = std::make_pair(modelSurfaces[0]->getFirst(), upperJawModel->getFirst());
 
 				detectionNP->setInstance(this);
@@ -552,10 +553,10 @@ namespace sofa
 				detectionNP->beginNarrowPhase();
 				detectionNP->addCollisionPair(CMPair);
 				detectionNP->endNarrowPhase();
-
+				// Get collision outputs
 				const core::collision::NarrowPhaseDetection::DetectionOutputMap& detectionOutputs = detectionNP->getDetectionOutputs();
 				core::collision::NarrowPhaseDetection::DetectionOutputMap::const_iterator it1 = detectionOutputs.begin();
-				if (it1 != detectionOutputs.end()) {
+				if (it1 != detectionOutputs.end()) { // If there is a collision, i.e. detectionOutputs not empty
 					const ContactVector* contacts = dynamic_cast<const ContactVector*>(it1->second);
 					const ContactVector::value_type& c = (*contacts)[0];
 					unsigned int idx1 = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getIndex() : c.elem.first.getIndex());
@@ -567,7 +568,7 @@ namespace sofa
 
 					const core::collision::NarrowPhaseDetection::DetectionOutputMap& outputs = detectionNP->getDetectionOutputs();
 					core::collision::NarrowPhaseDetection::DetectionOutputMap::const_iterator it2 = outputs.begin();
-					if (it2 != outputs.end()){
+					if (it2 != outputs.end()){ // Then check if lower jaw also intersects the haptic surface. Maybe not necessary !!!
 						const ContactVector* cv = dynamic_cast<const ContactVector*>(it2->second);
 						const ContactVector::value_type& ct = (*cv)[0];
 						unsigned int idx2 = (ct.elem.first.getCollisionModel() == lowerJawModel ? ct.elem.second.getIndex() : ct.elem.first.getIndex());
