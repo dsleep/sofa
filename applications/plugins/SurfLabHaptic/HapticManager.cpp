@@ -46,7 +46,7 @@ namespace sofa
 
 			HapticManager::HapticManager()
 				: grasp_stiffness(initData(&grasp_stiffness, 10000.0, "graspStiffness", "how stiff surface is attached to the tool"))
-				, attach_stiffness(initData(&attach_stiffness, 10000000.0, "attachStiffness", "how stiff surface is attached together"))
+				, attach_stiffness(initData(&attach_stiffness, 3000.0, "attachStiffness", "how stiff surface is attached together"))
 				, grasp_forcescale(initData(&grasp_forcescale, 0.001, "grasp_force_scale", "multiply the force with this coefficient"))
 				, duration(initData(&duration, 10.0, "duration", "time to increase stiffness of suturing springs"))
 				, intersectionMethod(NULL)
@@ -217,7 +217,7 @@ namespace sofa
 					std::vector< Vector3 > points;
 					points.push_back(Vector3(x1[0]));
 					points.push_back(Vector3(x2[0]));
-					vparams->drawTool()->drawLines(points, 3, sofa::defaulttype::Vec4f(0.8, 0.8, 0.8, 1));
+					vparams->drawTool()->drawLines(points, 3, sofa::defaulttype::Vec4f(0.8f, 0.8f, 0.8f, 1));
 				}
 				for (int i = 0; i < clampPairs.size(); i++) {
 					component::topology::Hexahedron hex = clampPairs[i].first;
@@ -447,7 +447,7 @@ namespace sofa
 			{
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
-				unsigned int ncontacts = contacts->size();
+				size_t ncontacts = contacts->size();
 				std::vector<int> second_idx;
 				std::vector<Vector3> second_point;
 				for (unsigned int j = 0; j < ncontacts; ++j)
@@ -458,7 +458,7 @@ namespace sofa
 					second_idx.push_back(idx);
 					second_point.push_back(pnt);
 				}
-				unsigned int ss = std::min(toolState.first_idx.size(), second_idx.size());
+				size_t ss = std::min(toolState.first_idx.size(), second_idx.size());
 				if (ss > 0)
 				{
 					core::CollisionModel* surf;
@@ -515,7 +515,7 @@ namespace sofa
 						toolState.ff = sofa::core::objectmodel::New<StiffSpringForceField3>(mstate1, mstate2);
 
 						toolState.ff->setName(GenerateStirngID::generate().c_str());
-						toolState.ff->setArrowSize(0.1);
+						toolState.ff->setArrowSize(0.1f);
 						toolState.ff->setDrawMode(1); 
 
 						double r1 = 0.0;
@@ -540,90 +540,95 @@ namespace sofa
 			}
 
 			void HapticManager::doClamp(){
-				if (modelSurfaces.empty()) return;
+				if (modelSurfaces.empty()) return;	
+
 
 				// two collision models set in the xml tag, they are link type
 				ToolModel *upperJawModel = upperJaw.get();
 				ToolModel *lowerJawModel = lowerJaw.get();
-				// Set the collision pair between the upper jaw and the interacting surface 
-				std::pair<core::CollisionModel*, core::CollisionModel*> CMPair = std::make_pair(modelSurfaces[0]->getFirst(), upperJawModel->getFirst());
+				
+				for (std::size_t i_surf = 0; (i_surf < 3) && (i_surf < modelSurfaces.size()); i_surf++)
+				{
+					// Set the collision pair between the upper jaw and the interacting surface 
+					std::pair<core::CollisionModel*, core::CollisionModel*> CMPair = std::make_pair(modelSurfaces[i_surf]->getFirst(), upperJawModel->getFirst());
 
-				detectionNP->setInstance(this);
-				detectionNP->setIntersectionMethod(intersectionMethod);
-				detectionNP->beginNarrowPhase();
-				detectionNP->addCollisionPair(CMPair);
-				detectionNP->endNarrowPhase();
-				// Get collision outputs
-				const core::collision::NarrowPhaseDetection::DetectionOutputMap& detectionOutputs = detectionNP->getDetectionOutputs();
-				core::collision::NarrowPhaseDetection::DetectionOutputMap::const_iterator it1 = detectionOutputs.begin();
-				if (it1 != detectionOutputs.end()) { // If there is a collision, i.e. detectionOutputs not empty
-					const ContactVector* contacts = dynamic_cast<const ContactVector*>(it1->second);
-					const ContactVector::value_type& c = (*contacts)[0];
-					unsigned int idx1 = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getIndex() : c.elem.first.getIndex());
-										
-					CMPair = std::make_pair(modelSurfaces[0]->getFirst(), lowerJawModel->getFirst());
+					detectionNP->setInstance(this);
+					detectionNP->setIntersectionMethod(intersectionMethod);
 					detectionNP->beginNarrowPhase();
 					detectionNP->addCollisionPair(CMPair);
 					detectionNP->endNarrowPhase();
+					// Get collision outputs
+					const core::collision::NarrowPhaseDetection::DetectionOutputMap& detectionOutputs = detectionNP->getDetectionOutputs();
+					core::collision::NarrowPhaseDetection::DetectionOutputMap::const_iterator it1 = detectionOutputs.begin();
+					if (it1 != detectionOutputs.end()) { // If there is a collision, i.e. detectionOutputs not empty
+						const ContactVector* contacts = dynamic_cast<const ContactVector*>(it1->second);
+						const ContactVector::value_type& c = (*contacts)[0];
+						unsigned int idx1 = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getIndex() : c.elem.first.getIndex());
 
-					const core::collision::NarrowPhaseDetection::DetectionOutputMap& outputs = detectionNP->getDetectionOutputs();
-					core::collision::NarrowPhaseDetection::DetectionOutputMap::const_iterator it2 = outputs.begin();
-					if (it2 != outputs.end()){ // Then check if lower jaw also intersects the haptic surface. Maybe not necessary !!!
-						const ContactVector* cv = dynamic_cast<const ContactVector*>(it2->second);
-						const ContactVector::value_type& ct = (*cv)[0];
-						unsigned int idx2 = (ct.elem.first.getCollisionModel() == lowerJawModel ? ct.elem.second.getIndex() : ct.elem.first.getIndex());
-						
-						if (idx1 >= 0 && idx2 >= 0 && idx1 != idx2)
-						{
-							sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
-							core::CollisionModel* surf = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getCollisionModel() : ct.elem.first.getCollisionModel());
-							surf->getContext()->get(triangleContainer);
-							const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);
-							const component::topology::Triangle Triangle2 = triangleContainer->getTriangle(idx2);
-							
-							sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
-							surf->getContext()->get(hexContainer);
-							if (hexContainer == NULL) return;
-							hexContainer->getContext()->get(clipperState);
+						CMPair = std::make_pair(modelSurfaces[i_surf]->getFirst(), lowerJawModel->getFirst());
+						detectionNP->beginNarrowPhase();
+						detectionNP->addCollisionPair(CMPair);
+						detectionNP->endNarrowPhase();
 
-							StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();
-							hexContainer->getContext()->addObject(spring);
+						const core::collision::NarrowPhaseDetection::DetectionOutputMap& outputs = detectionNP->getDetectionOutputs();
+						core::collision::NarrowPhaseDetection::DetectionOutputMap::const_iterator it2 = outputs.begin();
+						if (it2 != outputs.end()){ // Then check if lower jaw also intersects the haptic surface. Maybe not necessary !!!
+							const ContactVector* cv = dynamic_cast<const ContactVector*>(it2->second);
+							const ContactVector::value_type& ct = (*cv)[0];
+							unsigned int idx2 = (ct.elem.first.getCollisionModel() == lowerJawModel ? ct.elem.second.getIndex() : ct.elem.first.getIndex());
 
-							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(Triangle1[0]);
-							sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(Triangle1[1]);
-							sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(Triangle1[2]);
-							sofa::helper::vector< unsigned int > ie1;
-							sofa::helper::vector< unsigned int > ie;
-							std::sort(e1.begin(), e1.end());
-							std::sort(e2.begin(), e2.end());
-							std::sort(e3.begin(), e3.end());
-							std::set_intersection(e1.begin(), e1.end(),	e2.begin(), e2.end(), std::back_inserter(ie1));
-							std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
-							
-							const component::topology::Hexahedron hex = hexContainer->getHexahedron(ie[0]);
-							int v1 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[0]);
-							int v2 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[1]);
-							int v3 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[2]);
-							
-							const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
-							for (int i = 0; i < 6; i++) {
-                                const sofa::core::topology::Quad& q = hexContainer->getLocalQuadsInHexahedron(i);
-								int j;
-								for (j = 0; j < 4; j++) {
-									if (q[j] == v1 || q[j] == v2 || q[j] == v3) {
+							if (idx1 >= 0 && idx2 >= 0 && idx1 != idx2)
+							{
+								sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
+								core::CollisionModel* surf = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getCollisionModel() : ct.elem.first.getCollisionModel());
+								surf->getContext()->get(triangleContainer);
+								const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);
+								const component::topology::Triangle Triangle2 = triangleContainer->getTriangle(idx2);
+
+								sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
+								surf->getContext()->get(hexContainer);
+								if (hexContainer == NULL) return;
+								hexContainer->getContext()->get(clipperState);
+
+								StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();
+								hexContainer->getContext()->addObject(spring);
+
+								sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(Triangle1[0]);
+								sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(Triangle1[1]);
+								sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(Triangle1[2]);
+								sofa::helper::vector< unsigned int > ie1;
+								sofa::helper::vector< unsigned int > ie;
+								std::sort(e1.begin(), e1.end());
+								std::sort(e2.begin(), e2.end());
+								std::sort(e3.begin(), e3.end());
+								std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie1));
+								std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
+
+								const component::topology::Hexahedron hex = hexContainer->getHexahedron(ie[0]);
+								int v1 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[0]);
+								int v2 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[1]);
+								int v3 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[2]);
+
+								const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
+								for (int i = 0; i < 6; i++) {
+									const sofa::core::topology::Quad& q = hexContainer->getLocalQuadsInHexahedron(i);
+									int j;
+									for (j = 0; j < 4; j++) {
+										if (q[j] == v1 || q[j] == v2 || q[j] == v3) {
+											break;
+										}
+									}
+									if (j == 4) { // found										
+										double thicknessFactor = 10.0;
+										spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+										spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+										spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+										spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
 										break;
 									}
 								}
-								if (j == 4) { // found
-									clampPairs.push_back(std::make_pair(hex, i));
-									spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue(), 0.0, intersectionMethod->getContactDistance());
-									break;
-								}
-							}
-						} // endif
+							} // endif
+						}
 					}
 				}
 			}
