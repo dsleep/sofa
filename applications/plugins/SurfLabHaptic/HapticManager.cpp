@@ -46,7 +46,7 @@ namespace sofa
 
 			HapticManager::HapticManager()
 				: grasp_stiffness(initData(&grasp_stiffness, 10000.0, "graspStiffness", "how stiff surface is attached to the tool"))
-				, attach_stiffness(initData(&attach_stiffness, 3000.0, "attachStiffness", "how stiff surface is attached together"))
+				, attach_stiffness(initData(&attach_stiffness, 1.0, "attachStiffness", "how stiff surface is attached together"))
 				, grasp_forcescale(initData(&grasp_forcescale, 0.001, "grasp_force_scale", "multiply the force with this coefficient"))
 				, duration(initData(&duration, 10.0, "duration", "time to increase stiffness of suturing springs"))
 				, intersectionMethod(NULL)
@@ -547,7 +547,7 @@ namespace sofa
 				ToolModel *upperJawModel = upperJaw.get();
 				ToolModel *lowerJawModel = lowerJaw.get();
 				
-				for (std::size_t i_surf = 0; (i_surf < 3) && (i_surf < modelSurfaces.size()); i_surf++)
+				for (std::size_t i_surf = 0; (i_surf < 20) && (i_surf < modelSurfaces.size()); i_surf++)
 				{
 					// Set the collision pair between the upper jaw and the interacting surface 
 					std::pair<core::CollisionModel*, core::CollisionModel*> CMPair = std::make_pair(modelSurfaces[i_surf]->getFirst(), upperJawModel->getFirst());
