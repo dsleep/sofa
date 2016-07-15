@@ -97,9 +97,6 @@ namespace sofa
 				sofa::core::objectmodel::DataFileName clampMesh;
 
 				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> toolModel;
-				/*these two links are used for clamping tool*/
-				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> upperJaw;
-				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> lowerJaw;
 				/* we need a link to the omni driver just so we can get the proper ID */
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
 
