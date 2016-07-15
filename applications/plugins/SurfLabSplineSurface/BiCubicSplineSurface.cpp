@@ -112,7 +112,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
       return;
     }
 
-
+	// initialize _patches
     convertQuadsToPatches();
   }
 
@@ -264,8 +264,8 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
   }
 
   virtual void updateVisual() {
-    updatePoints();
-    evaluatePatches();
+    updatePoints(); // update _positions
+    evaluatePatches(); // compute _patches
     buildIndices();
     uploadPoints();
   }
@@ -288,6 +288,7 @@ struct SOFA_EXPORT_DYNAMIC_LIBRARY BiCubicSplineSurface : public virtual sofa::c
         X[i][2] = mstate->getPZ(i);
       }
     }
+	// initialize _positions here
     WriteOnlyAccessor<Data<ExtVecCoord> > positions(_positions);
     positions.resize(N);
     for(size_t i = 0; i < positions.size(); i++)

@@ -23,6 +23,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include "HapticManager.h"
+//#include "../SurfLabSplineSurface/SurfLabSplineSurface.cpp"
 
 #define int2string(a) std::to_string(a)
 namespace sofa
@@ -219,25 +220,27 @@ namespace sofa
 					points.push_back(Vector3(x2[0]));
 					vparams->drawTool()->drawLines(points, 3, sofa::defaulttype::Vec4f(0.8f, 0.8f, 0.8f, 1));
 				}
-				for (int i = 0; i < clampPairs.size(); i++) {
+				for (int i = 0; i < clampPairs.size(); i++) { // construct clip "brick" (hex) on quad facet(s) of thick curve hex where the clip is applied
 					component::topology::Hexahedron hex = clampPairs[i].first;
 					int quad = clampPairs[i].second;
 					const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
 					const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
 					
 					const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();
-					Vector3 P1 = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4;
-					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized();
-					Vector3 n2 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized();
-					Vector3 n3 = n2.cross(n1).normalized();
-					n2 = n3.cross(n1);
-					const vector< Vector3 > &vertices = clipperMesh->getVertices();
+					Vector3 P1 = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4; // quad's center
+					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
+					Vector3 n2 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized(); //edge difference of quad
+					//Vector3 n2 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
+					//Vector3 n1 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized(); //edge difference of quad
+					Vector3 n3 = n2.cross(n1).normalized(); // normal of the quad
+					n2 = n3.cross(n1);  // in case of twisted quad, get second direction orthogonal to n1, n3
+					const vector< Vector3 > &vertices = clipperMesh->getVertices(); // get model of clip  triangulated
 					const vector< Vector3 > &normals = clipperMesh->getNormals();
 					const vector< vector< vector<int> > > &facets = clipperMesh->getFacets();
-					vector< Vector3 > vv(vertices.size());
-					vector< Vector3 > nn(normals.size());
+					vector< Vector3 > vv(vertices.size()); // modifiable vertex array
+					vector< Vector3 > nn(normals.size()); 
 					Vec3f sc = clampScale.getValue();
-					for (int t = 0; t < vertices.size(); t++) {
+					for (int t = 0; t < vertices.size(); t++) {  // adjust clip model (scale, etc) along edge-directions of quad
 						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P1[0];
 						vv[t][1] = sc[0] * n1[1] * vertices[t][0] + sc[1] * n2[1] * vertices[t][1] + sc[2] * n3[1] * vertices[t][2] + P1[1];
 						vv[t][2] = sc[0] * n1[2] * vertices[t][0] + sc[1] * n2[2] * vertices[t][1] + sc[2] * n3[2] * vertices[t][2] + P1[2];
@@ -249,7 +252,7 @@ namespace sofa
 
 					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 					//glEnable(GL_COLOR_MATERIAL);
-					glBegin(GL_TRIANGLES);
+					glBegin(GL_TRIANGLES);  // display clip in OGL: 2 triangles per 
 					for (int t = 0; t < facets.size(); t++) {
 						glNormal3d(nn[facets[t][1][0]][0], nn[facets[t][1][0]][1], nn[facets[t][1][0]][2]);
 						glVertex3d(vv[facets[t][0][0]][0], vv[facets[t][0][0]][1], vv[facets[t][0][0]][2]);
@@ -259,11 +262,14 @@ namespace sofa
 						glVertex3d(vv[facets[t][0][2]][0], vv[facets[t][0][2]][1], vv[facets[t][0][2]][2]);						
 					}
 					glEnd();
-
 					//glDisable(GL_COLOR_MATERIAL);
+					
+					// 2nd clip (as above)
 					Vector3 P2 = (x[hex[vertexMap[quad][0]]] + x[hex[vertexMap[quad][1]]] + x[hex[vertexMap[quad][2]]] + x[hex[vertexMap[quad][3]]]) / 4;
 					n1 = (x[hex[vertexMap[quad][1]]] - x[hex[vertexMap[quad][0]]]).normalized();
 					n2 = (x[hex[vertexMap[quad][2]]] - x[hex[vertexMap[quad][1]]]).normalized();
+					//n2 = (x[hex[vertexMap[quad][1]]] - x[hex[vertexMap[quad][0]]]).normalized();
+					//n1 = (x[hex[vertexMap[quad][2]]] - x[hex[vertexMap[quad][1]]]).normalized();
 					n3 = n1.cross(n2).normalized();
 					n2 = n3.cross(n1);
 					
@@ -542,7 +548,6 @@ namespace sofa
 			void HapticManager::doClamp(){
 				if (modelSurfaces.empty()) return;	
 
-
 				// two collision models set in the xml tag, they are link type
 				ToolModel *upperJawModel = upperJaw.get();
 				ToolModel *lowerJawModel = lowerJaw.get();
@@ -584,7 +589,7 @@ namespace sofa
 						if (idx1 >= 0 && idx2 >= 0 && idx1 != idx2)
 						{
 							sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
-							core::CollisionModel* surf = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getCollisionModel() : ct.elem.first.getCollisionModel());
+							core::CollisionModel* surf = (c.elem.first.getCollisionModel() == upperJawModel ? c.elem.second.getCollisionModel() : ct.elem.first.getCollisionModel());	
 							surf->getContext()->get(triangleContainer);
 							const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);
 							const component::topology::Triangle Triangle2 = triangleContainer->getTriangle(idx2);
@@ -623,12 +628,82 @@ namespace sofa
 									}
 								}
 								if (j == 4) { // found			
-									clampPairs.push_back(std::make_pair(hex, i));
-									double thicknessFactor = 10.0;
-									spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-									spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+									clampPairs.push_back(std::make_pair(hex, i));									
+
+									// 8 vertices
+									SReal x1 = hexContainer->getPX(hex[q[0]]);
+									SReal y1 = hexContainer->getPY(hex[q[0]]);
+									SReal z1 = hexContainer->getPZ(hex[q[0]]);
+									SReal x2 = hexContainer->getPX(hex[vertexMap[i][0]]);
+									SReal y2 = hexContainer->getPY(hex[vertexMap[i][0]]);
+									SReal z2 = hexContainer->getPZ(hex[vertexMap[i][0]]);
+									printf("x cor of the first one is ...........................: %f ............................ \n", x1);
+									//hexContainer->removeHexahedra(const sofa::helper::vector<unsigned int> &hexahedraIds);
+									helper::ReadAccessor< Data<defaulttype::Vec3Types::VecCoord> > initPoints = hexContainer->d_initPoints;
+									printf("x cor of the first one is ...........................: %f ............................ \n", initPoints[hex[q[0]]][0]);
+									helper::WriteAccessor< Data<defaulttype::Vec3Types::VecCoord> > initPointsAccessor = hexContainer->d_initPoints;
+									x1 = 0; y1 = 0; z1 = 0;
+									x2 = 0; y2 = 0; z2 = 0;
+									for (int i_hex = 0; i_hex < 4; i_hex++)
+									{
+										initPointsAccessor[hex[q[i_hex]]][0] = (x1 + x2) / 2;
+										initPointsAccessor[hex[q[i_hex]]][1] = (y1 + y2) / 2;
+										initPointsAccessor[hex[q[i_hex]]][2] = (z1 + z2) / 2;
+										initPointsAccessor[hex[vertexMap[i][i_hex]]][0] = (x1 + x2) / 2;
+										initPointsAccessor[hex[vertexMap[i][i_hex]]][1] = (y1 + y2) / 2;
+										initPointsAccessor[hex[vertexMap[i][i_hex]]][2] = (z1 + z2) / 2;
+									}
+									hexContainer->toVisualModel();
+									
+									sofa::component::visualmodel::OglModel::SPtr visu_base = sofa::core::objectmodel::New<sofa::component::visualmodel::OglModel>();
+
+									//helper::ReadAccessor< Data<defaulttype::Vec3Types::VecCoord> > initPointss = hexContainer->d_initPoints;
+									//printf("x cor of the first one is ...........................: %f ............................ \n", initPointss[hex[q[0]]][0]);
+									//initPointsAccessor.resize(1);
+									//clipperState->reinit();
+
+									// double thicknessFactor = 1.0;
+									// spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+									// spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+									// spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+									// spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+
+									//------------------------- TEST change coordinates
+									//const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();
+									//Data<VecCoord>* y = clipperState->write(core::VecCoordId::position());
+
+									//printf("how many ------------------------      %d", x.size());
+									//double width1 = .35, width2 = .35;
+									//Vector3 v0 = x[hex[q[0]]] * (1 - width1) + x[hex[vertexMap[i][0]]] * width1;
+									//Vector3 w0 = x[hex[q[0]]] * width2 + x[hex[vertexMap[i][0]]] * (1 - width2);
+									////printf("how many ------------------------      %d", y->getData()
+									//BaseData * bdata = y->getData();
+									////(*y)[hex[q[0]]] = v0;
+									////y[hex[vertexMap[i][0]]] = w0;
+									//printf("size ....................... ------------------------      %d", clipperState->getSize());
+									//helper::WriteOnlyAccessor<Data<VecCoord> > positions(y);
+									//// 52 vertices
+									//for (size_t i = 0; i < 52; i++)
+									//{
+									//	positions[i][0] = 0.;
+									//	positions[i][1] = 0.;
+									//	positions[i][2] = 0.;
+									//}
+									//clipperState->reinit();
+
+									//const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
+									//const VecCoord& xnew = clipperState->read(core::ConstVecCoordId::position())->getValue();
+									//unsigned int quad(0);
+									//cout << endl << " cooooooooooooooooooooooooooo .............. " << xnew[hex[vertexHex[quad][0]]];
+									//cout << endl << " cooooooooooooooooooooooooooo .............. " << xnew[hex[vertexHex[quad][1]]];
+									//cout << endl << " cooooooooooooooooooooooooooo .............. " << xnew[hex[vertexHex[quad][2]]];
+									//cout << endl << " cooooooooooooooooooooooooooo .............. " << xnew[hex[vertexHex[quad][3]]];
+									//cout << endl << " cooooooooooo positions .............. " << positions[0];
+									////cout << endl << " cooooooooooo y .............. " << y->getData; 
+									////y->setValue(1, 0);
+									////BiCubicSplineSurface();
+
+
 									break;
 								}
 							}
