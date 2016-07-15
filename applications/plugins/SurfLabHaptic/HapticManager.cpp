@@ -54,7 +54,8 @@ namespace sofa
 				, detectionNP(NULL)
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
-				, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
+				//, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
+				, clampScale(initData(&clampScale, Vec3f(.5, .5, .5), "clampScale", "scale of the object created during clamping"))
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
@@ -228,7 +229,7 @@ namespace sofa
 					points.push_back(Vector3(x2[0]));
 					vparams->drawTool()->drawLines(points, 3, sofa::defaulttype::Vec4f(0.8f, 0.8f, 0.8f, 1));
 				}
-				cout << endl << " Number of pairs ..................." << clampPairs.size() << endl;
+				
 				for (int i = 0; i < clampPairs.size(); i++) { // construct clip "brick" (hex) on quad facet(s) of thick curve hex where the clip is applied
 					component::topology::Hexahedron hex = clampPairs[i].first;
 					int quad = clampPairs[i].second;
@@ -239,8 +240,6 @@ namespace sofa
 					Vector3 P1 = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4; // quad's center
 					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
 					Vector3 n2 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized(); //edge difference of quad
-					//Vector3 n2 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
-					//Vector3 n1 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized(); //edge difference of quad
 					Vector3 n3 = n2.cross(n1).normalized(); // normal of the quad
 					n2 = n3.cross(n1);  // in case of twisted quad, get second direction orthogonal to n1, n3
 					const vector< Vector3 > &vertices = clipperMesh->getVertices(); // get model of clip  triangulated
@@ -277,8 +276,6 @@ namespace sofa
 					Vector3 P2 = (x[hex[vertexMap[quad][0]]] + x[hex[vertexMap[quad][1]]] + x[hex[vertexMap[quad][2]]] + x[hex[vertexMap[quad][3]]]) / 4;
 					n1 = (x[hex[vertexMap[quad][1]]] - x[hex[vertexMap[quad][0]]]).normalized();
 					n2 = (x[hex[vertexMap[quad][2]]] - x[hex[vertexMap[quad][1]]]).normalized();
-					//n2 = (x[hex[vertexMap[quad][1]]] - x[hex[vertexMap[quad][0]]]).normalized();
-					//n1 = (x[hex[vertexMap[quad][2]]] - x[hex[vertexMap[quad][1]]]).normalized();
 					n3 = n1.cross(n2).normalized();
 					n2 = n3.cross(n1);
 					
