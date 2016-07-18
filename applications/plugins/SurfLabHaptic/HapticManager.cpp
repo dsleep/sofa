@@ -236,12 +236,21 @@ namespace sofa
 					const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
 					const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
 					
-					const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();
-					Vector3 P1 = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4; // quad's center
+					const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();					
+					const unsigned int oppositeQuads[6] = { 1, 0, 3, 2, 5, 4 };
+					int quadop = oppositeQuads[quad]; // opposite quad in the hex
+					Vector3 P1ori = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4; // quad's center
+					Vector3 P1op = (x[hex[vertexHex[quadop][0]]] + x[hex[vertexHex[quadop][1]]] + x[hex[vertexHex[quadop][2]]] + x[hex[vertexHex[quadop][3]]]) / 4; // quad's center
+					Vector3 P1 = .4*P1ori + .6*P1op;
 					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
 					Vector3 n2 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized(); //edge difference of quad
 					Vector3 n3 = n2.cross(n1).normalized(); // normal of the quad
 					n2 = n3.cross(n1);  // in case of twisted quad, get second direction orthogonal to n1, n3
+					n2 = n2 / 4;
+
+
+					//Vector3 n3; n3[0] = .0; n3[1] = .0; n3[2] = .0;
+
 					const vector< Vector3 > &vertices = clipperMesh->getVertices(); // get model of clip  triangulated
 					const vector< Vector3 > &normals = clipperMesh->getNormals();
 					const vector< vector< vector<int> > > &facets = clipperMesh->getFacets();
@@ -268,36 +277,6 @@ namespace sofa
 						glVertex3d(vv[facets[t][0][1]][0], vv[facets[t][0][1]][1], vv[facets[t][0][1]][2]);
 						glNormal3d(nn[facets[t][1][2]][0], nn[facets[t][1][2]][1], nn[facets[t][1][2]][2]);
 						glVertex3d(vv[facets[t][0][2]][0], vv[facets[t][0][2]][1], vv[facets[t][0][2]][2]);						
-					}
-					glEnd();
-					//glDisable(GL_COLOR_MATERIAL);
-					
-					// 2nd clip (as above)
-					Vector3 P2 = (x[hex[vertexMap[quad][0]]] + x[hex[vertexMap[quad][1]]] + x[hex[vertexMap[quad][2]]] + x[hex[vertexMap[quad][3]]]) / 4;
-					n1 = (x[hex[vertexMap[quad][1]]] - x[hex[vertexMap[quad][0]]]).normalized();
-					n2 = (x[hex[vertexMap[quad][2]]] - x[hex[vertexMap[quad][1]]]).normalized();
-					n3 = n1.cross(n2).normalized();
-					n2 = n3.cross(n1);
-					
-					for (int t = 0; t < vertices.size(); t++) {
-						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P2[0];
-						vv[t][1] = sc[0] * n1[1] * vertices[t][0] + sc[1] * n2[1] * vertices[t][1] + sc[2] * n3[1] * vertices[t][2] + P2[1];
-						vv[t][2] = sc[0] * n1[2] * vertices[t][0] + sc[1] * n2[2] * vertices[t][1] + sc[2] * n3[2] * vertices[t][2] + P2[2];
-						nn[t][0] = n1[0] * normals[t][0] + n2[0] * normals[t][1] + n3[0] * normals[t][2];
-						nn[t][1] = n1[1] * normals[t][0] + n2[1] * normals[t][1] + n3[1] * normals[t][2];
-						nn[t][2] = n1[2] * normals[t][0] + n2[2] * normals[t][1] + n3[2] * normals[t][2];
-					}
-
-					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-					//glEnable(GL_COLOR_MATERIAL);
-					glBegin(GL_TRIANGLES);
-					for (int t = 0; t < facets.size(); t++) {
-						glNormal3d(normals[facets[t][1][0]][0], normals[facets[t][1][0]][1], normals[facets[t][1][0]][2]);
-						glVertex3d(vv[facets[t][0][0]][0], vv[facets[t][0][0]][1], vv[facets[t][0][0]][2]);
-						glNormal3d(normals[facets[t][1][1]][0], normals[facets[t][1][1]][1], normals[facets[t][1][1]][2]);
-						glVertex3d(vv[facets[t][0][1]][0], vv[facets[t][0][1]][1], vv[facets[t][0][1]][2]);
-						glNormal3d(normals[facets[t][1][2]][0], normals[facets[t][1][2]][1], normals[facets[t][1][2]][2]);
-						glVertex3d(vv[facets[t][0][2]][0], vv[facets[t][0][2]][1], vv[facets[t][0][2]][2]);
 					}
 					glEnd();
 				}
