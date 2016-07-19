@@ -93,16 +93,16 @@ namespace sofa
 					else{
 						toolState.function = TOOLFUNCTION_CLAMP;
 						sout << "Active tool: Clamping" << sendl;
-						std::string meshFilename("mesh/cube.obj");
-						if (sofa::helper::system::DataRepository.findFile(meshFilename)) {
-							clipperMesh.reset(sofa::helper::io::Mesh::Create(meshFilename));
-							if (clipperMesh.get() == 0)
-								sout << "Clipper mesh not found !" << sendl;
-							else
-								sout << "Clipper mesh size:" << clipperMesh->getVertices().size() << sendl;
-						}
 					}
 					sout << "tool is found " << sendl;
+					std::string meshFilename("mesh/cube.obj");
+					if (sofa::helper::system::DataRepository.findFile(meshFilename)) {
+						clipperMesh.reset(sofa::helper::io::Mesh::Create(meshFilename));
+						if (clipperMesh.get() == 0)
+							sout << "Clipper mesh not found !" << sendl;
+						else
+							sout << "Clipper mesh size:" << clipperMesh->getVertices().size() << sendl;
+					}
 				} 
 				else {
 					warnings.append("No collision model for the tool is found ");
@@ -239,37 +239,48 @@ namespace sofa
 					const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();					
 					const unsigned int oppositeQuads[6] = { 1, 0, 3, 2, 5, 4 };
 					int quadop = oppositeQuads[quad]; // opposite quad in the hex
-					Vector3 P1ori = (x[hex[vertexHex[quad][0]]] + x[hex[vertexHex[quad][1]]] + x[hex[vertexHex[quad][2]]] + x[hex[vertexHex[quad][3]]]) / 4; // quad's center
-					Vector3 P1op = (x[hex[vertexHex[quadop][0]]] + x[hex[vertexHex[quadop][1]]] + x[hex[vertexHex[quadop][2]]] + x[hex[vertexHex[quadop][3]]]) / 4; // quad's center
-					Vector3 P1 = .4*P1ori + .6*P1op;
 					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
 					Vector3 n2 = (x[hex[vertexHex[quad][2]]] - x[hex[vertexHex[quad][1]]]).normalized(); //edge difference of quad
 					Vector3 n3 = n2.cross(n1).normalized(); // normal of the quad
-					n2 = n3.cross(n1);  // in case of twisted quad, get second direction orthogonal to n1, n3
-					n2 = n2 / 4;
-
-
-					//Vector3 n3; n3[0] = .0; n3[1] = .0; n3[2] = .0;
+					n2 = n3.cross(n1);  // in case of twisted quad, get second direction orthogonal to n1, n3	
+								
+					Vec3f sc = clampScale.getValue();				
+					Vector3 P; // hex center
+					for (size_t iv = 0; iv < 8; iv++){P += x[hex[iv]] / 8;}
 
 					const vector< Vector3 > &vertices = clipperMesh->getVertices(); // get model of clip  triangulated
 					const vector< Vector3 > &normals = clipperMesh->getNormals();
 					const vector< vector< vector<int> > > &facets = clipperMesh->getFacets();
 					vector< Vector3 > vv(vertices.size()); // modifiable vertex array
-					vector< Vector3 > nn(normals.size()); 
-					Vec3f sc = clampScale.getValue();
-					for (int t = 0; t < vertices.size(); t++) {  // adjust clip model (scale, etc) along edge-directions of quad
-						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P1[0];
-						vv[t][1] = sc[0] * n1[1] * vertices[t][0] + sc[1] * n2[1] * vertices[t][1] + sc[2] * n3[1] * vertices[t][2] + P1[1];
-						vv[t][2] = sc[0] * n1[2] * vertices[t][0] + sc[1] * n2[2] * vertices[t][1] + sc[2] * n3[2] * vertices[t][2] + P1[2];
+					vector< Vector3 > nn(normals.size()); 					
 
-						nn[t][0] = n1[0] * normals[t][0] +  n2[0] * normals[t][1] +  n3[0] * normals[t][2];
-						nn[t][1] = n1[1] * normals[t][0] +  n2[1] * normals[t][1] +  n3[1] * normals[t][2];
-						nn[t][2] = n1[2] * normals[t][0] +  n2[2] * normals[t][1] +  n3[2] * normals[t][2];
+					float hexLength = (x[hex[0]]-x[hex[1]]).norm();
+					float relativeRatioForClip = 2; // relative between edge length of clip and hex
+					float relativeScale = relativeRatioForClip*hexLength/2;				
+
+					//cout << " hex lnegth " << hexLength << endl;
+					////cout << " ten lnegth " << tentativeClipLength << endl;
+					//cout << " current scale h " << sc[0] << endl;
+					//cout << " new sclae " << relativeScale<< endl;
+					//cout << " P " << P << endl;
+
+					//for (size_t ic = 0; ic < 3; ic++){ sc[ic] = relativeScale; }
+					// update *sc*
+					sc[0] = relativeScale;sc[1] = relativeScale;sc[1] = relativeScale/4;
+
+					for (int t = 0; t < vertices.size(); t++) {  // adjust clip model (scale, etc) along edge-directions of quad
+						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P[0];
+						vv[t][1] = sc[0] * n1[1] * vertices[t][0] + sc[1] * n2[1] * vertices[t][1] + sc[2] * n3[1] * vertices[t][2] + P[1];
+						vv[t][2] = sc[0] * n1[2] * vertices[t][0] + sc[1] * n2[2] * vertices[t][1] + sc[2] * n3[2] * vertices[t][2] + P[2];
+
+						nn[t][0] = n1[0] * normals[t][0] + n2[0] * normals[t][1] + n3[0] * normals[t][2];
+						nn[t][1] = n1[1] * normals[t][0] + n2[1] * normals[t][1] + n3[1] * normals[t][2];
+						nn[t][2] = n1[2] * normals[t][0] + n2[2] * normals[t][1] + n3[2] * normals[t][2];
 					}
 
 					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 					//glEnable(GL_COLOR_MATERIAL);
-					glBegin(GL_TRIANGLES);  // display clip in OGL: 2 triangles per 
+					glBegin(GL_TRIANGLES);  // display clip in OGL: 2 triangles per quad
 					for (int t = 0; t < facets.size(); t++) {
 						glNormal3d(nn[facets[t][1][0]][0], nn[facets[t][1][0]][1], nn[facets[t][1][0]][2]);
 						glVertex3d(vv[facets[t][0][0]][0], vv[facets[t][0][0]][1], vv[facets[t][0][0]][2]);
