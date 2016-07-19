@@ -23,7 +23,6 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include "HapticManager.h"
-//#include "../SurfLabSplineSurface/SurfLabSplineSurface.cpp"
 
 #define int2string(a) std::to_string(a)
 namespace sofa
@@ -54,8 +53,7 @@ namespace sofa
 				, detectionNP(NULL)
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
-				//, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
-				, clampScale(initData(&clampScale, Vec3f(.5, .5, .5), "clampScale", "scale of the object created during clamping"))
+				, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
@@ -220,6 +218,9 @@ namespace sofa
 			
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
 			{
+				//cout << "--------------------------------------------" << endl;
+				//cout << "draw visual is called ............" << endl;
+				//cout << " size of clampPairs ............" << clampPairs.size() << endl;
 				if(!vparams->displayFlags().getShowVisualModels()) return;
 				if (toolState.m_forcefield) {
 					const VecCoord& x1 = toolState.m_forcefield->getObject1()->read(core::ConstVecCoordId::position())->getValue();
@@ -258,15 +259,8 @@ namespace sofa
 					float relativeRatioForClip = 2; // relative between edge length of clip and hex
 					float relativeScale = relativeRatioForClip*hexLength/2;				
 
-					//cout << " hex lnegth " << hexLength << endl;
-					////cout << " ten lnegth " << tentativeClipLength << endl;
-					//cout << " current scale h " << sc[0] << endl;
-					//cout << " new sclae " << relativeScale<< endl;
-					//cout << " P " << P << endl;
-
-					//for (size_t ic = 0; ic < 3; ic++){ sc[ic] = relativeScale; }
 					// update *sc*
-					sc[0] = relativeScale;sc[1] = relativeScale;sc[1] = relativeScale/4;
+					sc[0] = relativeScale*sc[0];sc[1] = relativeScale/4*sc[1];sc[2] = relativeScale*sc[2];
 
 					for (int t = 0; t < vertices.size(); t++) {  // adjust clip model (scale, etc) along edge-directions of quad
 						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P[0];
@@ -282,6 +276,7 @@ namespace sofa
 					//glEnable(GL_COLOR_MATERIAL);
 					glBegin(GL_TRIANGLES);  // display clip in OGL: 2 triangles per quad
 					for (int t = 0; t < facets.size(); t++) {
+						// plot wrt 3 vertices of the each facet (1 pair for 1 vertex)
 						glNormal3d(nn[facets[t][1][0]][0], nn[facets[t][1][0]][1], nn[facets[t][1][0]][2]);
 						glVertex3d(vv[facets[t][0][0]][0], vv[facets[t][0][0]][1], vv[facets[t][0][0]][2]);
 						glNormal3d(nn[facets[t][1][1]][0], nn[facets[t][1][1]][1], nn[facets[t][1][1]][2]);
