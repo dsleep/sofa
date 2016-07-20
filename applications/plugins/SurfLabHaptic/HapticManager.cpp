@@ -65,8 +65,7 @@ namespace sofa
 
 
 			void HapticManager::init()
-			{
-				cout << "... INIT............" << clampPairs.size() << endl;
+			{				
 				if (toolModel) {
 					ToolModel *tm = toolModel.get();
 					toolState.buttonState = 0;
@@ -135,15 +134,12 @@ namespace sofa
 			}
 
 			void HapticManager::reset()
-			{
-				cout << "... ReSet............" << clampPairs.size() << endl;
+			{				
 			}
 			
 			void HapticManager::doGrasp()
-			{
-				cout << "size of clamp pairs ....inside doGrasp 1............" << clampPairs.size() << endl;
-				const ContactVector* contacts = getContacts();
-				cout << "size of clamp pairs ....inside doGrasp 2............" << clampPairs.size() << endl;
+			{				
+				const ContactVector* contacts = getContacts();				
 				if (contacts == NULL) return;
 				for (unsigned int j = 0; j < 1; ++j)
 				{
@@ -199,8 +195,7 @@ namespace sofa
 					else
 						toolState.modelTool->setGroups(c.elem.first.getCollisionModel()->getGroups());
 
-				}
-				cout << "size of clamp pairs ....inside doGrasp 3............" << clampPairs.size() << endl;
+				}				
 
 			}
 			
@@ -217,8 +212,7 @@ namespace sofa
 			}
 			
 			void HapticManager::updateVisual()
-			{
-				cout << "... Update visual............" << clampPairs.size() << endl;
+			{				
 			}
 			
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
@@ -612,8 +606,7 @@ namespace sofa
 			}
 			
 			void HapticManager::updateTool()
-			{
-				cout << "size of clamp pairs ...in update Tool............" << clampPairs.size() << endl;
+			{				
 				unsigned char newButtonState = toolState.newButtonState;
 				const unsigned char FIRST = 1, SECOND = 2;
 				switch (toolState.function)
@@ -629,11 +622,9 @@ namespace sofa
 				case TOOLFUNCTION_GRASP:
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
 					{
-						/* the state of the first button is changing */
-						cout << "size of clamp pairs ....before doGrasp is called............" << clampPairs.size() << endl;
+						/* the state of the first button is changing */						
 						if ((newButtonState & FIRST) != 0)
-						{
-							cout << "size of clamp pairs ....when doGrasp is called............" << clampPairs.size() << endl;
+						{							
 							doGrasp(); /* button down */
 						}
 						else
@@ -670,19 +661,16 @@ namespace sofa
 			}
 
 			void HapticManager::handleEvent(Event* event)
-			{
-				cout << "size of clamp pairs ...in handle event............" << clampPairs.size() << endl;				
+			{				
 				Controller::handleEvent(event);
 			}
 
 			void HapticManager::onHapticDeviceEvent(HapticDeviceEvent* ev)
-			{
-				cout << "size of clamp pairs ...haptic device event............" << clampPairs.size() << endl;
+			{				
 				if (ev->getDeviceId() == toolState.id) toolState.newButtonState = ev->getButtonState();
 			}
 			
-			void HapticManager::onEndAnimationStep(const double dt) {
-				cout << "size of clamp pairs ...EndAnimationStep............" << clampPairs.size() << endl;
+			void HapticManager::onEndAnimationStep(const double dt) {				
 				if (intersectionMethod == NULL || detectionNP == NULL)
 				{
 					sout << "intersection method or detection NP is missing" << sendl;

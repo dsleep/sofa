@@ -155,9 +155,7 @@ namespace sofa
 				double start_time;
 				double delta_time;
 				// the following variables used in clamping
-				std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;
-				std::vector<std::pair<component::topology::Hexahedron*, int> > clampPairsPt;
-				//core::behavior::MechanicalState<DataTypes>* clipperState;
+				std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;				
 				std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
 				boost::scoped_ptr<sofa::helper::io::Mesh> clipperMesh;
 				
