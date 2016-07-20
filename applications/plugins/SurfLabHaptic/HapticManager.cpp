@@ -66,6 +66,7 @@ namespace sofa
 
 			void HapticManager::init()
 			{
+				cout << "... INIT............" << clampPairs.size() << endl;
 				if (toolModel) {
 					ToolModel *tm = toolModel.get();
 					toolState.buttonState = 0;
@@ -135,11 +136,14 @@ namespace sofa
 
 			void HapticManager::reset()
 			{
+				cout << "... ReSet............" << clampPairs.size() << endl;
 			}
 			
 			void HapticManager::doGrasp()
 			{
+				cout << "size of clamp pairs ....inside doGrasp 1............" << clampPairs.size() << endl;
 				const ContactVector* contacts = getContacts();
+				cout << "size of clamp pairs ....inside doGrasp 2............" << clampPairs.size() << endl;
 				if (contacts == NULL) return;
 				for (unsigned int j = 0; j < 1; ++j)
 				{
@@ -196,6 +200,7 @@ namespace sofa
 						toolState.modelTool->setGroups(c.elem.first.getCollisionModel()->getGroups());
 
 				}
+				cout << "size of clamp pairs ....inside doGrasp 3............" << clampPairs.size() << endl;
 
 			}
 			
@@ -213,7 +218,7 @@ namespace sofa
 			
 			void HapticManager::updateVisual()
 			{
-				
+				cout << "... Update visual............" << clampPairs.size() << endl;
 			}
 			
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
@@ -237,7 +242,8 @@ namespace sofa
 					const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
 					const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
 					
-					const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();					
+					//const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();					
+					const VecCoord& x = clipperStates[i]->read(core::ConstVecCoordId::position())->getValue();
 					const unsigned int oppositeQuads[6] = { 1, 0, 3, 2, 5, 4 };
 					int quadop = oppositeQuads[quad]; // opposite quad in the hex
 					Vector3 n1 = (x[hex[vertexHex[quad][1]]] - x[hex[vertexHex[quad][0]]]).normalized(); //edge difference of quad
@@ -556,7 +562,8 @@ namespace sofa
 					sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
 					surf->getContext()->get(hexContainer);
 					if (hexContainer == NULL) return;
-					hexContainer->getContext()->get(clipperState);
+					core::behavior::MechanicalState<DataTypes>* currentClipperState;
+					hexContainer->getContext()->get(currentClipperState);					
 
 					StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();
 					hexContainer->getContext()->addObject(spring);
@@ -591,6 +598,7 @@ namespace sofa
 							}
 						}
 						if (j == 4) { // found	
+							clipperStates.push_back(currentClipperState);
 							clampPairs.push_back(std::make_pair(hex, i));
 							/*double thicknessFactor = 3.0;
 							spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
@@ -605,6 +613,7 @@ namespace sofa
 			
 			void HapticManager::updateTool()
 			{
+				cout << "size of clamp pairs ...in update Tool............" << clampPairs.size() << endl;
 				unsigned char newButtonState = toolState.newButtonState;
 				const unsigned char FIRST = 1, SECOND = 2;
 				switch (toolState.function)
@@ -621,8 +630,12 @@ namespace sofa
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
 					{
 						/* the state of the first button is changing */
+						cout << "size of clamp pairs ....before doGrasp is called............" << clampPairs.size() << endl;
 						if ((newButtonState & FIRST) != 0)
+						{
+							cout << "size of clamp pairs ....when doGrasp is called............" << clampPairs.size() << endl;
 							doGrasp(); /* button down */
+						}
 						else
 							unGrasp(); /* button up */
 					}
@@ -658,15 +671,18 @@ namespace sofa
 
 			void HapticManager::handleEvent(Event* event)
 			{
+				cout << "size of clamp pairs ...in handle event............" << clampPairs.size() << endl;				
 				Controller::handleEvent(event);
 			}
 
 			void HapticManager::onHapticDeviceEvent(HapticDeviceEvent* ev)
 			{
+				cout << "size of clamp pairs ...haptic device event............" << clampPairs.size() << endl;
 				if (ev->getDeviceId() == toolState.id) toolState.newButtonState = ev->getButtonState();
 			}
 			
 			void HapticManager::onEndAnimationStep(const double dt) {
+				cout << "size of clamp pairs ...EndAnimationStep............" << clampPairs.size() << endl;
 				if (intersectionMethod == NULL || detectionNP == NULL)
 				{
 					sout << "intersection method or detection NP is missing" << sendl;
