@@ -43,6 +43,8 @@ namespace sofa
 				.add< HapticManager >()
 				;
 
+			//int HapticManager::_test = 0;
+
 
 			HapticManager::HapticManager()
 				: grasp_stiffness(initData(&grasp_stiffness, 10000.0, "graspStiffness", "how stiff surface is attached to the tool"))
@@ -54,7 +56,7 @@ namespace sofa
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
 				, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
-				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
+				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))								
 			{
 				this->f_listening.setValue(true);
 			}
@@ -217,9 +219,6 @@ namespace sofa
 			
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
 			{
-				//cout << "--------------------------------------------" << endl;
-				//cout << "draw visual is called ............" << endl;
-				//cout << " size of clampPairs ............" << clampPairs.size() << endl;
 				if(!vparams->displayFlags().getShowVisualModels()) return;
 				if (toolState.m_forcefield) {
 					const VecCoord& x1 = toolState.m_forcefield->getObject1()->read(core::ConstVecCoordId::position())->getValue();
@@ -235,8 +234,7 @@ namespace sofa
 					int quad = clampPairs[i].second;
 					const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
 					const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
-					
-					//const VecCoord& x = clipperState->read(core::ConstVecCoordId::position())->getValue();					
+										
 					const VecCoord& x = clipperStates[i]->read(core::ConstVecCoordId::position())->getValue();
 					const unsigned int oppositeQuads[6] = { 1, 0, 3, 2, 5, 4 };
 					int quadop = oppositeQuads[quad]; // opposite quad in the hex
@@ -254,13 +252,14 @@ namespace sofa
 					const vector< vector< vector<int> > > &facets = clipperMesh->getFacets();
 					vector< Vector3 > vv(vertices.size()); // modifiable vertex array
 					vector< Vector3 > nn(normals.size()); 					
-
-					float hexLength = (x[hex[0]]-x[hex[1]]).norm();
-					float relativeRatioForClip = 2; // relative between edge length of clip and hex
-					float relativeScale = relativeRatioForClip*hexLength/2;				
+					
+					double relativeRatioForClip = 2; // relative between edge length of clip and hex
+					double relativeScale = relativeRatioForClip*hexDimensions[i]/ 2;
 
 					// update *sc*
-					sc[0] = relativeScale*sc[0];sc[1] = relativeScale/4*sc[1];sc[2] = relativeScale*sc[2];
+					if (edge12along[i]){ sc[0] = relativeScale*sc[0]; sc[1] = relativeScale/4*sc[1]; }
+					else{ sc[0] = relativeScale/4*sc[0]; sc[1] = relativeScale*sc[1]; };
+					sc[2] = relativeScale*sc[2];
 
 					for (int t = 0; t < vertices.size(); t++) {  // adjust clip model (scale, etc) along edge-directions of quad
 						vv[t][0] = sc[0] * n1[0] * vertices[t][0] + sc[1] * n2[0] * vertices[t][1] + sc[2] * n3[0] * vertices[t][2] + P[0];
@@ -536,7 +535,7 @@ namespace sofa
 				}
 			}			
 
-			void HapticManager::doClamp(){
+			void HapticManager::doClamp(){	
 				if (modelSurfaces.empty()) return;
 
 				ToolModel *toolModelPt = toolModel.get();
@@ -557,7 +556,9 @@ namespace sofa
 					surf->getContext()->get(hexContainer);
 					if (hexContainer == NULL) return;
 					core::behavior::MechanicalState<DataTypes>* currentClipperState;
-					hexContainer->getContext()->get(currentClipperState);					
+					hexContainer->getContext()->get(currentClipperState);	
+
+					const VecCoord& x = currentClipperState->read(core::ConstVecCoordId::position())->getValue();
 
 					StiffSpringForceField3::SPtr spring = sofa::core::objectmodel::New<StiffSpringForceField3>();
 					hexContainer->getContext()->addObject(spring);
@@ -580,6 +581,7 @@ namespace sofa
 					int v3 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[2]);
 
 					const unsigned int vertexMap[6][4] = { { 4, 5, 6, 7 }, { 0, 3, 2, 1 }, { 2, 3, 7, 6 }, { 0, 4, 7, 3 }, { 1, 5, 4, 0 }, { 1, 2, 6, 5 } };
+					const unsigned int vertexHex[6][4] = { { 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 1, 0, 4, 5 }, { 1, 5, 6, 2 }, { 2, 6, 7, 3 }, { 0, 3, 7, 4 } };
 					for (int i = 0; i < 6; i++) {
 						// call the quad corresponding to the face i
 						const sofa::core::topology::Quad& q = hexContainer->getLocalQuadsInHexahedron(i);
@@ -593,7 +595,38 @@ namespace sofa
 						}
 						if (j == 4) { // found	
 							clipperStates.push_back(currentClipperState);
-							clampPairs.push_back(std::make_pair(hex, i));
+							clampPairs.push_back(std::make_pair(hex, i));							
+							double hexLength = -1.0; // max hex edge length
+							for (size_t iv = 0; iv < 7; iv++)
+							{
+								hexLength = std::max(hexLength, (x[hex[iv]] - x[hex[iv+1]]).norm());
+							}
+							hexDimensions.push_back(hexLength);
+							//check if edge 2-1 is in longigonal direction							
+							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][1]]);
+							sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][2]]);	
+							sofa::helper::vector< unsigned int > ie;							
+							std::sort(e1.begin(), e1.end());
+							std::sort(e2.begin(), e2.end());							
+							std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie));							
+							bool isEdge12Along;
+							// assume that *hex* is not an outermost thick curve hex
+							if (ie.size() == 1)
+							{
+								isEdge12Along = true;
+							}
+							else if (ie.size()==2)
+							{
+								isEdge12Along = false;
+							}
+							else
+							{
+								isEdge12Along = true;								
+								printf("\n HapticManager.cpp: unable to determine proper orientation to clamp, since the object is not a thick curve");
+								printf("\n HapticManager.cpp: size of common hexes: %d",ie1.size());
+							}
+							edge12along.push_back(isEdge12Along);
+
 							/*double thicknessFactor = 3.0;
 							spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
 							spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());

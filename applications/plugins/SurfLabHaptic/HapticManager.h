@@ -25,7 +25,6 @@
 #ifndef SOFA_COMPONENT_COLLISION_HAPTICMANAGER_H
 #define SOFA_COMPONENT_COLLISION_HAPTICMANAGER_H
 
-#include "initSurfLabHaptic.h"
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/collision/Intersection.h>
 #include <sofa/core/collision/NarrowPhaseDetection.h>
@@ -62,6 +61,9 @@
 #include <SofaMeshCollision/PointModel.h>
 
 #include "GraspingForceFeedback.h"
+#include "initSurfLabHaptic.h"
+
+
 namespace sofa
 {
 
@@ -142,6 +144,10 @@ namespace sofa
 				virtual void onEndAnimationStep(const double dt);
 				void drawVisual(const core::visual::VisualParams* vparams);
 				void updateVisual();
+				void initializeStaticDataMembers(){ 
+					std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;
+					std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
+					};
 			private:
 				void updateTool();
 				void doGrasp();
@@ -154,11 +160,12 @@ namespace sofa
 				const ContactVector* getContacts();
 				double start_time;
 				double delta_time;
-				// the following variables used in clamping
-				std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;				
-				std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
-				boost::scoped_ptr<sofa::helper::io::Mesh> clipperMesh;
-				
+				// the following variables used in clamping			
+				boost::scoped_ptr<sofa::helper::io::Mesh> clipperMesh;				
+				static std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;				
+				static std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
+				static std::vector<double> hexDimensions;
+				static std::vector<bool> edge12along; // if edge 12 is along vessel
 			};
 
 		} // namespace collision
@@ -166,5 +173,15 @@ namespace sofa
 	} // namespace component
 
 } // namespace sofa
+
+// initialize static data members
+using namespace sofa::component::collision;
+using namespace sofa::component::topology;
+using namespace sofa::core::behavior;
+
+std::vector<std::pair<Hexahedron, int> > HapticManager::clampPairs;
+std::vector<MechanicalState<HapticManager::DataTypes>*> HapticManager::clipperStates;
+std::vector<double> HapticManager::hexDimensions;
+std::vector<bool> HapticManager::edge12along;
 
 #endif

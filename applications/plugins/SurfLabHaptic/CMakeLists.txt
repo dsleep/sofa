@@ -14,7 +14,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
 	initSurfLabHaptic.cpp
     GraspingForceFeedback.cpp
-	HapticManager.cpp
+	HapticManager.cpp	
 	)
 
 set(README_FILES SurfLabHaptic.txt)
