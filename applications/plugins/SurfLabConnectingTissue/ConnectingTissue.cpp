@@ -48,7 +48,7 @@ namespace sofa
 				, object1(initLink("object1", "First object to connect to"))
 				, object2(initLink("object2", "Second object to connect to"))
 				, useConstraint(initData(&useConstraint,true,"useConstraint", "Second object to connect to"))
-				, connectingStiffness(initData(&connectingStiffness, 1000000000000.0, "connectingStiffness", "stiffness of springs if useConstraint is false"))
+				, connectingStiffness(initData(&connectingStiffness, 5000.0, "connectingStiffness", "stiffness of springs if useConstraint is false"))
 			{
 				this->f_listening.setValue(true);
 			}

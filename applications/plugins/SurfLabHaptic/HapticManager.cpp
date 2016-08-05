@@ -55,7 +55,7 @@ namespace sofa
 				, detectionNP(NULL)
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
-				, clampScale(initData(&clampScale, Vec3f(1.0, 1.0, 1.0), "clampScale", "scale of the object created during clamping"))
+				, clampScale(initData(&clampScale, Vec3f(.2, .2, .2), "clampScale", "scale of the object created during clamping"))
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))								
 			{
 				this->f_listening.setValue(true);
@@ -627,11 +627,13 @@ namespace sofa
 							}
 							edge12along.push_back(isEdge12Along);
 
-							/*double thicknessFactor = 3.0;
-							spring->addSpring(hex[q[0]], hex[vertexMap[i][0]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-							spring->addSpring(hex[q[1]], hex[vertexMap[i][1]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-							spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-							spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue(), 0.0, thicknessFactor*intersectionMethod->getContactDistance());*/
+							double thicknessFactor = 50.0;
+              spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+              spring->addSpring(hex[q[2]], hex[q[3]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][3]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							//spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue()/8, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							//spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue()/8, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
 							break;
 						}
 					}					
