@@ -67,7 +67,7 @@ namespace sofa
 
 
 			void HapticManager::init()
-			{				
+			{		
 				if (toolModel) {
 					ToolModel *tm = toolModel.get();
 					toolState.buttonState = 0;
@@ -75,7 +75,7 @@ namespace sofa
 					toolState.id = 0;
 					toolState.modelTool = tm;
 					toolState.modelGroup = tm->getGroups();
-					if (tm->hasTag(core::objectmodel::Tag("CarvingTool")))
+					if (tm->hasTag(core::objectmodel::Tag("CarvingTool")) || tm->hasTag(core::objectmodel::Tag("DissectingTool")))
 					{
 						toolState.function = TOOLFUNCTION_CARVE;
 						sout << "Active tool: Carving" << sendl;
@@ -121,8 +121,12 @@ namespace sofa
 
 				/* looking for Haptic surfaces */
 				
+        std::vector<core::CollisionModel*> modelVeinSurfaces;
 				getContext()->get<core::CollisionModel>(&modelSurfaces, core::objectmodel::Tag("HapticSurface"), core::objectmodel::BaseContext::SearchRoot);
-				
+        getContext()->get<core::CollisionModel>(&modelVeinSurfaces, core::objectmodel::Tag("HapticSurfaceVein"), core::objectmodel::BaseContext::SearchRoot);
+        for(int i=0; i<modelVeinSurfaces.size(); i++)
+          modelSurfaces.push_back(modelVeinSurfaces[i]);
+
 				/* Looking for intersection and NP */
 				intersectionMethod = getContext()->get<core::collision::Intersection>();
 				detectionNP = getContext()->get<core::collision::NarrowPhaseDetection>();
@@ -308,18 +312,28 @@ namespace sofa
 					return NULL;
 			}
 
+      int mistatkeTolerance = 80;
 			void HapticManager::doCarve()
 			{
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
 				int nbelems = 0;
 				helper::vector<int> elemsToRemove;
+        ToolModel *tm = toolModel.get();
 
 				for (unsigned int j = 0; j < contacts->size(); ++j)
 				{
 					const ContactVector::value_type& c = (*contacts)[j];
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-					sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
+				  if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeTolerance > 0)
+          {
+            //cout<<"foud vein, will do dissection! ";
+            mistatkeTolerance --;
+            //cout<<" now "<<mistatkeTolerance<<" lives remain"<<endl;
+            return;
+            
+          }  
+          sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
 					if (topoMapping == NULL) return;
 					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
 					elemsToRemove.push_back(triangleIdx);
@@ -549,8 +563,17 @@ namespace sofa
 				{
 					sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;					
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolModelPt ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-					surf->getContext()->get(triangleContainer);
-					const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);					
+					if (!surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")))
+            return;
+          surf->getContext()->get(triangleContainer);
+					const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);	
+
+          // cout<<"before test"<<endl;
+          // sofa::component::topology::QuadSetTopologyContainer* quadContainer;
+					// surf->getContext()->get(quadContainer);
+          // cout<<"after get quadContainer"<<endl;
+          // const VecCoord& qx = quadContainer->read(core::ConstVecCoordId::position())->getValue();
+          // cout<<qx<<endl;
 
 					sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
 					surf->getContext()->get(hexContainer);
@@ -601,6 +624,7 @@ namespace sofa
 							{
 								hexLength = std::max(hexLength, (x[hex[iv]] - x[hex[iv+1]]).norm());
 							}
+              //cout<<"max hexlength: "<<hexLength<<endl;
 							hexDimensions.push_back(hexLength);
 							//check if edge 2-1 is in longigonal direction							
 							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][1]]);
@@ -623,11 +647,11 @@ namespace sofa
 							{
 								isEdge12Along = true;								
 								printf("\n HapticManager.cpp: unable to determine proper orientation to clamp, since the object is not a thick curve");
-								printf("\n HapticManager.cpp: size of common hexes: %d",ie1.size());
+								printf("\n HapticManager.cpp: size of common hexes: %d",ie.size());
 							}
 							edge12along.push_back(isEdge12Along);
 
-							double thicknessFactor = 50.0;
+							double thicknessFactor = 15.0;
               spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
               spring->addSpring(hex[q[2]], hex[q[3]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
 							spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());

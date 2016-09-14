@@ -5,7 +5,6 @@
 	<LightManager name="lightManager1"  listening="1"  shadows="1"  softShadows="1" />
 	
 	<SpotLight name="spotLight1"  shadowTextureSize="2048"  position="0 5 -15"  direction="0 -0.2 1"  cutoff="45" />
-	<SpotLight name="spotLight2"  shadowTextureSize="128"  position="0 5 10"  direction="0 -0.2 -1"  cutoff="45"  />
 	
 	<Node>
 		<OglShadowShader name="oglShadowShader1" />
@@ -14,8 +13,8 @@
 	</Node>
 	<Node>
 		<OglShadowShader name="oglShadowShader1" />
- 		<OglTexture textureFilename="textures/ice_chess.bmp" indexShader="0" id="colorTexture" textureUnit="0"  repeat="true" />
-		<OglTexture textureFilename="textures/ice_chess.bmp" indexShader="1" id="colorTexture" textureUnit="1"  repeat="true" />
+ 		<OglTexture textureFilename="textures/ice_chess.bmp" indexShader="0" id="colorTexture" textureUnit="2"  repeat="true" />
+		<OglTexture textureFilename="textures/ice_chess.bmp" indexShader="1" id="colorTexture" textureUnit="3"  repeat="true" />
 		
 		<OglShaderDefineMacro id="USE_TEXTURE" indexShader="0" />
 		<OglShaderDefineMacro id="USE_TEXTURE" indexShader="1" />

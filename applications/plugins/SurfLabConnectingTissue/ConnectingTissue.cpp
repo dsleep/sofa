@@ -48,7 +48,9 @@ namespace sofa
 				, object1(initLink("object1", "First object to connect to"))
 				, object2(initLink("object2", "Second object to connect to"))
 				, useConstraint(initData(&useConstraint,true,"useConstraint", "Second object to connect to"))
-				, connectingStiffness(initData(&connectingStiffness, 5000.0, "connectingStiffness", "stiffness of springs if useConstraint is false"))
+				, connectingStiffness(initData(&connectingStiffness, 3000.0, "connectingStiffness", "stiffness of springs if useConstraint is false"))
+        , naturalLength(initData(&naturalLength, 0.5, "naturalLength", "natural length of springs as a percentage of the 2-node-distance"))
+        
 			{
 				this->f_listening.setValue(true);
 			}
@@ -185,7 +187,9 @@ namespace sofa
 							if (useConstraint.getValue())
 								constraints->addContact(-normal, P, Q, dist, index1, mapIdx, P, Q);
 							else
-								ff->addSpring(index1, mapIdx, connectingStiffness.getValue(), 0.0, Q - P);
+              {
+                ff->addSpring(index1, mapIdx, connectingStiffness.getValue(), 0.0, (Q - P)*naturalLength.getValue());
+              }	
 
 							projPnts.push_back(Q);
 						}
@@ -199,7 +203,10 @@ namespace sofa
 							if (useConstraint.getValue())
 								constraints->addContact(-normal, P, Q, dist, index1, mapIdx, P, Q);
 							else
-								ff->addSpring(index1, mapIdx, connectingStiffness.getValue(), 0.0, Q - P);
+              {
+                ff->addSpring(index1, mapIdx, connectingStiffness.getValue(), 0.0, (Q - P)*naturalLength.getValue());
+              }
+								
 
 							projPnts.push_back(Q);
 						}
