@@ -257,7 +257,8 @@ namespace sofa
 					vector< Vector3 > vv(vertices.size()); // modifiable vertex array
 					vector< Vector3 > nn(normals.size()); 					
 					
-					double relativeRatioForClip = 2; // relative between edge length of clip and hex
+					//double relativeRatioForClip = 2; // relative between edge length of clip and hex
+					double relativeRatioForClip = 4; // relative between edge length of clip and hex
 					double relativeScale = relativeRatioForClip*hexDimensions[i]/ 2;
 
 					// update *sc*
@@ -652,12 +653,18 @@ namespace sofa
 							edge12along.push_back(isEdge12Along);
 
 							double thicknessFactor = 15.0;
-              spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-              spring->addSpring(hex[q[2]], hex[q[3]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-							spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-							spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][3]], attach_stiffness.getValue()/10, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							//double clippedHexSize = thicknessFactor*intersectionMethod->getContactDistance();
+							double clippedHexSize = .5*hexLength;
+							spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue()/10, 0.0, clippedHexSize);
+							spring->addSpring(hex[q[2]], hex[q[3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+							spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+							spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
 							//spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue()/8, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
 							//spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue()/8, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							for (size_t iv = 0; iv < 4; iv++)
+							{
+								spring->addSpring(hex[q[iv]], hex[vertexMap[i][iv]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+							}
 							break;
 						}
 					}					
