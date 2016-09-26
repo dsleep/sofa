@@ -258,8 +258,9 @@ namespace sofa
 					vector< Vector3 > nn(normals.size()); 					
 					
 					//double relativeRatioForClip = 2; // relative between edge length of clip and hex
-					double relativeRatioForClip = 4; // relative between edge length of clip and hex
+					double relativeRatioForClip = 3; // relative between edge length of clip and hex
 					double relativeScale = relativeRatioForClip*hexDimensions[i]/ 2;
+					//double relativeScale = relativeRatioForClip*hexDimensions[0] / 2;
 
 					// update *sc*
 					if (edge12along[i]){ sc[0] = relativeScale*sc[0]; sc[1] = relativeScale/4*sc[1]; }
@@ -617,7 +618,7 @@ namespace sofa
 								break;
 							}
 						}
-						if (j == 4) { // found	
+						if (j == 4) { // found the opposite quad face of the collision triangle	
 							clipperStates.push_back(currentClipperState);
 							clampPairs.push_back(std::make_pair(hex, i));							
 							double hexLength = -1.0; // max hex edge length
@@ -625,9 +626,9 @@ namespace sofa
 							{
 								hexLength = std::max(hexLength, (x[hex[iv]] - x[hex[iv+1]]).norm());
 							}
-              //cout<<"max hexlength: "<<hexLength<<endl;
+							//cout<<"max hexlength: "<<hexLength<<endl;
 							hexDimensions.push_back(hexLength);
-							//check if edge 2-1 is in longigonal direction							
+							//check if edge 2-1 in the opposite quad face is in the skeleton direction							
 							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][1]]);
 							sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][2]]);	
 							sofa::helper::vector< unsigned int > ie;							
@@ -655,12 +656,20 @@ namespace sofa
 							double thicknessFactor = 15.0;
 							//double clippedHexSize = thicknessFactor*intersectionMethod->getContactDistance();
 							double clippedHexSize = .5*hexLength;
-							spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue()/10, 0.0, clippedHexSize);
-							spring->addSpring(hex[q[2]], hex[q[3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
-							spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
-							spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
-							//spring->addSpring(hex[q[2]], hex[vertexMap[i][2]], attach_stiffness.getValue()/8, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
-							//spring->addSpring(hex[q[3]], hex[vertexMap[i][3]], attach_stiffness.getValue()/8, 0.0, thicknessFactor*intersectionMethod->getContactDistance());
+							if (isEdge12Along)
+							{
+								spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+								spring->addSpring(hex[q[2]], hex[q[3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+								spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+								spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+							}
+							else
+							{
+								spring->addSpring(hex[q[0]], hex[q[3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+								spring->addSpring(hex[q[2]], hex[q[1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+								spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+								spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
+							}
 							for (size_t iv = 0; iv < 4; iv++)
 							{
 								spring->addSpring(hex[q[iv]], hex[vertexMap[i][iv]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
