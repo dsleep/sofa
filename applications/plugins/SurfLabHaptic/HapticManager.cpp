@@ -616,16 +616,9 @@ namespace sofa
 					sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;					
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolModelPt ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
 					if (!surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")))
-            return;
-          surf->getContext()->get(triangleContainer);
+					return;
+					surf->getContext()->get(triangleContainer);
 					const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);	
-
-          // cout<<"before test"<<endl;
-          // sofa::component::topology::QuadSetTopologyContainer* quadContainer;
-					// surf->getContext()->get(quadContainer);
-          // cout<<"after get quadContainer"<<endl;
-          // const VecCoord& qx = quadContainer->read(core::ConstVecCoordId::position())->getValue();
-          // cout<<qx<<endl;
 
 					sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
 					surf->getContext()->get(hexContainer);
@@ -678,15 +671,18 @@ namespace sofa
 							}
 							//cout<<"max hexlength: "<<hexLength<<endl;
 							hexDimensions.push_back(hexLength);
-							//check if edge 2-1 in the opposite quad face is in the skeleton direction							
+							//check if edge 2-1 in the opposite quad face is in the skeleton direction				
+							// e1: all hexes containing vertex 1
+							// e2: all hexes containing vertex 2
 							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][1]]);
 							sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(hex[vertexHex[i][2]]);	
-							sofa::helper::vector< unsigned int > ie;							
+							sofa::helper::vector< unsigned int > ie; // intersection of e1 and e2							
 							std::sort(e1.begin(), e1.end());
 							std::sort(e2.begin(), e2.end());							
 							std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie));							
 							bool isEdge12Along;
 							// assume that *hex* is not an outermost thick curve hex
+							// if there is only one hex containing both vertices 1 and 2, then edge 1-2 is along the curve direction
 							if (ie.size() == 1)
 							{
 								isEdge12Along = true;
@@ -705,7 +701,9 @@ namespace sofa
 
 							double thicknessFactor = 15.0;
 							//double clippedHexSize = thicknessFactor*intersectionMethod->getContactDistance();
-							double clippedHexSize = .5*hexLength;
+							double clippedHexSize = .5*hexLength; // size of the clip defined relatively from edge length of the original hexes (without springs)
+							// if the edge connecting vertices 1 and 2 of the quad face is along the curve direction, then the edges 0-1 and 2-3 are 
+							// orthogonal to the curve direction
 							if (isEdge12Along)
 							{
 								spring->addSpring(hex[q[0]], hex[q[1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
@@ -713,6 +711,8 @@ namespace sofa
 								spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
 								spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
 							}
+							// if the edge connecting vertices 1 and 2 of the quad face is NOT along the curve direction, then the edges 0-3 and 2-1 are 
+							// orthogonal to the curve direction
 							else
 							{
 								spring->addSpring(hex[q[0]], hex[q[3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
@@ -720,6 +720,7 @@ namespace sofa
 								spring->addSpring(hex[vertexMap[i][0]], hex[vertexMap[i][3]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
 								spring->addSpring(hex[vertexMap[i][2]], hex[vertexMap[i][1]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
 							}
+							// adding springs to the remaining direciton
 							for (size_t iv = 0; iv < 4; iv++)
 							{
 								spring->addSpring(hex[q[iv]], hex[vertexMap[i][iv]], attach_stiffness.getValue() / 10, 0.0, clippedHexSize);
