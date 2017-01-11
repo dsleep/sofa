@@ -314,7 +314,7 @@ namespace sofa
 					return NULL;
 			}
 
-      int mistatkeTolerance = 80;
+      int mistatkeTolerance = 50;
 			void HapticManager::doCarve()
 			{
 				const ContactVector* contacts = getContacts();
@@ -331,7 +331,7 @@ namespace sofa
           {
             //cout<<"foud vein, will do dissection! ";
             mistatkeTolerance --;
-            //cout<<" now "<<mistatkeTolerance<<" lives remain"<<endl;
+            cout<<" Burned the vein "<<50 - mistatkeTolerance<<" times"<<endl;
             return;
             
           }  
@@ -352,6 +352,56 @@ namespace sofa
 				}
 			}
 			
+      void HapticManager::doIncise()
+			{
+				const ContactVector* contacts = getContacts();
+				if (contacts == NULL) return;
+				int nbelems = 0;
+				helper::vector<int> incidentTriangles;
+        helper::vector<Vector3> incidentPoints;
+        ToolModel *tm = toolModel.get();
+
+				for (unsigned int j = 0; j < contacts->size(); ++j)
+				{
+					const ContactVector::value_type& c = (*contacts)[j];
+					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+				  if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeTolerance > 0)
+          {
+            //cout<<"foud vein, will do dissection! ";
+            mistatkeTolerance --;
+            //cout<<" now "<<mistatkeTolerance<<" lives remain"<<endl;
+            return;
+            
+          }  
+          sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
+					if (topoMapping == NULL) return;
+					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
+					incidentTriangles.push_back(triangleIdx);
+          incidentPoints.push_back(c.elem.first.getCollisionModel() == toolState.modelTool ? c.point[1] : c.point[0]);
+				}
+				sofa::helper::AdvancedTimer::stepBegin("CarveElems");
+        std::size_t nCutPoints = incidentPoints.size(); // 
+				if (!incidentTriangles.empty() && (incidentTriangles[nCutPoints - 2] != incidentTriangles.back()))
+				{
+          cout<<"begin incise..."<<endl;
+					static TopologicalChangeManager manager;
+					const ContactVector::value_type& c = (*contacts)[0];
+          cout << "incident point 2: " << incidentPoints.back() << endl;
+					cout << "incident point 1: " << incidentPoints[nCutPoints - 2] << endl;
+					cout << "incident tri 2: " << incidentTriangles.back() << endl;
+					cout << "incident tri 1: " << incidentTriangles[nCutPoints - 2] << endl;
+          bool ok = 0;
+					if (c.elem.first.getCollisionModel() == toolState.modelTool)
+						ok = manager.incisionCollisionModel(c.elem.second.getCollisionModel(), incidentTriangles[nCutPoints - 2], incidentPoints[nCutPoints - 2], c.elem.second.getCollisionModel(), incidentTriangles.back(), incidentPoints.back());
+					else
+						ok = manager.incisionCollisionModel(c.elem.first.getCollisionModel(), incidentTriangles[nCutPoints - 2], incidentPoints[nCutPoints - 2], c.elem.first.getCollisionModel(), incidentTriangles.back(), incidentPoints.back());
+          if (ok)
+            cout << "OK, coord: " << endl;
+					else
+						cout << "NOT ok, coord: " << endl;
+        }
+			}
+      
 			void HapticManager::startSuture()
 			{
 				const ContactVector* contacts = getContacts();

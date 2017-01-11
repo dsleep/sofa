@@ -234,7 +234,8 @@ void OglTexture::initVisual()
     {
         (*it)->setTexture(indexShader.getValue(), id.getValue().c_str(), textureUnit.getValue());
         //serr << "OGLTextureDEBUG: shader textured:" << (*it)->getName() << sendl;
-    }
+        std::cout << "OGLTextureDEBUG: shader textured:" << (*it)->getName() << std::endl;//RGao modified here
+        }
     setActiveTexture(0);
 }
 

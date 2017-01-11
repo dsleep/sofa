@@ -152,6 +152,7 @@ namespace sofa
 				void updateTool();
 				void doGrasp();
 				void doCarve();
+        void doIncise();
 				void startSuture();
 				void stopSuture();
 				void doSuture();

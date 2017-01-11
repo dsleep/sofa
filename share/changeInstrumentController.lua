@@ -38,3 +38,27 @@ function handlers.onKeyPressed(c)
     end
   end
 end
+
+Tool2cliks = 0
+Tool1cliks = 0
+function handlers.onHaptic(c,d)-- means button state, c means
+   -- print('c:',c)
+   -- print('d:',d)
+  if c == 0 and d == 2 then
+    if Tool2cliks >= 4 then
+      changeInstrument(haptics[1])
+      Tool2cliks = -1
+    else
+      Tool2cliks = Tool2cliks + 1 
+    end
+  end
+end
+  -- if c == 1 and d == 2 then
+    -- if Tool1cliks <= 2 then
+      -- Tool1cliks = Tool1cliks + 1
+    -- else 
+      -- Tool1cliks = -1
+      -- changeInstrument(haptics[2])
+    -- end
+  -- end
+

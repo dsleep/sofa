@@ -630,6 +630,7 @@ bool OglModel::loadTextures()
     for (std::vector< unsigned int>::iterator i = activatedTextures.begin() ; i < activatedTextures.end(); ++i)
     {
         std::string textureFile(this->materials.getValue()[*i].textureFilename);
+		std::cout << "Ogl loading texture: " << textureFile << std::endl;
 
         if (!sofa::helper::system::DataRepository.findFile(textureFile))
         {

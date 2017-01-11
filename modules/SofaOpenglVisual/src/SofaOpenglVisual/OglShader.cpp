@@ -118,6 +118,7 @@ void OglShader::init()
 #endif
 
     sout << nshaders << " shader version(s)" << sendl;
+	//std::cout << nshaders << " shader version(s) (OglShader.cpp)" << std::endl;//Rgao
 
     shaderVector.resize(nshaders);
 
@@ -196,6 +197,9 @@ void OglShader::initVisual()
     for (unsigned int i=0 ; i<nshaders ; i++)
     {
         shaderVector[i]->InitShaders();
+		//std::cout << "init shaders (vs)" << shaderVector[i]->GetVertexShaderFileName() << std::endl;//RG 
+		//std::cout << "init shaders (fs)" << shaderVector[i]->GetFragmentShaderFileName() << std::endl;
+		//std::cout << "init shaders (tes)" << shaderVector[i]->GetTessellationEvaluationShaderFileName() << std::endl;//RG 
     }
 }
 
