@@ -42,7 +42,7 @@ sofa_add_plugin(SaLua SaLua)
 sofa_add_plugin(SurfLabHexahedralIGA SurfLabHexahedralIGA)
 sofa_add_plugin(SurfLabSplineSurface SurfLabSplineSurface)
 sofa_add_plugin(SurfLabConnectingTissue SurfLabConnectingTissue)
-
+sofa_add_plugin(SurfLabSpeechRecognition SurfLabSpeechRecognition)
 
 sofa_add_plugin(RigidScale RigidScale)
 sofa_add_plugin(LeapMotion LeapMotion)

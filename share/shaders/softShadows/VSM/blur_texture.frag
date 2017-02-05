@@ -85,11 +85,11 @@ void main()
 	//gl_FragColor = vec4(1,0,0,0.0);
   //float dpv = N[2];
   vec3 mylightDir = normalize(vec3(0.1, 0.1, 0) - pos.xyz);//light position in ViewCoord
-  vec3 myN = normalize(N);
-  //N = normalize(N);
-  vec3 ReflectedRay = reflect(mylightDir, myN );//
+  vec3 myN = normalize(N);//This step is so important that the Rasteration step will use interpolattion to get N, which must be normalized.
+  
+  vec3 ReflectedRay = reflect(mylightDir, myN );
   vec3 CamDir = normalize(pos.xyz);//Cam position in ViewCoord is 0,0,0
-  gl_FragColor.xyz = vec3(0.2,0.1,0.1) + 0.5 * color.xyz + 1 * color.xyz * dot(CamDir,ReflectedRay);//dot( N,viewVector );//dot(viewVector,N);//color * 0.5;
+  gl_FragColor.xyz = vec3(0.1,0.05,0.0) + 0.5 * color.xyz + 1 * color.xyz * clamp(dot(CamDir,ReflectedRay),-0.2,1.0);//dot( N,viewVector );//dot(viewVector,N);//color * 0.5;
 	//gl_FragColor.xyz = N;
   // if( dpv>.3 )
 		// gl_FragColor.xyz += 0.1 + vec3(0.5,0.5,0.0) * dp;//.9*gl_FrontLightProduct[0].diffuse.xyz * dp;

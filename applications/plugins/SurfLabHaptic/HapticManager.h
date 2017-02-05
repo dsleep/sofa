@@ -102,6 +102,7 @@ namespace sofa
 				/* we need a link to the omni driver just so we can get the proper ID */
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
 
+                double time_init;
 			protected:
 				enum ToolFunction {
 					TOOLFUNCTION_SUTURE, 
@@ -152,13 +153,14 @@ namespace sofa
 				void updateTool();
 				void doGrasp();
 				void doCarve();
-        void doIncise();
+                void doIncise();
 				void startSuture();
 				void stopSuture();
 				void doSuture();
 				void unGrasp();
 				void doClamp();
 				const ContactVector* getContacts();
+                double mistake_time;
 				double start_time;
 				double delta_time;
 				// the following variables used in clamping			
