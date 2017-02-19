@@ -225,9 +225,6 @@ namespace sofa
             
 			}
 			
-            //2 paras for test: has_shown_collision, deltaT
-            //bool has_shown_CM = false;
-            //double deltaT;
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
 			{
                 // if(!has_shown_CM)
@@ -333,19 +330,10 @@ namespace sofa
             int mistatkeToleranceCut = 50;
             int mistatkeToleranceCutVein = 50;
             int mistatkeToleranceClamp = 50;
-            int mistatkeToleranceDissect = 50;
-            //core::CollisionModel* organsBleeding;
-            //test keyboard event
-            
-            
+            int mistatkeToleranceDissect = 50;                      
             
 			void HapticManager::doCarve()//RG: only dissectingTool can cut the vein, other tools will be recorded
-			{
-                //sofa::simulation::Node *mygroot;
-                //mygroot = dynamic_cast<sofa::simulation::Node *>(this->getContext()->getRootContext()); // access to current node
-                //simulation::Node *mygroot = dynamic_cast<simulation::Node *>(getContext()->getRootContext()); 
-                //sofa::core::objectmodel::KeypressedEvent ke('s');
-                
+			{             
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
 				int nbelems = 0;
@@ -361,11 +349,14 @@ namespace sofa
                     if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCutVein > 0)
                     {
                       mistatkeToleranceCutVein --;
+                      mistatkeTolerance--;
                       cout<<" Cut the vein "<<50 - mistatkeToleranceCutVein<<" times by accident"<<endl;
+                      std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+                      std::string err("Dissect_vein.png");                     
+                      std::string out = capturePath + int2string(50 - mistatkeTolerance);
+                      out = out + err;
+                      capture.saveScreen(out);
                       // mistake_time = this->getContext()->getRootContext()->getTime();
-                      // cout<<"mistake time is: "<<mistake_time<<endl;
-                      
-                      // mygroot->propagateEvent(core::ExecParams::defaultInstance(), &ke);
                       return;
                     }
                     else if (surf->hasTag(core::objectmodel::Tag("SafetySurface")) && mistatkeTolerance > 0)
@@ -373,17 +364,16 @@ namespace sofa
                         if(tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCut > 0)
                         {
                             //sofa::component::visualmodel::BaseCamera::SPtr testcamera;
-                            //testcamera = getContext()->get<component::visualmodel::InteractiveCamera>(this->getTags(), sofa::core::objectmodel::BaseContext::SearchRoot);
-                            // if(testcamera)
-                                // cout<<"found cam!"<<endl;
-                            // else
-                                // cout<<"cam not found!"<<endl;                            
-                            mistatkeToleranceCut --;                            
-                            
-                            surf->setColor4f(testColor);
+                            //testcamera = getContext()->get<component::visualmodel::InteractiveCamera>(this->getTags(), sofa::core::objectmodel::BaseContext::SearchRoot);                          
+                            mistatkeToleranceCut --;
+                            std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+                            mistatkeTolerance --;
+                            std::string err("Dissect.png");
+                            std::string out = capturePath + int2string(50 - mistatkeTolerance);
+                            out = out + err;
+                            capture.saveScreen(out);
+                            //surf->setColor4f(testColor);
                             cout<<" Dissect the wrong organ-- "<<50 - mistatkeToleranceCut<<" times by accident"<<endl;
-                            // cout<<"current name: "<<surf->getIndex()<<endl;
-                            // cout<<"current class name: "<<surf->getClassName()<<endl;
                             return; 
                         }    
                         // else if(tm->hasTag(core::objectmodel::Tag("ClampingTool")) && mistatkeToleranceClamp > 0)
@@ -395,6 +385,12 @@ namespace sofa
                         else if(tm->hasTag(core::objectmodel::Tag("DissectingTool")) && mistatkeToleranceDissect > 0)
                         {
                             mistatkeToleranceDissect --;
+                            mistatkeTolerance --;
+                            std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+                            std::string err("Cut.png");
+                            std::string out = capturePath + int2string(50 - mistatkeTolerance);
+                            out = out + err;
+                            capture.saveScreen(out);
                             cout<<" Cut the wrong organs" <<50 - mistatkeToleranceDissect<<" times by accident"<<endl;
                             return; 
                         }
@@ -797,10 +793,11 @@ namespace sofa
 			{				
 				unsigned char newButtonState = toolState.newButtonState;
 				const unsigned char FIRST = 1, SECOND = 2;
-				switch (toolState.function)
+				
+                switch (toolState.function)
 				{
 				case TOOLFUNCTION_CARVE:
-                    if (newButtonState != 0) doCarve();//Continue carving if the button is pressed down					
+                    if (newButtonState != 0) doCarve();//Continue carving if the button is pressed down	
                     break;
 				case TOOLFUNCTION_CLAMP:
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)

@@ -62,11 +62,12 @@
 
 #include "GraspingForceFeedback.h"
 #include "initSurfLabHaptic.h"
+#include <sofa/helper/gl/Capture.h>
 
 
 namespace sofa
 {
-
+    
 	namespace component
 	{
 
@@ -77,6 +78,8 @@ namespace sofa
 			{
 			public:
 				SOFA_CLASS2(HapticManager, sofa::component::controller::Controller, sofa::core::visual::VisualModel);
+                
+                sofa::helper::gl::Capture capture; // used for capturing screenshots when user make an error
 
 				typedef defaulttype::Vec3Types DataTypes;
 				typedef defaulttype::Vec3f Vec3f;
@@ -105,6 +108,7 @@ namespace sofa
                 double time_init;
 			protected:
 				enum ToolFunction {
+                    //TOOLFUNCTION_ANIMATE,
 					TOOLFUNCTION_SUTURE, 
 					TOOLFUNCTION_CARVE,
 					TOOLFUNCTION_CLAMP,
@@ -181,6 +185,8 @@ namespace sofa
 using namespace sofa::component::collision;
 using namespace sofa::component::topology;
 using namespace sofa::core::behavior;
+using namespace sofa::simulation;
+using sofa::simulation::getSimulation;
 
 std::vector<std::pair<Hexahedron, int> > HapticManager::clampPairs;
 std::vector<MechanicalState<HapticManager::DataTypes>*> HapticManager::clipperStates;
