@@ -1,0 +1,65 @@
+
+This plugin allows users to control the camera with their voice.  Written by Jeremy Youngquist (jyoungquist@ufl.edu) and Sayak Biswas (sayak90@ufl.edu).  We use CMUSphinx to do the actual speech to text conversion (http://cmusphinx.sourceforge.net/).  In designing this plugin, we took inspiration from applications/plugins/SensableEmulation/OmniDriver.cpp.
+
+RECOGNIZED PHRASES:
+	Left
+	Right
+	Up
+	Down
+	Slightly Left
+	Slightly Right
+	Slightly Up
+	Slightly Down
+	Zoom In
+	Zoom Out
+
+
+COMPILING:  
+
+	To compile this plugin, add SURFLABSPEECHRECOGNITION in cmake.  If you are compiling on the command line, this is done by adding the flag -DPLUGIN_SURFLABSPEECHRECOGNITION=ON to the cmake command.  In the cmake gui, just check the PLUGIN_SURFLABSPEECHTOTEXT box.
+
+INCLUDING IN YOUR SCENE:
+
+	To add it to your scene, add the lines
+
+	<InteractiveCamera name="baseCamera"  position="2.5 5 37.4995"  orientation="-0 -0 0 1"  lookAt="2.5 5 0"  distance="37.4995"  minBBox="-5 0 -8.66"  maxBBox="10 10 8.66"  widthViewport="190"  heightViewport="552" />
+	<RequiredPlugin pluginName="SurfLabSpeechRecognition" />
+	<SpeechToText />
+
+to your .scn file.
+
+FILE DESCRIPTIONS:
+
+--InitSurflabSpeechRecognition.cpp 
+
+	Initializes the plugin, fairly uninteresting.
+
+--SpeechToText.cpp 
+
+	Where the magic happens.  
+
+	init() 
+		Sets the default values and finds the current interactive camera.
+
+	bwdinit() 
+		This spawns a new thread using boost which runs SpeechToTextExecute, which is where the speech to text conversion is actually done.
+
+	SpeechToTextExecute() 
+		This is the function which is running in the seperate thread.  It calls recognize_from_mic(const char*, const char*, const char*) which uses CMUSphinx to listen from the mic and converts it to text. The function takes three strings as parameters each specifying the location path of the the hidden markov model folder, language model file and the dictionary respectively. It returns a data type asr_result with asr_result.hyp being the std::string phrase which was recognized and asr_result.confidence being the confidence value of the phrase on a log scale, i.e. less negative is a higher confidence.
+		If it hears a phrase it recognizes, it updates speechtotext->moveMode and speechtotext->moveCount to the correct values using the helper functions. The moveModes are set to be the opposites of the phrase, so that the world moves in the other direction giving the illusion of the camera motion. For example, if the user says "left" we move the scene to the right so that the user feels that the camera moved to the left.
+
+	In handleEvent() 
+		Here we check on every animationBeginEvent to see if we need to move the camera.  This is done by checking if moveCount>0 and, if so, we move based on moveMode and then decrement moveCount by one.  We move the camera by spoofing mouseEvents, since this seemed to be the best way to do it without modifying interactiveCamera.cpp, although the functionality is limited.
+		There are several important variables that you can edit to change the behavior of the camera.  The first is moveCount.  This specifies how many animation frames the camera will move, so the higher the value the longer the camera will move.  
+		For moving left/right/up/down the variables pos_x and pos_y store the x and y coordinates of the spoofed mouse, respectively.  When we create our mouseEvent, we must change these values.  The interactive camera stores the previous values of the mouse position and then moves based on old_mouse_position - new_mouse_position.  Therefore, we modify the value of these variables for each mouseEvent.  How much you change these values determines how fast the camera moves.  For example, if I change pos_x by 3 for each animation frame and moveCount is set to 100, then the camera will move by 3*100 = 300.
+		The last variable is wheelDelta.  The interactive camera does not deal with absolute values of wheel position, instead it only works with the change in wheel position and in this way it is unlike the left/right/up/down movements.  For example, if we set wheelDelta to 3 and never change it and moveCount to 100, then we move by 3*100 = 300.  Strictly speaking, we do not need the wheelDelta variable for this reason, however we keep it in order to make the code more readable and assume it gets removed by the compiler.
+
+--pthread
+
+	This folder contains the multithreading header files needed to run CMUSphinx in a seperate thread if running on linux.
+
+--sphinxlib
+	This folder contains the needed .dll and header files from CMUSphinx, the helper SphinxLib.lib, SphinxLib.h and SphinxLib.dll files.
+
+--model
+	This folder contains the model files. We use the model/en-us/en-us folder for the Hidden Markov Model, model/en-us/en-us.lm.bin for the Language Model and model/laparoscopicCamera.dict for the dictionary. To add words to the dictionary, you can search for corresponding pronunciations in the model/en-us/cmudict-en-us.dict file and add it to the laparascopicCamera.dict file.
