@@ -140,7 +140,7 @@ private:
 public:
 
     static const std::string VIEW_FILE_EXTENSION;
-
+	std::string path_TIPS = "";
 
     static QtViewer* create(QtViewer*, BaseViewerArgument& arg)
     {
