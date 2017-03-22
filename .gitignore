@@ -12,6 +12,15 @@
 # Ignore all objets and archives
 #*.[oa]
 
+*.vcxproj
+*.cmake
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+moc_*
+*.dir/
+CMakeFiles/
+#extlibs/
 
 ########## GITIGNORE SOFA ##############
 
