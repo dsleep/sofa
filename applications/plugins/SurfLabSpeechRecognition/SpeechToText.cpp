@@ -90,12 +90,24 @@ namespace sofa
 				{
 					std::wstring path(NPath);
 					std::string str(path.begin(), path.end());
-					base_path = str.substr(0, str.find("\\bin"));
+					std::cout << "path " << str << std::endl;
+					if (str.find("\\Debug") != std::string::npos)
+					{
+						base_path = str.substr(0, str.find("\\bin\\Debug")).append("\\bin\\Debug");
+					}
+					else if (str.find("\\Release") != std::string::npos)
+					{
+						base_path = str.substr(0, str.find("\\bin\\Release")).append("\\bin\\Release");
+					}
+					else
+					{
+						base_path = str.substr(0, str.find("\\bin")).append("\\bin");
+					}
 					std::cout << "base path " << base_path << std::endl;
 				}
 			}
 
-			void *SpeechToTextExecute(void *ptr, sofa::component::visualmodel::BaseCamera::SPtr currentCamera, std::string base_path)
+			void *SpeechToTextExecute(void *ptr, sofa::component::visualmodel::BaseCamera::SPtr currentCamera, std::string base_path, bool* stopCameraMotion, bool* enableSpeechRec)
 			{
 
 				std::cout << "\nIn SpeechToTextExecute Thread\n" << std::endl;
@@ -105,64 +117,88 @@ namespace sofa
 				
 				while (true)
 				{
-					//std::cout << "animated? " << speechtotext->groot->getAnimate() << std::endl;
-					result = recognize_from_mic((base_path + "\\bin\\model\\en-us\\en-us").c_str(), (base_path + "\\bin\\model\\en-us\\en-us.lm.bin").c_str(),
-						(base_path + "\\bin\\model\\en-us\\laparoscopicCamera.dict").c_str());
+					result = recognize_from_mic((base_path + "\\model\\en-us\\en-us").c_str(), (base_path + "\\model\\en-us\\en-us.lm.bin").c_str(),
+						(base_path + "\\model\\en-us\\laparoscopicCamera.dict").c_str());
 					if (strcmp(result.hyp, "") != 0)
 					{
-						if (strcmp(result.hyp, "left") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->RIGHT);
-							speechtotext->setMoveCount(100);
-						}
+						if (*enableSpeechRec) {
+							std::cout << "Camera Enabled" << std::endl;
+							if (strcmp(result.hyp, "camera left") == 0)
+							{
+								speechtotext->setMoveMode(speechtotext->RIGHT);
+								speechtotext->setMoveCount(100);
+							}
 						else if (strcmp(result.hyp, "right") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->LEFT);
-							speechtotext->setMoveCount(100);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->LEFT);
+								speechtotext->setMoveCount(100);
+							}
 						else if (strcmp(result.hyp, "up") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->DOWN);
-							speechtotext->setMoveCount(100);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->DOWN);
+								speechtotext->setMoveCount(100);
+							}
 						else if (strcmp(result.hyp, "down") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->UP);
-							speechtotext->setMoveCount(100);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->UP);
+								speechtotext->setMoveCount(100);
+							}
 						else if (strcmp(result.hyp, "slightly left") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->SLIGHTLY_RIGHT);
-							speechtotext->setMoveCount(50);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->SLIGHTLY_RIGHT);
+								speechtotext->setMoveCount(50);
+							}
 						else if (strcmp(result.hyp, "slightly right") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->SLIGHTLY_LEFT);
-							speechtotext->setMoveCount(50);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->SLIGHTLY_LEFT);
+								speechtotext->setMoveCount(50);
+							}
 						else if (strcmp(result.hyp, "slightly up") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->SLIGHTLY_DOWN);
-							speechtotext->setMoveCount(50);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->SLIGHTLY_DOWN);
+								speechtotext->setMoveCount(50);
+							}
 						else if (strcmp(result.hyp, "slightly down") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->SLIGHTLY_UP);
-							speechtotext->setMoveCount(50);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->SLIGHTLY_UP);
+								speechtotext->setMoveCount(50);
+							}
 						else if (strcmp(result.hyp, "zoom in") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->ZOOM_IN);
-							speechtotext->setMoveCount(100);
-						}
+							{
+								speechtotext->setMoveMode(speechtotext->ZOOM_IN);
+								speechtotext->setMoveCount(100);
+							}
 						else if (strcmp(result.hyp, "zoom out") == 0)
-						{
-							speechtotext->setMoveMode(speechtotext->ZOOM_OUT);
-							speechtotext->setMoveCount(100);
+							{
+								speechtotext->setMoveMode(speechtotext->ZOOM_OUT);
+								speechtotext->setMoveCount(100);
+							}
+							else if (strcmp(result.hyp, "stop") == 0)
+							{
+								*stopCameraMotion = true;
+							}
+							else if (strcmp(result.hyp, "camera disable") == 0)
+							{
+								*enableSpeechRec = false;
+								*stopCameraMotion = true;
+							}
+							else
+							{
+								speechtotext->setMoveMode(speechtotext->UNRECOGNIZED);
+							}
 						}
 						else
 						{
-							speechtotext->setMoveMode(speechtotext->UNRECOGNIZED);
+							std::cout << "Camera Disabled. ";
+							if (strcmp(result.hyp, "camera enable") == 0)
+							{
+								std::cout << "Enabling..." << std::endl;
+								*enableSpeechRec = true;
+							}
+							else
+							{
+								speechtotext->setMoveMode(speechtotext->UNRECOGNIZED);
+							}
 						}
 					}
 				}
@@ -208,7 +244,7 @@ namespace sofa
 					omniSimThreadCreated = true;
 				}
 #else
-				boost::thread STTThread(SpeechToTextExecute, this, currentCamera, base_path);
+				boost::thread STTThread(SpeechToTextExecute, this, currentCamera, base_path, &stopCameraMotion, &enableSpeechRec);
 				setSTTThreadCreated(true);
 #endif
 			}

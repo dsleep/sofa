@@ -48,6 +48,7 @@ public:
 	int moveCount = 0;
 	std::string base_path = "";
 	sofa::simulation::Node::SPtr groot;
+	bool enableSpeechRec = false;
 
 	enum Mode { LEFT, RIGHT, UP, DOWN, SLIGHTLY_LEFT, SLIGHTLY_RIGHT, SLIGHTLY_UP, SLIGHTLY_DOWN, ZOOM_IN, ZOOM_OUT, UNRECOGNIZED = 9999 };
 
