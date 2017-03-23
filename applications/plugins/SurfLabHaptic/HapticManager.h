@@ -63,8 +63,21 @@
 #include "GraspingForceFeedback.h"
 #include "initSurfLabHaptic.h"
 #include <sofa/helper/gl/Capture.h>
+//add the 2 libs below to support v12.16
+#include <boost/scoped_ptr.hpp>
+#include <sofa/core/topology/Topology.h>
 
+//Changes for force feedback safety
+#include <SofaHaptics/ForceFeedback.h>
+#include "NewOmniDriver.h"
+#include <math.h>
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <algorithm>
+#include <stdio.h>
+#include <windows.h>
 namespace sofa
 {
     
@@ -73,6 +86,8 @@ namespace sofa
 
 		namespace collision
 		{
+			//Changes for force feedback safety
+			class ForceFeedback;
 
 			class SOFA_SURFLABHAPTIC_API HapticManager : public sofa::component::controller::Controller, sofa::core::visual::VisualModel
 			{
@@ -93,6 +108,7 @@ namespace sofa
 				typedef core::CollisionModel ToolModel;
 				typedef helper::vector<core::collision::DetectionOutput> ContactVector;
 				typedef sofa::component::collision::BaseContactMapper< DataTypes > ContactMapper;
+				Data < Real > veinForceThreshold;
 
 				Data < Real > grasp_stiffness;
 				Data < Real > attach_stiffness;
@@ -112,7 +128,8 @@ namespace sofa
 					TOOLFUNCTION_SUTURE, 
 					TOOLFUNCTION_CARVE,
 					TOOLFUNCTION_CLAMP,
-					TOOLFUNCTION_GRASP
+					TOOLFUNCTION_GRASP,
+					TOOLFUNCTION_CONTAIN
 				};
 				struct Tool
 				{
@@ -137,7 +154,8 @@ namespace sofa
 				core::collision::Intersection* intersectionMethod;
 				core::collision::NarrowPhaseDetection* detectionNP;
 				//sofa::component::topology::TriangleSetTopologyContainer* mesh;
-				
+				//Changes for force feedback safety
+				sofa::component::controller::NewOmniDriver *newOmniDriver;
 				HapticManager();
 
 				virtual ~HapticManager();
@@ -155,6 +173,7 @@ namespace sofa
 					};
 			private:
 				void updateTool();
+				void doContain();
 				void doGrasp();
 				void doCarve();
                 void doIncise();
@@ -164,7 +183,7 @@ namespace sofa
 				void unGrasp();
 				void doClamp();
 				const ContactVector* getContacts();
-                double mistake_time;
+                //double mistake_time;
 				double start_time;
 				double delta_time;
 				// the following variables used in clamping			
@@ -173,6 +192,16 @@ namespace sofa
 				static std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
 				static std::vector<double> hexDimensions;
 				static std::vector<bool> edge12along; // if edge 12 is along vessel
+				static std::vector<int> clipVector;
+				static std::set<int> veinCutSet;
+
+				
+				//updateShader is used for replace a string in shader file, it will replace 
+				//the searchstring from the input file to be the replacestring of the output file
+				int updateShader(string Input, string Output, string searchstring, string replacestring);
+				static std::string base_path_share ;
+				bool hasInstrumentTurnedRed = false;
+				static double last_update_time;//last time the shader has been updated
 			};
 
 		} // namespace collision
@@ -192,5 +221,9 @@ std::vector<std::pair<Hexahedron, int> > HapticManager::clampPairs;
 std::vector<MechanicalState<HapticManager::DataTypes>*> HapticManager::clipperStates;
 std::vector<double> HapticManager::hexDimensions;
 std::vector<bool> HapticManager::edge12along;
+std::vector<int> HapticManager::clipVector;
+std::set<int> HapticManager::veinCutSet;
+double HapticManager::last_update_time;
+std::string HapticManager::base_path_share = "";
 
 #endif

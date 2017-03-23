@@ -25,6 +25,8 @@
 #include "HapticManager.h"
 
 #define int2string(a) std::to_string(a)
+using namespace std;
+
 namespace sofa
 {
 
@@ -57,8 +59,11 @@ namespace sofa
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
 				, clampScale(initData(&clampScale, Vec3f(.2, .2, .2), "clampScale", "scale of the object created during clamping"))
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))								
+				, veinForceThreshold(initData(&veinForceThreshold, 0.6, "veinForceThreshold", "Threshold force before the vein is injured"))
 			{
 				this->f_listening.setValue(true);
+
+				//std::cout << "haptic manager construction" << std::endl;
 			}
 
 			HapticManager::~HapticManager()
@@ -89,6 +94,12 @@ namespace sofa
 						toolState.function = TOOLFUNCTION_GRASP;
 						sout << "Active tool: Grasping" << sendl;
 					}
+					else if (tm->hasTag(core::objectmodel::Tag("ContainerTool")))
+					{
+						toolState.function = TOOLFUNCTION_CONTAIN;
+						std::cout << "found container!" << std::endl;
+						sout << "Active tool: Container" << sendl;
+					}
 					else{
 						toolState.function = TOOLFUNCTION_CLAMP;
 						sout << "Active tool: Clamping" << sendl;
@@ -111,8 +122,13 @@ namespace sofa
 				{
 					sofa::core::objectmodel::BaseData *idData = omniDriver.get()->findData("deviceIndex");
 					if (idData)
+					{
 						toolState.id = atoi(idData->getValueString().c_str());
+						newOmniDriver = dynamic_cast<sofa::component::controller::NewOmniDriver *>(omniDriver.get());
+					}
+						
 				}
+
 				else
 				{
 					warnings.append("omniDriver is missing, the device id is set to 0 and may not be accurate");
@@ -121,12 +137,16 @@ namespace sofa
 				/* looking for Haptic surfaces */
 				
                 std::vector<core::CollisionModel*> modelVeinSurfaces;
+				std::vector<core::CollisionModel*> modelCurveSurfaces;
                 std::vector<core::CollisionModel*> SafetySurfaces;
                 getContext()->get<core::CollisionModel>(&modelSurfaces, core::objectmodel::Tag("HapticSurface"), core::objectmodel::BaseContext::SearchRoot);
                 getContext()->get<core::CollisionModel>(&modelVeinSurfaces, core::objectmodel::Tag("HapticSurfaceVein"), core::objectmodel::BaseContext::SearchRoot);
-                getContext()->get<core::CollisionModel>(&SafetySurfaces, core::objectmodel::Tag("SafetySurface"), core::objectmodel::BaseContext::SearchRoot);
+				getContext()->get<core::CollisionModel>(&modelCurveSurfaces, core::objectmodel::Tag("HapticSurfaceCurve"), core::objectmodel::BaseContext::SearchRoot);
+				getContext()->get<core::CollisionModel>(&SafetySurfaces, core::objectmodel::Tag("SafetySurface"), core::objectmodel::BaseContext::SearchRoot);
                 for(int i=0; i<modelVeinSurfaces.size(); i++)
                   modelSurfaces.push_back(modelVeinSurfaces[i]);
+				for (int i = 0; i<modelCurveSurfaces.size(); i++)
+					modelSurfaces.push_back(modelCurveSurfaces[i]);
                 for(int i=0; i<SafetySurfaces.size(); i++)
                   modelSurfaces.push_back(SafetySurfaces[i]);
 
@@ -139,15 +159,85 @@ namespace sofa
 				if (modelSurfaces.empty()) warnings.append("Haptic Surface not found");
 				if (intersectionMethod == NULL) warnings.append("intersectionMethod not found");
 				if (detectionNP == NULL) warnings.append("NarrowPhaseDetection not found");
-
+				
+				std::string path = sofa::helper::system::DataRepository.getFirstPath();
+				//std::cout << "get first path:" << path<<std::endl;
+				base_path_share = path.substr(0, path.find("examples")).append("share");
+				//std::cout << "base_path_share" << base_path_share << std::endl;				
 			}
+
+
 
 			void HapticManager::reset()
 			{				
 			}
 			
+			void HapticManager::doContain()
+			{
+				//std::cout << "haptic manager: doing contain!" << std::endl;
+				const ContactVector* contacts = getContacts();
+				if (contacts == NULL) return;
+				for (unsigned int j = 0; j < 1; ++j)
+				{
+					const ContactVector::value_type& c = (*contacts)[j];
+					// get the triangle index in the collision model of the surface
+					int idx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
+					// get the actual collision point. The point may lie inside in the triangle and its coordinates are calculated as barycentric coordinates w.r.t. the triangle. 
+					Vector3 pnt = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.point[1] : c.point[0]);
+					if (idx >= 0)
+					{
+						toolState.m1 = ContactMapper::Create(c.elem.first.getCollisionModel());
+						toolState.m2 = ContactMapper::Create(c.elem.second.getCollisionModel());
+
+						core::behavior::MechanicalState<DataTypes>* mstateCollision1 = toolState.m1->createMapping(GenerateStirngID::generate().c_str());
+						toolState.m1->resize(1);
+						core::behavior::MechanicalState<DataTypes>* mstateCollision2 = toolState.m2->createMapping(GenerateStirngID::generate().c_str());
+						toolState.m2->resize(1);
+
+						toolState.m_constraints = sofa::core::objectmodel::New<sofa::component::constraintset::BilateralInteractionConstraint<DataTypes> >(mstateCollision1, mstateCollision2);
+						toolState.m_constraints->clear(1);
+
+						int index1 = c.elem.first.getIndex();
+						int index2 = c.elem.second.getIndex();
+
+						double r1 = 0.0;
+						double r2 = 0.0;
+
+						index1 = toolState.m1->addPointB(c.point[0], index1, r1);
+						index2 = toolState.m2->addPointB(c.point[1], index2, r2);
+
+						double distance = c.elem.first.getCollisionModel()->getProximity() + c.elem.second.getCollisionModel()->getProximity() + intersectionMethod->getContactDistance() + r1 + r2;
+
+						toolState.m_constraints->addContact(c.normal, c.point[0], c.point[1], distance, index1, index2, c.point[0], c.point[1]);
+
+						if (c.elem.first.getCollisionModel() == toolState.modelTool)
+						{
+							mstateCollision2->getContext()->addObject(toolState.m_constraints);
+						}
+						else
+						{
+							mstateCollision1->getContext()->addObject(toolState.m_constraints);
+						}
+
+						toolState.m1->update();
+						toolState.m2->update();
+						toolState.m1->updateXfree();
+						toolState.m2->updateXfree();
+
+					}
+
+					if (c.elem.first.getCollisionModel() == toolState.modelTool)
+						toolState.modelTool->setGroups(c.elem.second.getCollisionModel()->getGroups());
+					else
+						toolState.modelTool->setGroups(c.elem.first.getCollisionModel()->getGroups());
+
+				}
+
+			}
+			
 			void HapticManager::doGrasp()
-			{				
+			{							
+				//std::cout << "haptic manager: doing grasp!" << std::endl;
 				const ContactVector* contacts = getContacts();				
 				if (contacts == NULL) return;
 				for (unsigned int j = 0; j < 1; ++j)
@@ -325,15 +415,16 @@ namespace sofa
 					return NULL;
 			}
 
-            //global var used for recording mistakes
+            //global var used for recording mistakes, change these to static member later
             int mistatkeTolerance = 50;
             int mistatkeToleranceCut = 50;
             int mistatkeToleranceCutVein = 50;
             int mistatkeToleranceClamp = 50;
-            int mistatkeToleranceDissect = 50;                      
+            int mistatkeToleranceDissect = 50;    
+			int mistakeToleranceForce = 0;
             
-			void HapticManager::doCarve()//RG: only dissectingTool can cut the vein, other tools will be recorded
-			{             
+			void HapticManager::doCarve()
+			{     
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
 				int nbelems = 0;
@@ -346,34 +437,56 @@ namespace sofa
                   
 					const ContactVector::value_type& c = (*contacts)[j];
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-                    if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCutVein > 0)
+					if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))) && tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCutVein > 0)
                     {
-                      mistatkeToleranceCutVein --;
-                      mistatkeTolerance--;
-                      cout<<" Cut the vein "<<50 - mistatkeToleranceCutVein<<" times by accident"<<endl;
-                      std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
-                      std::string err("Dissect_vein.png");                     
-                      std::string out = capturePath + int2string(50 - mistatkeTolerance);
-                      out = out + err;
-                      capture.saveScreen(out);
-                      // mistake_time = this->getContext()->getRootContext()->getTime();
-                      return;
+						if (!hasInstrumentTurnedRed)
+						{
+							string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+							string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+							hasInstrumentTurnedRed = true;
+							updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+								search_string, replace_string);
+							last_update_time = this->getContext()->getTime();
+							//std::cout << "last_update_time is " << last_update_time << std::endl;
+						}
+
+						mistatkeToleranceCutVein --;
+						mistatkeTolerance--;
+						//std::cout<<" Cut the vein "<<50 - mistatkeToleranceCutVein<<" times by accident"<<endl;
+						std::string SharePath = base_path_share;
+						std::string capturePath(SharePath + "\/TIPS_screenshot\/error"); //temp path for saving the screenshot
+						std::string err("Dissect_vein.png");                     
+						std::string out = capturePath + int2string(50 - mistatkeTolerance);
+						out = out + err;
+						capture.saveScreen(out);
+						// mistake_time = this->getContext()->getRootContext()->getTime();	
+						return;
                     }
                     else if (surf->hasTag(core::objectmodel::Tag("SafetySurface")) && mistatkeTolerance > 0)
                     {
                         if(tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCut > 0)
-                        {
-                            //sofa::component::visualmodel::BaseCamera::SPtr testcamera;
-                            //testcamera = getContext()->get<component::visualmodel::InteractiveCamera>(this->getTags(), sofa::core::objectmodel::BaseContext::SearchRoot);                          
+						{
+							if (!hasInstrumentTurnedRed)
+							{
+								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+								hasInstrumentTurnedRed = true;
+								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+									search_string, replace_string);
+								last_update_time = this->getContext()->getTime();
+								//std::cout << "last_update_time is " << last_update_time << std::endl;
+							}
+							
                             mistatkeToleranceCut --;
-                            std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+							std::string SharePath = base_path_share;
+							std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
+                            //std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
                             mistatkeTolerance --;
                             std::string err("Dissect.png");
                             std::string out = capturePath + int2string(50 - mistatkeTolerance);
                             out = out + err;
                             capture.saveScreen(out);
-                            //surf->setColor4f(testColor);
-                            cout<<" Dissect the wrong organ-- "<<50 - mistatkeToleranceCut<<" times by accident"<<endl;
+                            //std::cout<<" Dissect the wrong organ-- "<<50 - mistatkeToleranceCut<<" times by accident"<<std::endl;
                             return; 
                         }    
                         // else if(tm->hasTag(core::objectmodel::Tag("ClampingTool")) && mistatkeToleranceClamp > 0)
@@ -382,24 +495,53 @@ namespace sofa
                             // cout<<" Clamp the wrong organs "<<50 - mistatkeToleranceClamp<<" times by accident"<<endl;
                             // return; 
                         // }    
-                        else if(tm->hasTag(core::objectmodel::Tag("DissectingTool")) && mistatkeToleranceDissect > 0)
+                        else if(tm->hasTag(core::objectmodel::Tag("DissectingTool")) && mistatkeToleranceDissect > 0)//RG: only dissectingTool(like scissor) can cut the vein
                         {
                             mistatkeToleranceDissect --;
                             mistatkeTolerance --;
-                            std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+							std::string SharePath = base_path_share;
+							std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
+                            //std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
                             std::string err("Cut.png");
                             std::string out = capturePath + int2string(50 - mistatkeTolerance);
                             out = out + err;
                             capture.saveScreen(out);
-                            cout<<" Cut the wrong organs" <<50 - mistatkeToleranceDissect<<" times by accident"<<endl;
+                            //std::cout<<" Cut the wrong organs" <<50 - mistatkeToleranceDissect<<" times by accident"<<std::endl;
                             return; 
                         }
 
                     }
+					
                     sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
                     if (topoMapping == NULL) return;
                     int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
                     elemsToRemove.push_back(triangleIdx);
+					
+					if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("DissectingTool")))
+					{
+						core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+						sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
+						surf->getContext()->get(triangleContainer);
+						const sofa::core::topology::Topology::Triangle TriangleElem = triangleContainer->getTriangle(triangleIdx);
+						sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
+						surf->getContext()->get(hexContainer);
+						if (hexContainer == NULL) return;
+
+						sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(TriangleElem[0]);
+						sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(TriangleElem[1]);
+						sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(TriangleElem[2]);
+						sofa::helper::vector< unsigned int > ie1;
+						sofa::helper::vector< unsigned int > ie;
+						std::sort(e1.begin(), e1.end());
+						std::sort(e2.begin(), e2.end());
+						std::sort(e3.begin(), e3.end());
+						std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie1));
+						std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
+						int idxHex = ie[0];
+						//std::cout << "idx of the hex to cut: " << idxHex << std::endl;
+						veinCutSet.insert(idxHex);
+					}
+
 				}
 				sofa::helper::AdvancedTimer::stepBegin("CarveElems");
 				if (!elemsToRemove.empty())
@@ -411,6 +553,14 @@ namespace sofa
 					else
 						nbelems += manager.removeItemsFromCollisionModel(c.elem.first.getCollisionModel(), elemsToRemove);
 				}
+				/*if (hasInstrumentTurnedRed && this->getContext()->getTime() - last_update_time > 0)
+				{
+					hasInstrumentTurnedRed = false;
+					string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+					string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+					updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+						replace_string, search_string);
+				}*/
 			}
 			
         void HapticManager::doIncise()
@@ -668,12 +818,14 @@ namespace sofa
 				if (contacts == NULL) return;
 				const ContactVector::value_type& c = (*contacts)[0];
 				unsigned int idx1 = (c.elem.first.getCollisionModel() == toolModelPt ? c.elem.second.getIndex() : c.elem.first.getIndex());
-				
+				//std::cout << "inside do clamp()" << std::endl;
+				//std::cout << "index of the triangle of the organ:" << idx1 << std::endl;
+
 				if (idx1 >= 0)
 				{
 					sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;					
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolModelPt ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-					if (!surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")))
+					if (!surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")))//only the vein is clampable
 					return;
 					surf->getContext()->get(triangleContainer);
 					const component::topology::Triangle Triangle1 = triangleContainer->getTriangle(idx1);	
@@ -701,6 +853,19 @@ namespace sofa
 					std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
 
 					const component::topology::Hexahedron hex = hexContainer->getHexahedron(ie[0]);
+					//std::cout << "index of the hex:" << ie[0] << std::endl;
+					int idxclip = ie[0];
+					std::vector<int>::iterator it;
+					it = find(clipVector.begin(), clipVector.end(), idxclip);
+					if (it != clipVector.end())
+						std::cout << "Applying a clip on an existing one!" << *it << '\n';
+					else
+						clipVector.push_back(idxclip);
+					std::cout << "current clip vector: ";
+					for (auto i = clipVector.begin(); i != clipVector.end(); ++i)
+						std::cout << *i << ' ';
+					std::cout << endl;
+
 					// order of the 3 vertices in the hex (0 to 7)
 					int v1 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[0]);
 					int v2 = hexContainer->getVertexIndexInHexahedron(hex, Triangle1[1]);
@@ -800,8 +965,18 @@ namespace sofa
                     if (newButtonState != 0) doCarve();//Continue carving if the button is pressed down	
                     break;
 				case TOOLFUNCTION_CLAMP:
+					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0 && (newButtonState & FIRST) != 0)
+						doClamp(); /* button down */
+					break;
+				case TOOLFUNCTION_CONTAIN:
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
-						doClamp();	
+					{
+						/* the state of the first button is changing */
+						if ((newButtonState & FIRST) != 0)
+						{
+							doContain(); /* button down */
+						}
+					}
 					break;
 				case TOOLFUNCTION_GRASP:
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
@@ -842,6 +1017,30 @@ namespace sofa
 					break;
 				}
 				toolState.buttonState = newButtonState;
+				//Changes for force feedback safety
+				const ContactVector* contacts = getContacts();
+				if (contacts != NULL) {
+					ToolModel *tm = toolModel.get();
+					for (unsigned int j = 0; j < contacts->size(); ++j) {
+						const ContactVector::value_type& c = (*contacts)[j];
+						core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+						if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein"))) {
+							//std::cout << "current force components on vein " << newOmniDriver->data.currentForce[0] << " " << newOmniDriver->data.currentForce[1] << " " << newOmniDriver->data.currentForce[2] << std::endl;
+
+							//TODO: Take the force direction(sign) into account while calculating resultant
+							double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
+							//std::cout << "current force on vein  " << resultantForce << " and threshold " << veinForceThreshold.getValue() << std::endl;
+							if (resultantForce > veinForceThreshold.getValue()) {
+								mistakeToleranceForce++;
+								std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+								std::string err("Safety_force_vein.png");
+								std::string out = capturePath + int2string(mistakeToleranceForce);
+								out = out + err;
+								capture.saveScreen(out);
+							}
+						}
+					}
+				}
 			}
 
 			void HapticManager::handleEvent(Event* event)
@@ -862,9 +1061,78 @@ namespace sofa
 					this->f_listening.setValue(false);
 				}
 
+				if (hasInstrumentTurnedRed)
+				{
+					Sleep(100);
+					hasInstrumentTurnedRed = false;
+					string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+					string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+					updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+						replace_string, search_string);
+				}
+
 				updateTool();
 			}
 
+			int HapticManager::updateShader(string Input, string Output, string searchstring, string replacestring)
+			{ 
+				string temp_share_path = base_path_share;
+				string input = temp_share_path.append(Input);
+				temp_share_path = base_path_share;
+				string output = temp_share_path.append(Output);
+				//std::cout << "input and output path: " << input << "  " << output << std::endl;
+				string search_string = searchstring;
+				string replace_string = replacestring;
+				string inbuf;
+				fstream input_file(input, ios::in);
+				ofstream output_file(output);
+				while (!input_file.eof())
+				{
+					getline(input_file, inbuf);
+
+					int spot = inbuf.find(search_string);
+					if (spot >= 0)
+					{
+						string tmpstring = inbuf.substr(0, spot);
+						tmpstring += replace_string;
+						tmpstring += inbuf.substr(spot + search_string.length(), inbuf.length());
+						inbuf = tmpstring;
+					}
+					output_file << inbuf << endl;
+				}
+				input_file.close();
+				output_file.close();
+				int resultRem = remove(input.c_str());
+				if (resultRem != 0)
+					perror("Error removing file");
+				int resultRen = rename(output.c_str(), input.c_str());
+				if (resultRen != 0)
+					perror("Error renaming file");
+				std::cout << "update done, results: " << resultRem << "," << resultRen << std::endl;
+				if (resultRem == 0 && resultRen == 0)
+					return 1;
+				else
+					return 0;
+			}
+
+			/*int isCutBetweenClips()
+			{
+				int nbS = 0, nbL = 0, nbE = 0;
+				for (auto j = veinCutSet.begin(); j != veinCutSet.end(); ++j)
+				{
+					for (auto i = clipVector.begin(); i != clipVector.end(); ++i)
+						std::cout << *i << ' ';
+					if (*i < j)
+						nbS++;
+					else if (*i == j);
+					{
+						nbE++;
+						return 2;
+					}
+					else if (*i > j)
+						nbL++;
+				}
+			}*/
 		} // namespace collision
 
 	} // namespace component
