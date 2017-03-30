@@ -545,9 +545,10 @@ void BaseCamera::rotateWorldAroundPoint(Quat &rotation, const Vec3 &point, Quat 
     updateOutputData();
 }
 
+bool hasComputedZ = false;
 void BaseCamera::computeZ()
 {
-    if (p_computeZClip.getValue())
+	if (p_computeZClip.getValue() && !hasComputedZ)
     {
         double zNear = 1e10;
         double zFar = -1e10;
@@ -578,8 +579,13 @@ void BaseCamera::computeZ()
         if (zNear < zMin)
             zNear = zMin;
 
+		//temporary fix the Znear expansion problem below:
+		if (zNear >= 1.5)
+			zNear = 0.5;
+
         currentZNear = zNear;
         currentZFar = zFar;
+		//hasComputedZ = true;
     }
     else
     {
