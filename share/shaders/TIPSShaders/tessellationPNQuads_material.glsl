@@ -4,18 +4,12 @@ struct V2T
 {
     vec3 position;
     vec3 normal;
-
-	//Texture3D coords
-	vec3 texcoord3;
 };
 
 struct TC2E
 {
     vec3 position;
     vec3 normal;
-
-	//Texture3D coords
-	vec3 texcoord3;
 };
 
 struct T2F
@@ -23,23 +17,24 @@ struct T2F
     vec3 position;
     vec3 normal;
     vec3 patchDistance;
+};
 
-	//Texture3D coords
-	vec3 texcoord3;
+struct gl_MaterialParameters
+{
+   vec4 emission;    // Ecm
+   vec4 ambient;     // Acm
+   vec4 diffuse;     // Dcm
+   vec4 specular;    // Scm
+   float shininess;  // Srm
 };
 
 #ifdef VertexShader //--------------------------------------
 out V2T vdata;
-//layout(location = 8) in vec3 texcoords;
 
 void main()
 {
   vdata.position = gl_Vertex.xyz;
   vdata.normal = normalize(gl_Normal.xyz);
-
-	//Texture3D coords
-	vdata.texcoord3.xyz = gl_MultiTexCoord0.xyz;
-	//vdata.texcoord3.xyz = texcoords.xyz;
 }
 #endif
 
@@ -53,7 +48,6 @@ void main() {
 	#define I gl_InvocationID
 	tcdata[I].position = vdata[I].position;
 	tcdata[I].normal = vdata[I].normal;
-	tcdata[I].texcoord3 = vdata[I].texcoord3;
 
 	gl_TessLevelOuter[0] = TessellationLevel;
 	gl_TessLevelOuter[1] = TessellationLevel;
@@ -75,12 +69,6 @@ void main() {
 	vec3 p1 = tcdata[1].position;
 	vec3 p2 = tcdata[2].position;
 	vec3 p3 = tcdata[3].position;
-
-	//Texture3D coords
-	vec3 t0 = tcdata[0].texcoord3;
-	vec3 t1 = tcdata[1].texcoord3;
-	vec3 t2 = tcdata[2].texcoord3;
-	vec3 t3 = tcdata[3].texcoord3;
 
 	vec3 n0 = tcdata[0].normal;
 	vec3 n1 = tcdata[1].normal;
@@ -148,15 +136,6 @@ void main() {
 
 	tedata.position = pos;
 
-	float tu0 = (1.-u);
-	float tu1 = u;
-
-	float tv0 = (1.-v);
-	float tv1 = v;
-
-	tedata.texcoord3 = tu0*(tv0*t0 + tv1*t1)
-                   + tu1*(tv0*t3 + tv1*t2);
-
 	float v01 = (2.*(dot(p1 - p0, n0 + n1) / dot(p1 - p0, p1 - p0)));
 	float v12 = (2.*(dot(p2 - p1, n1 + n2) / dot(p2 - p1, p2 - p1)));
 	float v23 = (2.*(dot(p3 - p2, n2 + n3) / dot(p3 - p2, p3 - p2)));
@@ -187,12 +166,14 @@ void main() {
 
 #ifdef FragmentShader //------------------------------------
 in T2F tedata;
-uniform sampler3D colorTexture3;
+uniform gl_MaterialParameters gl_FrontMaterial;
+uniform gl_MaterialParameters gl_BackMaterial;
 
 float basicNoise(vec2 co){
     return 0.5 + 0.5 * fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+//For wetness effect
 //3D Value Noise generator by Morgan McGuire @morgan3d
 //https://www.shadertoy.com/view/4dS3Wd
 float hash(float n) { return fract(sin(n) * 1e4); }
@@ -216,7 +197,7 @@ float noise(vec3 x) {
 }
 
 //Fractional Brownian Motion
-#define NUM_OCTAVES 5
+#define NUM_OCTAVES 1
 
 float fnoise(vec3 x) {
 	float v = 0.0;
@@ -231,22 +212,19 @@ float fnoise(vec3 x) {
 }
 
 void main() {
-	vec3 in_texcoord3 = tedata.texcoord3.xyz;
-	vec4 color = texture3D(colorTexture3, in_texcoord3);
-
 	//Adapted from Ruiliang's Texture3D shader
 	vec4 pos = gl_ModelViewMatrix * vec4(tedata.position, 1);
 	vec3 mylightDir = normalize(vec3(0.1, 0.1, 0) - pos.xyz);//light position in ViewCoord
 
   //Generating a bump map from noise
-  float noiseVal = fnoise(in_texcoord3) * 0.5 + 0.5;
+  float noiseVal = fnoise(tedata.position.xyz) * 0.5 + 0.5;
   float E = 0.001;
 
-  vec3 px = in_texcoord3;
+  vec3 px = tedata.position.xyz;
   px.x += E;
-  vec3 py = in_texcoord3;
+  vec3 py = tedata.position.xyz;
   py.y += E;
-  vec3 pz = in_texcoord3;
+  vec3 pz = tedata.position.xyz;
   pz.z += E;
 
   vec3 bump = vec3(fnoise(px)*0.5+0.5, fnoise(py)*0.5+0.5, fnoise(pz)*0.5+0.5);
@@ -267,10 +245,8 @@ void main() {
   float fresnel = exponential + F0 * (1.0 - exponential);
 
   // color below = ambient + specular
-	gl_FragColor.xyz = vec3(0.15,0.05,0.05) + 0.2 * color.xyz
-                      + 1.0 * vec3(0.8, 0.8, 0.8) * pow(max(0.0, clamp(dot(CamDir,ReflectedRay),-0.2,1.0)), 200) * fresnel * basicNoise(in_texcoord3.xy) * 5
-                      + 0.5*color.xyz * clamp(dot(mylightDir, myN), -0.8,1.0);
-  gl_FragColor.a = 0.2;
-	//gl_FragColor = vec4(color.rgb, 1.0);
+	gl_FragColor = gl_FrontMaterial.ambient
+                      + 0.5 * gl_FrontMaterial.diffuse * clamp(dot(mylightDir, myN), -0.2, 1.0)
+                      + 1 * gl_FrontMaterial.specular * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), gl_FrontMaterial.shininess) * fresnel * basicNoise(tedata.position.xy) * 5;
 }
 #endif
