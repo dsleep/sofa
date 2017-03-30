@@ -201,6 +201,7 @@ namespace sofa
 				int updateShader(string Input, string Output, string searchstring, string replacestring);
 				static std::string base_path_share ;
 				bool hasInstrumentTurnedRed = false;
+				bool hasInstrumentTurnedGreen = false;
 				static double last_update_time;//last time the shader has been updated
 			};
 

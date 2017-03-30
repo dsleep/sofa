@@ -231,6 +231,32 @@ namespace sofa
 					else
 						toolState.modelTool->setGroups(c.elem.first.getCollisionModel()->getGroups());
 
+					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+					if ((surf->hasTag(core::objectmodel::Tag("HapticSurface")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))))
+					{
+						//std::cout << "you have made an achievement by putting the organ in pouch! " << std::endl;
+						std::string SharePath = base_path_share;
+						std::string capturePath(SharePath + "\/TIPS_screenshot\/Achievement_");
+						std::string achi("Pouch.png");
+						std::string out = capturePath;
+						out = out + achi;
+						capture.saveScreen(out);
+						if (!hasInstrumentTurnedGreen)
+						{
+							string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+							string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+							hasInstrumentTurnedGreen = true;
+							updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+								search_string, replace_string);
+							last_update_time = this->getContext()->getTime();
+
+						}
+						this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
+						return;
+
+
+					}
+
 				}
 
 			}
@@ -1031,8 +1057,20 @@ namespace sofa
 							double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
 							//std::cout << "current force on vein  " << resultantForce << " and threshold " << veinForceThreshold.getValue() << std::endl;
 							if (resultantForce > veinForceThreshold.getValue()) {
+								if (!hasInstrumentTurnedRed)
+								{
+									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+									string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+									hasInstrumentTurnedRed = true;
+									updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+										search_string, replace_string);
+									last_update_time = this->getContext()->getTime();
+		
+								}
+								std::string SharePath = base_path_share;
+								std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
 								mistakeToleranceForce++;
-								std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
+								//std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
 								std::string err("Safety_force_vein.png");
 								std::string out = capturePath + int2string(mistakeToleranceForce);
 								out = out + err;
@@ -1063,7 +1101,7 @@ namespace sofa
 
 				if (hasInstrumentTurnedRed)
 				{
-					Sleep(100);
+					Sleep(150);
 					hasInstrumentTurnedRed = false;
 					string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
 					string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
