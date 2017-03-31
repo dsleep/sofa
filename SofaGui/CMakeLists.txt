@@ -68,13 +68,13 @@ if(NOT SOFA_NO_OPENGL)
             ## Qt GUI options, used in the relevant CMakeLists.txt
 
             ## QtViewer
-            option(SOFAGUI_QTVIEWER "Compile the QtViewer for the Qt GUI" OFF)
+            option(SOFAGUI_QTVIEWER "Compile the QtViewer for the Qt GUI" ON)
             if(SOFAGUI_QTVIEWER)
                 set(SOFA_GUI_QTVIEWER 1) # cmakedefine
             endif()
 
             ## QglViewer
-            option(SOFAGUI_QGLVIEWER "Compile the QGLViewer for the Qt GUI" ON)
+            option(SOFAGUI_QGLVIEWER "Compile the QGLViewer for the Qt GUI" OFF)
             if(SOFAGUI_QGLVIEWER)
                 set(SOFA_GUI_QGLVIEWER 1) # cmakedefine
                 find_package(QGLViewer QUIET)
