@@ -122,8 +122,6 @@ namespace sofa
 				while (true)
 				{
 
-					*enableSpeechRec = true; /* FOR TESTING, DELETE WHEN DONE*/
-
 					result = recognize_from_mic((base_path + "\\model\\en-us\\en-us").c_str(), (base_path + "\\model\\en-us\\en-us.lm.bin").c_str(),
 						(base_path + "\\model\\en-us\\laparoscopicCamera.dict").c_str());
 					if (strcmp(result.hyp, "") != 0)
