@@ -59,7 +59,7 @@ namespace sofa
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
 				, clampScale(initData(&clampScale, Vec3f(.2, .2, .2), "clampScale", "scale of the object created during clamping"))
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))								
-				, veinForceThreshold(initData(&veinForceThreshold, 0.6, "veinForceThreshold", "Threshold force before the vein is injured"))
+				, veinForceThreshold(initData(&veinForceThreshold, 1.0, "veinForceThreshold", "Threshold force before the vein is injured"))
 			{
 				this->f_listening.setValue(true);
 
@@ -241,16 +241,16 @@ namespace sofa
 						std::string out = capturePath;
 						out = out + achi;
 						capture.saveScreen(out);
-						if (!hasInstrumentTurnedGreen)
-						{
-							string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-							string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
-							hasInstrumentTurnedGreen = true;
-							updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-								search_string, replace_string);
-							last_update_time = this->getContext()->getTime();
+						// if (!hasInstrumentTurnedGreen)
+						// {
+							// string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+							// string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+							// hasInstrumentTurnedGreen = true;
+							// updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+								// search_string, replace_string);
+							// last_update_time = this->getContext()->getTime();
 
-						}
+						// }
 						this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
 						return;
 
@@ -1056,7 +1056,8 @@ namespace sofa
 							//TODO: Take the force direction(sign) into account while calculating resultant
 							double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
 							//std::cout << "current force on vein  " << resultantForce << " and threshold " << veinForceThreshold.getValue() << std::endl;
-							if (resultantForce > veinForceThreshold.getValue()) {
+							if (resultantForce > veinForceThreshold.getValue() && mistakeToleranceForce<=5)
+							{
 								if (!hasInstrumentTurnedRed)
 								{
 									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -1070,7 +1071,6 @@ namespace sofa
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
 								mistakeToleranceForce++;
-								//std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
 								std::string err("Safety_force_vein.png");
 								std::string out = capturePath + int2string(mistakeToleranceForce);
 								out = out + err;
@@ -1109,6 +1109,16 @@ namespace sofa
 						replace_string, search_string);
 				}
 
+				// if (hasInstrumentTurnedGreen)
+				// {
+					// Sleep(150);
+					// hasInstrumentTurnedGreen = false;
+					// string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+					// string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+					// updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+						// replace_string, search_string);
+				// }
+
 				updateTool();
 			}
 
@@ -1146,7 +1156,7 @@ namespace sofa
 				int resultRen = rename(output.c_str(), input.c_str());
 				if (resultRen != 0)
 					perror("Error renaming file");
-				std::cout << "update done, results: " << resultRem << "," << resultRen << std::endl;
+				//std::cout << "update done, results: " << resultRem << "," << resultRen << std::endl;
 				if (resultRem == 0 && resultRen == 0)
 					return 1;
 				else
