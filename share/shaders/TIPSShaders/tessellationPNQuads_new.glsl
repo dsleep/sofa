@@ -270,7 +270,7 @@ void main() {
 	gl_FragColor.xyz = vec3(0.15,0.05,0.05) + 0.2 * color.xyz
                       + 1.0 * vec3(0.8, 0.8, 0.8) * pow(max(0.0, clamp(dot(CamDir,ReflectedRay),-0.2,1.0)), 200) * fresnel * basicNoise(in_texcoord3.xy) * 5
                       + 0.5*color.xyz * clamp(dot(mylightDir, myN), -0.8,1.0);
-  gl_FragColor.a = 0.2;
+  gl_FragColor.a = 0.5;
 	//gl_FragColor = vec4(color.rgb, 1.0);
 }
 #endif
