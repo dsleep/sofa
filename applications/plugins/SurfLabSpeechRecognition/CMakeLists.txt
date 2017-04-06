@@ -7,7 +7,7 @@ endif()
 
 set(HEADER_FILES
 	initSurfLabspeechRecognition.h
-    	SpeechToText.h
+    SpeechToText.h
 	)
 
 set(SOURCE_FILES

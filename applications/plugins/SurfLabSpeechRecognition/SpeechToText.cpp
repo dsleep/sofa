@@ -114,65 +114,103 @@ namespace sofa
 
 				SpeechToText *speechtotext = (SpeechToText*)ptr;
 				asr_result result;
+
+				const int default_translate_count = 10;
+				const int default_rotate_count = 10;
+				const int default_zoom_count = 10;
 				
 				while (true)
 				{
+
+					*enableSpeechRec = true; /* FOR TESTING, DELETE WHEN DONE*/
+
 					result = recognize_from_mic((base_path + "\\model\\en-us\\en-us").c_str(), (base_path + "\\model\\en-us\\en-us.lm.bin").c_str(),
 						(base_path + "\\model\\en-us\\laparoscopicCamera.dict").c_str());
 					if (strcmp(result.hyp, "") != 0)
 					{
-						if (*enableSpeechRec) {
+						if (enableSpeechRec) {
 							std::cout << "Camera Enabled" << std::endl;
+
+							/* TRANSLATIONS */
 							if (strcmp(result.hyp, "camera left") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->RIGHT);
-								speechtotext->setMoveCount(100);
+								speechtotext->setMoveCount(default_translate_count);
 							}
 						else if (strcmp(result.hyp, "right") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->LEFT);
-								speechtotext->setMoveCount(100);
+								speechtotext->setMoveCount(default_translate_count);
 							}
 						else if (strcmp(result.hyp, "up") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->DOWN);
-								speechtotext->setMoveCount(100);
+								speechtotext->setMoveCount(default_translate_count);
 							}
 						else if (strcmp(result.hyp, "down") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->UP);
-								speechtotext->setMoveCount(100);
+								speechtotext->setMoveCount(default_translate_count);
 							}
 						else if (strcmp(result.hyp, "slightly left") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->SLIGHTLY_RIGHT);
-								speechtotext->setMoveCount(50);
+								speechtotext->setMoveCount(default_translate_count/2);
 							}
 						else if (strcmp(result.hyp, "slightly right") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->SLIGHTLY_LEFT);
-								speechtotext->setMoveCount(50);
+								speechtotext->setMoveCount(default_translate_count/2);
 							}
 						else if (strcmp(result.hyp, "slightly up") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->SLIGHTLY_DOWN);
-								speechtotext->setMoveCount(50);
+								speechtotext->setMoveCount(default_translate_count/2);
 							}
 						else if (strcmp(result.hyp, "slightly down") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->SLIGHTLY_UP);
-								speechtotext->setMoveCount(50);
+								speechtotext->setMoveCount(default_translate_count/2);
 							}
-						else if (strcmp(result.hyp, "zoom in") == 0)
+
+							/* ROTATIONS/PIVOTS */
+							else if (strcmp(result.hyp, "camera rotate left") == 0)
+							{
+								*stopCameraMotion = false;
+								speechtotext->setMoveMode(speechtotext->ROTATE_RIGHT);
+								speechtotext->setMoveCount(default_rotate_count);
+							}
+							else if (strcmp(result.hyp, "camera rotate right") == 0)
+							{
+								*stopCameraMotion = false;
+								speechtotext->setMoveMode(speechtotext->ROTATE_LEFT);
+								speechtotext->setMoveCount(default_rotate_count);
+							}
+							else if (strcmp(result.hyp, "camera rotate up") == 0)
+							{
+								*stopCameraMotion = false;
+								speechtotext->setMoveMode(speechtotext->ROTATE_DOWN);
+								speechtotext->setMoveCount(default_rotate_count);
+							}
+							else if (strcmp(result.hyp, "camera rotate down") == 0)
+							{
+								*stopCameraMotion = false;
+								speechtotext->setMoveMode(speechtotext->ROTATE_UP);
+								speechtotext->setMoveCount(default_rotate_count);
+							}
+
+							/* ZOOM */
+							else if (strcmp(result.hyp, "camera zoom in") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->ZOOM_IN);
-								speechtotext->setMoveCount(100);
+								speechtotext->setMoveCount(default_zoom_count);
 							}
 						else if (strcmp(result.hyp, "zoom out") == 0)
 							{
 								speechtotext->setMoveMode(speechtotext->ZOOM_OUT);
-								speechtotext->setMoveCount(100);
+								speechtotext->setMoveCount(default_zoom_count);
 							}
+
 							else if (strcmp(result.hyp, "stop") == 0)
 							{
 								*stopCameraMotion = true;
@@ -255,67 +293,147 @@ namespace sofa
 				{
 					if (moveCount > 0)
 					{
-						sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
-						currentCamera->manageEvent(&me);
-
 						switch (moveMode)
 						{
+							/* TRANSLATIONS */
 						case LEFT:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_x -= 4;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case RIGHT:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_x += 4;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case UP:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_y -= 4;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case DOWN:
 						{
 							pos_y += 4;
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
+							pos_y += 4;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case SLIGHTLY_LEFT:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_x -= 2;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case SLIGHTLY_RIGHT:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_x += 2;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case SLIGHTLY_UP:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_y -= 2;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
 						case SLIGHTLY_DOWN:
 						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::RightPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
 							pos_y += 2;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
 							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
 						}
 						break;
+
+						/* ROTATIONS/PIVOTS */
+						case ROTATE_LEFT:
+						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::LeftPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
+							pos_x -= 4;
+							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
+							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::LeftReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
+						}
+						break;
+						case ROTATE_RIGHT:
+						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::LeftPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
+							pos_x += 4;
+							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
+							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::LeftReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
+						}
+						break;
+						case ROTATE_UP:
+						{
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::LeftPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
+							pos_y -= 4;
+							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
+							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::LeftReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
+						}
+						break;
+						case ROTATE_DOWN:
+						{
+							pos_y += 4;
+							sofa::core::objectmodel::MouseEvent me(sofa::core::objectmodel::MouseEvent::LeftPressed, pos_x, pos_y);
+							currentCamera->manageEvent(&me);
+							pos_y += 4;
+							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Move, pos_x, pos_y);
+							currentCamera->manageEvent(&me2);
+							sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::LeftReleased, pos_x, pos_y);
+							currentCamera->manageEvent(&me3);
+						}
+						break;
+
+						/* ZOOM */
 						case ZOOM_IN:
 						{
 							wheelDelta = 3;
@@ -340,9 +458,6 @@ namespace sofa
 							std::cout << "Did not understand command!" << std::endl;
 							moveCount = 0;
 						}
-
-						sofa::core::objectmodel::MouseEvent me3(sofa::core::objectmodel::MouseEvent::RightReleased, pos_x, pos_y);
-						currentCamera->manageEvent(&me3);
 
 						moveCount--;
 					}
