@@ -108,7 +108,6 @@ namespace sofa
 				typedef core::CollisionModel ToolModel;
 				typedef helper::vector<core::collision::DetectionOutput> ContactVector;
 				typedef sofa::component::collision::BaseContactMapper< DataTypes > ContactMapper;
-				Data < Real > veinForceThreshold;
 
 				Data < Real > grasp_stiffness;
 				Data < Real > attach_stiffness;

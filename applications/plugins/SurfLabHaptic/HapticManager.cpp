@@ -58,8 +58,7 @@ namespace sofa
 				, toolModel(initLink("toolModel", "Tool model that is used for grasping and Haptic"))
 				, omniDriver(initLink("omniDriver", "NewOmniDriver tag that corresponds to this tool"))				
 				, clampScale(initData(&clampScale, Vec3f(.2, .2, .2), "clampScale", "scale of the object created during clamping"))
-				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))								
-				, veinForceThreshold(initData(&veinForceThreshold, 1.0, "veinForceThreshold", "Threshold force before the vein is injured"))
+				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
 
@@ -1051,12 +1050,23 @@ namespace sofa
 						const ContactVector::value_type& c = (*contacts)[j];
 						core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
 						if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein"))) {
-							//std::cout << "current force components on vein " << newOmniDriver->data.currentForce[0] << " " << newOmniDriver->data.currentForce[1] << " " << newOmniDriver->data.currentForce[2] << std::endl;
-
 							//TODO: Take the force direction(sign) into account while calculating resultant
 							double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
-							//std::cout << "current force on vein  " << resultantForce << " and threshold " << veinForceThreshold.getValue() << std::endl;
-							if (resultantForce > veinForceThreshold.getValue() && mistakeToleranceForce<=5)
+							
+							double safetyForceThreshold = INT_MAX;
+							std::string keywordThreshold = "SafetyForceThreshold_";
+							sofa::core::objectmodel::TagSet tagSet = surf->getTags();
+							std::set<sofa::core::objectmodel::Tag>::iterator it;
+							for (it = tagSet.begin(); it != tagSet.end(); ++it) 
+							{
+								sofa::core::objectmodel::Tag tag = *it;
+								std::string tagString(tag);
+								if (tagString.find(keywordThreshold) != std::string::npos)
+								{
+									safetyForceThreshold = atof(tagString.substr(keywordThreshold.length(), tagString.length() - keywordThreshold.length()).c_str());
+								}
+							}
+							if (resultantForce > safetyForceThreshold && mistakeToleranceForce <= 5)
 							{
 								if (!hasInstrumentTurnedRed)
 								{
