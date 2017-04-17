@@ -201,6 +201,7 @@ namespace sofa
 				static std::string base_path_share ;
 				bool hasInstrumentTurnedRed = false;
 				bool hasInstrumentTurnedGreen = false;
+				bool hasCarvedtheVein = false;
 				static double last_update_time;//last time the shader has been updated
 			};
 
