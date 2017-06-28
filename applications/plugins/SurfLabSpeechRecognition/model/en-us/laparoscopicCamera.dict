@@ -1,14 +1,26 @@
 slightly S L AY T L IY
-left L EH F T
-right R AY T
-up AH P
-down D AW N
+slightly(2) S L EH T L IY
 
-zoom Z UW M
+up AH P
+up(2) AA P
+up(3) AH
+up(4) ER P
+down D AW N
+down(2) D AA N
 in IH N
+in(2) IY N
 out AW T
+out(2) AO T
+left L EH F T
+left(2) L EH F
+right R AY T
+right(2) R EH T
+right(3) R AY
+zoom Z UW M
+zoom(2) Z UW
 
 rotate R OW T EY T
+rotate(2) R UW L T EY T
 pivot P IH V AH T
 
 start S T AA R T
@@ -16,7 +28,67 @@ stop S T AA P
 
 camera K AE M ER AH
 camera(2) K AE M R AH
+camera(3) K AE M ER AA
+camera(4) K AE M ER UH
+camera(5) K EH M ER AH
+camera(6) K AY M ER AH
 
 enable EH N EY B AH L
 enable(2) IH N EY B AH L
+enable(3) IY N EY B AH L
 disable D IH S EY B AH L
+
+switch S W IH CH
+switch(2) S W IY CH
+to T UW
+
+cauterize K AO T ER AY Z ER
+cauterize(2) K AO T ER AY Z
+coagulate K OW AE G Y AH L EY T
+grasp G R AE S P
+grasp(2) G R AE S P ER
+grasp(3) G R AH S P
+grasp(4) G R AH S P ER
+grasp(5) G R AA S P
+grasp(6) G R AA S P ER
+bag B AE G
+bag(2) B EH G
+pouch P AW CH
+pouch(2) P AO CH
+scissor S IH Z ER
+scissor(2) S IY Z ER
+scissor(3) S IH Z ER Z 
+
+maryland M EH R AH L AH N D
+maryland(2) M AE R AH L AH N D
+maryland(3) M EH R IH L AH N D
+maryland(4) M AE R IH L AH N D
+maryland(5) M AE L IH L AH N D
+maryland(6) M AE L AH L AH N D
+maryland(7) M EH L IH L AH N D
+maryland(8) M EH L AH L AH N D
+clamp K L AE M P
+clamp(2) K L AY M P
+clip K L IH P
+applier AH P L AY
+applier(2) AH P L AY ER
+scalpel S K AE L P AH L
+retractor R IY T R AE K T
+retractor(2) R IY T R AE K T ER
+retractor(3) R IY T R AE K T R
+re R EY
+re(2) R IY
+rich R IH CH
+rich(2) R IY CH
+actor AE K T ER
+caught K AA T
+caught(2) K AW T
+caught(3) K AO T
+cod K AA D
+riser R AY Z ER
+arise ER AY Z
+tract T R AE K T
+stapler S T EY P AH L ER
+stapler S T EY P AH L
+endo EH N D OW
+

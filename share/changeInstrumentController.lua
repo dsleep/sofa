@@ -24,6 +24,19 @@ function changeInstrument(h)
  
 end
 
+-- change the instrument to the "nth" instrument
+function changeInstrumentTo(h,n)
+  if currentInstrument ~= n then  
+    h.instrumentNodes[h.currentInstrument]:setActive(false)
+    h.currentInstrument = n  
+    print('Changing instrument TO: ' .. h.node.name .. ' ' .. h.instrumentNodes[h.currentInstrument].name)
+    h.instrumentNodes[h.currentInstrument]:setActive(true)
+    h.instrumentNodes[h.currentInstrument]:init()
+  else
+    print('Instrument already changed')
+  end  
+end
+
 
 -- onKeyPressed is only called if you hold Control down
 -- so for '[' one must type Ctrl+[
@@ -43,26 +56,41 @@ Tool2cliks = 0
 Tool1cliks = 0
 Hp1Down = 0;
 Hp2Down = 0;
-function handlers.onHaptic(c,d,e)-- means button state, c means deviceID, d means ButtonState
-   -- print('c,d:',c,d)
-  if c == 0 and d == 2 then
+Tool_Target_1 = 0;
+Tool_Target_2 = 0;
+function handlers.onHaptic(c,d,e)
+   -- (c,d,e) means button state: c means deviceID(0~1), d means ButtonState(0)
+   -- c means deviceID(0~1)
+   -- d means ButtonState(0->noButton; 1->FirstButtonDown; 2->SecondButtonDown; 
+   -- 3~10 means second button down and the user wants to switch to "d-2"th instrument
+   -- e means device position. e.g. print('xyz:',e[1],e[2],e[3])
+  if c == 0 and d >= 2 then
     Hp1Down = 1;
+    Tool_Target_1 = d-2;
   end
   
   if c == 0 and d == 0 and Hp1Down == 1 then
     Hp1Down = 0;
-    if haptics[1] then
+    if haptics[1] and Tool_Target_1>0 then
+      changeInstrumentTo(haptics[1],Tool_Target_1)
+      Tool_Target_1 = 0
+    elseif haptics[1] then
       changeInstrument(haptics[1])
+      -- print('xyz:',e[1],e[2],e[3])
     end
   end
   
-  if c == 1 and d == 2 then
+  if c == 1 and d >= 2 then
     Hp2Down = 1;
+    Tool_Target_2 = d-2;
   end
   
   if c == 1 and d == 0 and Hp2Down == 1 then
     Hp2Down = 0;
-    if haptics[2] then
+    if haptics[2] and Tool_Target_2>0 then
+      changeInstrumentTo(haptics[1],Tool_Target_2)
+      Tool_Target_2 = 0
+    elseif haptics[2] then
       changeInstrument(haptics[2])
     end
   end

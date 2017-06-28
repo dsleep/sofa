@@ -127,8 +127,8 @@ namespace sofa
 					if (strcmp(result.hyp, "") != 0)
 					{
 						if (enableSpeechRec) {
-							std::cout << "Camera Enabled" << std::endl;
-
+							//std::cout << "Camera Enabled" << std::endl;
+							std::string result_str(result.hyp);
 							/* TRANSLATIONS */
 							if (strcmp(result.hyp, "camera left") == 0)
 							{
@@ -172,25 +172,25 @@ namespace sofa
 							}
 
 							/* ROTATIONS/PIVOTS */
-							else if (strcmp(result.hyp, "camera rotate left") == 0)
+							else if (strcmp(result.hyp, "camera rotate left") == 0 || strcmp(result.hyp, "rotate left") == 0)
 							{
 								*stopCameraMotion = false;
 								speechtotext->setMoveMode(speechtotext->ROTATE_RIGHT);
 								speechtotext->setMoveCount(default_rotate_count);
 							}
-							else if (strcmp(result.hyp, "camera rotate right") == 0)
+							else if (strcmp(result.hyp, "camera rotate right") == 0 || strcmp(result.hyp, "rotate right") == 0)
 							{
 								*stopCameraMotion = false;
 								speechtotext->setMoveMode(speechtotext->ROTATE_LEFT);
 								speechtotext->setMoveCount(default_rotate_count);
 							}
-							else if (strcmp(result.hyp, "camera rotate up") == 0)
+							else if (strcmp(result.hyp, "camera rotate up") == 0 || strcmp(result.hyp, "rotate up") == 0)
 							{
 								*stopCameraMotion = false;
 								speechtotext->setMoveMode(speechtotext->ROTATE_DOWN);
 								speechtotext->setMoveCount(default_rotate_count);
 							}
-							else if (strcmp(result.hyp, "camera rotate down") == 0)
+							else if (strcmp(result.hyp, "camera rotate down") == 0 || strcmp(result.hyp, "rotate down") == 0)
 							{
 								*stopCameraMotion = false;
 								speechtotext->setMoveMode(speechtotext->ROTATE_UP);
@@ -209,7 +209,7 @@ namespace sofa
 								speechtotext->setMoveCount(default_zoom_count);
 							}
 
-							else if (strcmp(result.hyp, "stop") == 0)
+							else if (strcmp(result.hyp, "stop") == 0 || strcmp(result.hyp, "camera stop") == 0)
 							{
 								*stopCameraMotion = true;
 							}
@@ -217,6 +217,62 @@ namespace sofa
 							{
 								*enableSpeechRec = false;
 								*stopCameraMotion = true;
+							}
+							else if (strcmp(result.hyp, "switch") == 0)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH);
+								speechtotext->setMoveCount(1);
+							}
+							else if (result_str.find("caught") != std::string::npos
+								|| result_str.find("out right") != std::string::npos
+								|| result_str.find("cod") != std::string::npos
+								|| result_str.find("arise") != std::string::npos
+							)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_CAUTERIZER);
+								speechtotext->setMoveCount(1);
+							}
+							else if (strcmp(result.hyp, "grasp") == 0 || strcmp(result.hyp, "switch to grasper") == 0)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_GRASPER);
+								speechtotext->setMoveCount(1);
+							}
+							else if (strcmp(result.hyp, "scissor") == 0 || strcmp(result.hyp, "switch to scissor") == 0)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_SCISSOR);
+								speechtotext->setMoveCount(1);
+							}
+							else if (result_str.find("maryland") != std::string::npos )
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_DISSECTOR);
+								speechtotext->setMoveCount(1);
+							}
+							else if (result_str.find("bag") != std::string::npos)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_BAG);
+								speechtotext->setMoveCount(1);
+							}
+							else if (result_str.find("clamp") != std::string::npos || 
+								result_str.find("clip") != std::string::npos)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_CLAMP);
+								speechtotext->setMoveCount(1);
+							}
+							else if (result_str.find("scalpel") != std::string::npos)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_SCALPEL);
+								speechtotext->setMoveCount(1);
+							}
+							else if (result_str.find("stapler") != std::string::npos)
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_STAPLER);
+								speechtotext->setMoveCount(1);
+							}
+							else if ( result_str.find("tract") != std::string::npos
+								|| result_str.find("actor") != std::string::npos || result_str.find("rich") != std::string::npos) //working well
+							{
+								speechtotext->setMoveMode(speechtotext->SWITCH_TO_RETRACTOR);
+								speechtotext->setMoveCount(1);
 							}
 							else
 							{
@@ -226,9 +282,9 @@ namespace sofa
 						else
 						{
 							std::cout << "Camera Disabled. ";
-							if (strcmp(result.hyp, "camera enable") == 0)
+							if (strcmp(result.hyp, "camera enable") == 0 || strcmp(result.hyp, "enable") == 0)
 							{
-								std::cout << "Enabling..." << std::endl;
+								std::cout << "Camera Enabled" << std::endl;
 								*enableSpeechRec = true;
 							}
 							else
@@ -444,6 +500,101 @@ namespace sofa
 							wheelDelta = -3;
 							sofa::core::objectmodel::MouseEvent me2(sofa::core::objectmodel::MouseEvent::Wheel, wheelDelta);
 							currentCamera->manageEvent(&me2);
+						}
+						break;
+						case SWITCH:
+						{
+							//std::cout << "swtiching the tools..." << std::endl;
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 2);
+							//sofa::core::objectmodel::HapticDeviceEvent eventrelease(1, dummyVector, dummyQuat, 0);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext()); // access to current node
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+							//groot->propagateEvent(core::ExecParams::defaultInstance(), &eventrelease);
+							
+						}
+						break;
+						//SWITCH_TO_CAUTERIZER, SWITCH_TO_GRASPER, SWITCH_TO_SCISSOR, SWITCH_TO_DISSECTOR, SWITCH_TO_BAG,
+						case SWITCH_TO_CAUTERIZER:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 3);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext()); 
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break;
+						case SWITCH_TO_GRASPER:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 4);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break;
+						case SWITCH_TO_CLAMP:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 5);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break;
+						case SWITCH_TO_SCISSOR:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 6);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break; 
+						case SWITCH_TO_DISSECTOR:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 7);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break; 
+						case SWITCH_TO_STAPLER:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 8);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break;
+						case SWITCH_TO_RETRACTOR:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 9);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break;
+						case SWITCH_TO_SCALPEL:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 10);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
+						}
+						break;
+						case SWITCH_TO_BAG:
+						{
+							Vector3 dummyVector;
+							Quat dummyQuat;
+							sofa::core::objectmodel::HapticDeviceEvent event_switch(0, dummyVector, dummyQuat, 11);
+							simulation::Node *groot = dynamic_cast<simulation::Node *>(this->getContext()->getRootContext());
+							groot->propagateEvent(core::ExecParams::defaultInstance(), &event_switch);
 						}
 						break;
 						case UNRECOGNIZED:
