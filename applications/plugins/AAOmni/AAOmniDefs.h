@@ -20,13 +20,26 @@ typedef struct omni_in
 	int16_t pot3;
 } omni_in;
 
-#define AAOMNI_THETA1_MAXCOUNTS 	18000//4500*4
-#define AAOMNI_THETA2_MAXCOUNTS 	15200//3800*4
-#define AAOMNI_THETA3_MAXCOUNTS 	14000//3500*4
+//motor torque multiplier 32.44
+#define THETA1_MIN_COUNT		-9800
+#define THETA1_MAX_COUNT		9580
+#define THETA1_MIN_DEGREES		-55.0
+#define THETA1_MAX_DEGREES		50.0
+#define THETA1_OFFSET_DEGREES	-1.9
 
-#define AAOMNI_THETA1_RANGE 		110//degrees measured with thread
-#define AAOMNI_THETA2_RANGE 		90//estimate
-#define AAOMNI_THETA3_RANGE 		90//estimate
+//motor torque multiplier 29.43
+#define THETA2_MIN_COUNT		-2600
+#define THETA2_MAX_COUNT		14980
+#define THETA2_MIN_DEGREES		0.0
+#define THETA2_MAX_DEGREES		-105.0
+#define THETA2_OFFSET_DEGREES	-15.52
+
+//motor torque multiplier 32.8
+#define THETA3_MIN_COUNT		-22790
+#define THETA3_MAX_COUNT		-1500
+#define THETA3_MIN_DEGREES		-105.0
+#define THETA3_MAX_DEGREES		9.0
+#define THETA3_OFFSET_DEGREES	17.03
 
 //the following values are the maxrange of potentionmeter values to be found out
 #define AAOMNI_GIMBAL1_MAXCOUNTS 	16000

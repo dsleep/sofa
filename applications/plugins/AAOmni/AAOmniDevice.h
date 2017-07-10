@@ -7,9 +7,6 @@
 #include <cmath>
 
 #define pi 3.1415926
-#define THETA1_CONST AAOMNI_THETA1_RANGE/AAOMNI_THETA1_MAXCOUNTS
-#define THETA2_CONST AAOMNI_THETA2_RANGE/AAOMNI_THETA2_MAXCOUNTS
-#define THETA3_CONST AAOMNI_THETA3_RANGE/AAOMNI_THETA3_MAXCOUNTS
 
 #define GIMBAL1_CONST (double)AAOMNI_GIMBAL1_RANGE/AAOMNI_GIMBAL1_MAXCOUNTS
 #define GIMBAL2_CONST (double)AAOMNI_GIMBAL2_RANGE/AAOMNI_GIMBAL2_MAXCOUNTS
@@ -28,6 +25,8 @@ typedef struct AAOmniDevice
 	double gimbalAnglesFiltered[3];
 	double forceFeedback[3];
 	char deviceName[10];
+	double transformationMat[4][4];
+	uint8_t newData;
 }AAOmniDevice;
 
 typedef struct AAOmniContext
@@ -48,5 +47,6 @@ void AAOmniGetTransformationMatrix(AAOmniDevice* dev,double ret[4][4]);
 void AAOmniGetNewData(AAOmniDevice* dev);
 void AAOmniSetForceFeedback(AAOmniDevice* dev,double* force);
 void AAOmniUpdateValues(AAOmniDevice *dev);
+void AAOmniRemoveAllForces(AAOmniDevice *dev);
 
 #endif
