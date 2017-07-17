@@ -90,6 +90,7 @@ class QSofaStatWidget;
 class GraphListenerQListView;
 class DisplayFlagsDataWidget;
 class SofaPluginManager;
+class Instructions;
 #ifdef SOFA_DUMP_VISITOR_INFO
 class WindowVisitor;
 class GraphVisitor;
@@ -208,6 +209,7 @@ protected:
     WDoubleLineEdit *background[3];
     QLineEdit *backgroundImage;
     SofaPluginManager* pluginManager_dialog;
+	Instructions* popup;
     QMenuFilesRecentlyOpened recentlyOpenedFilesManager;
 
     std::string simulation_name;
@@ -332,6 +334,7 @@ private:
     void parseOptions();
 
     void createPluginManager();
+	void createInstructions();
 
     /// configure Recently Opened Menu
     void createRecentFilesMenu();
@@ -397,6 +400,7 @@ public slots:
     virtual void showMouseManager();
     virtual void showVideoRecorderManager();
     virtual void toolsDockMoved();
+    virtual void showInstructions();
 
     void setViewToolbar(bool);
     void tabGraphVisibilityChanged(bool);
