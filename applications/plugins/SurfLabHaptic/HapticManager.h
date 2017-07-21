@@ -134,9 +134,9 @@ namespace sofa
 				{
 					ToolModel* modelTool;
 					helper::set<int> modelGroup;
-					sofa::component::constraintset::BilateralInteractionConstraint<DataTypes>::SPtr m_constraints;
-					sofa::component::interactionforcefield::VectorSpringForceField<DataTypes>::SPtr m_forcefield;
-					StiffSpringForceField3::SPtr ff;
+					sofa::component::constraintset::BilateralInteractionConstraint<DataTypes>::SPtr m_constraints; //for grasp
+					sofa::component::interactionforcefield::VectorSpringForceField<DataTypes>::SPtr m_forcefield; //for suture
+					StiffSpringForceField3::SPtr ff; //for suture
 					ContactMapper* m1;
 					ContactMapper* m2;
 					/* First button is for grasping, second button is for Haptic */
@@ -193,6 +193,9 @@ namespace sofa
 				static std::vector<bool> edge12along; // if edge 12 is along vessel
 				static std::vector<int> clipVector;
 				static std::set<int> veinCutSet;
+				static std::set<std::string> namesOfVeinCutSet;
+				static bool hasPutInBag;
+				static bool hasCutVein;
 
 				
 				//updateShader is used for replace a string in shader file, it will replace 
@@ -201,8 +204,9 @@ namespace sofa
 				static std::string base_path_share ;
 				bool hasInstrumentTurnedRed = false;
 				bool hasInstrumentTurnedGreen = false;
-				bool hasCarvedtheVein = false;
+				//bool hasCarvedtheVein = false;
 				static double last_update_time;//last time the shader has been updated
+				int hasBeenCut(std::string name);//check if a collision model has been cut or not, return 1 for yes, 0 for no.
 			};
 
 		} // namespace collision
@@ -224,7 +228,10 @@ std::vector<double> HapticManager::hexDimensions;
 std::vector<bool> HapticManager::edge12along;
 std::vector<int> HapticManager::clipVector;
 std::set<int> HapticManager::veinCutSet;
+std::set<std::string> HapticManager::namesOfVeinCutSet;
 double HapticManager::last_update_time;
 std::string HapticManager::base_path_share = "";
+bool HapticManager::hasPutInBag = false;
+bool HapticManager::hasCutVein = false;
 
 #endif

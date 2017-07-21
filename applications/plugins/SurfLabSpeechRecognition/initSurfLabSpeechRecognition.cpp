@@ -33,7 +33,7 @@ namespace sofa
 		}
 
 		const char* getModuleDescription(){
-			return "Allows voice commands to control camera movement";
+			return "Allows voice commands to control camera movement and switch instruments";
 		}
 
 		const char* getModuleComponentList(){

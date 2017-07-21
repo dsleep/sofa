@@ -14,6 +14,7 @@
 #include <sofa/core/objectmodel/HapticDeviceEvent.h>
 #include <sofa/simulation/Node.h>
 #include <sofa/simulation/Simulation.h>
+#include <ctime>
 
 namespace sofa
 {
@@ -53,14 +54,14 @@ public:
 	int moveCount = 0;
 	std::string base_path = "";
 	sofa::simulation::Node::SPtr groot;
-	bool enableSpeechRec = false;
+	bool enableSpeechRec = true;
+	time_t last_command_time;
 
 	enum Mode { LEFT, RIGHT, UP, DOWN, SLIGHTLY_LEFT, SLIGHTLY_RIGHT, SLIGHTLY_UP, SLIGHTLY_DOWN,
-		ROTATE_LEFT, ROTATE_RIGHT, ROTATE_UP, ROTATE_DOWN, ZOOM_IN, ZOOM_OUT, SWITCH, 
+		ROTATE_LEFT, ROTATE_RIGHT, ROTATE_UP, ROTATE_DOWN, ZOOM_IN, ZOOM_OUT,
 		SWITCH_TO_CAUTERIZER, SWITCH_TO_GRASPER, SWITCH_TO_SCISSOR, SWITCH_TO_DISSECTOR, 
 		SWITCH_TO_BAG, SWITCH_TO_SCALPEL, SWITCH_TO_STAPLER, SWITCH_TO_CLAMP, SWITCH_TO_RETRACTOR,
-		UNRECOGNIZED = 9999
-	};
+		UNRECOGNIZED = 9999};
 
 private:
 	bool STTThreadCreated;
