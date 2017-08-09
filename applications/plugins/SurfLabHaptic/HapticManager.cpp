@@ -1110,24 +1110,33 @@ namespace sofa
 
 				if (hasInstrumentTurnedRed)
 				{
-					Sleep(150);
-					hasInstrumentTurnedRed = false;
-					string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-					string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
-					updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-						replace_string, search_string);
+					//Sleep(400);
+					if (this->getContext()->getTime() - last_update_time >= 0.3)
+					{
+						hasInstrumentTurnedRed = false;
+						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+						string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+						updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+							replace_string, search_string);
+					}
+					
 				}
-
-				// if (hasInstrumentTurnedGreen)
-				// {
-					// Sleep(150);
-					// hasInstrumentTurnedGreen = false;
-					// string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-					// string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
-					// updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-						// replace_string, search_string);
-				// }
-
+				if (hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
+				{
+					if (this->getContext()->getTime() - last_update_time >= 0.3)
+					{
+						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+						string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+						updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+							replace_string, search_string);
+						hasInstrumentTurnedGreen = false;
+						//Sleep(400);
+						if (hasPutInBag){
+							hasPutInBag = false;
+							this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
+						}
+					}	
+				}
 				updateTool();
 			}
 
