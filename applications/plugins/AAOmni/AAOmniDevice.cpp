@@ -268,8 +268,8 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 	if (torque[2]<0)
         dev->outData.mot3|=0x8000;
 	int temp;
-	//getLibUsbErrorString("interrupt transfer", libusb_interrupt_transfer(dev->libUsbDeviceHandle, AAOMNI_OUT_ENDPOINT_ADDR, 
-		//(unsigned char*)&dev->outData, sizeof(omni_out), &temp, 0));
+	getLibUsbErrorString("interrupt transfer", libusb_interrupt_transfer(dev->libUsbDeviceHandle, AAOMNI_OUT_ENDPOINT_ADDR, 
+		(unsigned char*)&dev->outData, sizeof(omni_out), &temp, 0));
 }
 void AAOmniUpdateValues(AAOmniDevice* dev)
 {
@@ -312,7 +312,7 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		//Matrix4x4d mtransTip;//apparently not required
 		//populateTranslate(&mtransTip,0,0,-AAOMNI_TIP_LENGTH);
 		Matrix4x4d mtrans1;
-		populateTranslate(&mtrans1, 0, 50, -100);
+		populateTranslate(&mtrans1, 0, 50, -130);
 		Matrix4x4d mrot1;//rot z
 		populateRotate(&mrot1, gimAAvg[2], 2);
 		Matrix4x4d mrot2;//rot x
