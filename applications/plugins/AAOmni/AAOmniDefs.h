@@ -42,9 +42,9 @@ typedef struct omni_in
 #define THETA3_OFFSET_DEGREES	17.03
 
 //the following values are the maxrange of potentionmeter values to be found out
-#define AAOMNI_GIMBAL1_MAXCOUNTS 	16000
-#define AAOMNI_GIMBAL2_MAXCOUNTS 	10000
-#define AAOMNI_GIMBAL3_MAXCOUNTS 	16300
+#define AAOMNI_GIMBAL1_MAXCOUNTS 	16300
+#define AAOMNI_GIMBAL2_MAXCOUNTS 	7200
+#define AAOMNI_GIMBAL3_MAXCOUNTS 	16000
 
 #define AAOMNI_GIMBAL1_RANGE 		292//degrees measured with thread
 #define AAOMNI_GIMBAL2_RANGE 		150//degrees
@@ -60,7 +60,7 @@ typedef struct omni_in
 #define AAOMNI_THETA3_OFFSET 		22
 
 #define AAOMNI_GIMBAL1_OFFSET 		0//always remain zero
-#define AAOMNI_GIMBAL2_OFFSET 		-42
+#define AAOMNI_GIMBAL2_OFFSET 		-86
 #define AAOMNI_GIMBAL3_OFFSET 		0 //hopefully you have not twisted the tool in docking position
 
 
