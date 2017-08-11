@@ -293,12 +293,11 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		dev->gimbalAngles[0] = (double)-pi*(GIMBAL1_CONST*dev->inData.pot1 - AAOMNI_GIMBAL1_RANGE / 2 + AAOMNI_GIMBAL1_OFFSET) / 180;
 		dev->gimbalAngles[1] = (double)-pi*(GIMBAL2_CONST*dev->inData.pot2 - AAOMNI_GIMBAL2_RANGE / 2 + AAOMNI_GIMBAL2_OFFSET) / 180;
 		dev->gimbalAngles[2] = (double)pi*(GIMBAL3_CONST*dev->inData.pot3 - AAOMNI_GIMBAL3_RANGE / 2 + AAOMNI_GIMBAL3_OFFSET) / 180;
-		dev->gimbalAngles[1]-=dev->gimbalAngles[0]/2;//This is observed to happen. Why sensable why?
-
+		
 		dev->gimbalAnglesFiltered[0] = dev->alphaFiltering*dev->gimbalAnglesFiltered[0] + (1 - dev->alphaFiltering)*dev->gimbalAngles[0];
 		dev->gimbalAnglesFiltered[1] = dev->alphaFiltering*dev->gimbalAnglesFiltered[1] + (1 - dev->alphaFiltering)*dev->gimbalAngles[1];
 		dev->gimbalAnglesFiltered[2] = dev->alphaFiltering*dev->gimbalAnglesFiltered[2] + (1 - dev->alphaFiltering)*dev->gimbalAngles[2];
-		//std::cout<<dev->gimbalAngles[0]<<"\t"<<dev->gimbalAngles[1]<<"\t"<<dev->gimbalAngles[2]<<"\t"<<std::endl;
+		std::cout<<dev->gimbalAngles[0]<<"\t"<<dev->gimbalAngles[1]<<"\t"<<dev->gimbalAngles[2]<<"\t"<<std::endl;
 		/*int consider[3]={0,0,0};
 		//consider[0]=abs(m_omni_in.pot1-t_omni_in.pot1)>200;
 		//consider[1]=abs(m_omni_in.pot2-t_omni_in.pot2)>200;
