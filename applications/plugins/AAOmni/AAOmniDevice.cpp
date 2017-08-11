@@ -297,7 +297,7 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		dev->gimbalAnglesFiltered[0] = dev->alphaFiltering*dev->gimbalAnglesFiltered[0] + (1 - dev->alphaFiltering)*dev->gimbalAngles[0];
 		dev->gimbalAnglesFiltered[1] = dev->alphaFiltering*dev->gimbalAnglesFiltered[1] + (1 - dev->alphaFiltering)*dev->gimbalAngles[1];
 		dev->gimbalAnglesFiltered[2] = dev->alphaFiltering*dev->gimbalAnglesFiltered[2] + (1 - dev->alphaFiltering)*dev->gimbalAngles[2];
-		std::cout<<dev->gimbalAngles[0]<<"\t"<<dev->gimbalAngles[1]<<"\t"<<dev->gimbalAngles[2]<<"\t"<<std::endl;
+		//std::cout<<dev->gimbalAngles[0]<<"\t"<<dev->gimbalAngles[1]<<"\t"<<dev->gimbalAngles[2]<<"\t"<<std::endl;
 		/*int consider[3]={0,0,0};
 		//consider[0]=abs(m_omni_in.pot1-t_omni_in.pot1)>200;
 		//consider[1]=abs(m_omni_in.pot2-t_omni_in.pot2)>200;
