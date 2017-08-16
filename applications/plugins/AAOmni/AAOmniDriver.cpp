@@ -151,7 +151,7 @@ int AAOmniCallback()
             double transMat[4][4];
             AAOmniGetTransformationMatrix(autreOmniDriver[i]->aaOmniDeviceHandle,transMat);
             autreOmniDriver[i]->data.servoDeviceData.m_devicePosition.set(transMat[0][3], transMat[1][3], transMat[2][3]);
-            autreOmniDriver[i]->data.servoDeviceData.m_buttonState=autreOmniDriver[i]->aaOmniDeviceHandle->inData.but;
+            autreOmniDriver[i]->data.servoDeviceData.m_buttonState=autreOmniDriver[i]->aaOmniDeviceHandle->inData.but>>1;//The LSB is reserved for the home button
             
             
             memcpy(autreOmniDriver[i]->angle1,autreOmniDriver[i]->aaOmniDeviceHandle->baseAngles,sizeof(float)*3);
@@ -480,7 +480,7 @@ void AAOmniDriver::init()
         for(unsigned int i=0; i<autreOmniDriver.size(); i++)
         {
             sout<<"  device "<<i<<" = "<<autreOmniDriver[i]->getName()<<autreOmniDriver[i]->deviceName.getValue()<<sendl;
-            autreOmniDriver[i]->deviceIndex.setValue(i);
+			autreOmniDriver[i]->deviceIndex.setValue(i);
             autreOmniDriver[i]->aaOmniDeviceHandle=NULL;
             autreOmniDriver[i]->firstDevice=false;
             autreOmniDriver[i]->data.currentForce[0]=0;
