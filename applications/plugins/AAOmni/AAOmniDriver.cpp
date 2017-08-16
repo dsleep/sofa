@@ -144,10 +144,11 @@ int AAOmniCallback()
     		autreOmniDriver[i]->stateButton2 = (((autreOmniDriver[i]->data.servoDeviceData.m_buttonState)>>1)<<31)>>31 != 0;
 
             int temp;
-            AAOmniSetForceFeedback(autreOmniDriver[i]->aaOmniDeviceHandle,autreOmniDriver[i]->data.currentForce);
             
             AAOmniGetNewData(autreOmniDriver[i]->aaOmniDeviceHandle);
             AAOmniUpdateValues(autreOmniDriver[i]->aaOmniDeviceHandle);
+			AAOmniSetForceFeedback(autreOmniDriver[i]->aaOmniDeviceHandle, autreOmniDriver[i]->data.currentForce);
+
             double transMat[4][4];
             AAOmniGetTransformationMatrix(autreOmniDriver[i]->aaOmniDeviceHandle,transMat);
             autreOmniDriver[i]->data.servoDeviceData.m_devicePosition.set(transMat[0][3], transMat[1][3], transMat[2][3]);

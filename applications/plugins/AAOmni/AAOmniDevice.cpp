@@ -228,33 +228,21 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 	double torque[3] = { 0, 0, 0 };
 	double ret[4][4];
 	AAOmniGetTransformationMatrix(dev, ret);
-	double distPtrFromCenter = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] + 100)*(ret[2][3] + 100) + (ret[0][1] - 50)*(ret[0][1] - 50)) / 1000.0;
-	double ppdDistfromYaxis = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] + 100)*(ret[2][3] + 100)) / 1000.0;
+	double distPtrFromCenter = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] + 150)*(ret[2][3] + 150) + (ret[1][3] - 50)*(ret[1][3] - 50)) / 1000.0;
+	double ppdDistfromYaxis = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] + 150)*(ret[2][3] + 150)) / 1000.0;
 	//printf("base angles: %f,%f,%f\n", dev->baseAngles[0], dev->baseAngles[1], dev->baseAngles[2]);
 	//printf("distance from center: %f\n", distPtrFromCenter);
 	//printf("%f,%f\n", ppdDistfromYaxis, distPtrFromCenter);
 	torque[0] = rotatedForce.data[0][0] * ppdDistfromYaxis;
 	double denom1 = cosBA1P2BA2*sinnBA2 - sinBA1P2BA2*cosnBA2;
-	if (abs(denom1) > 1e-9)
-	{
-		torque[1] = (rotatedForce.data[2][0] * sinnBA2 - rotatedForce.data[1][0] * cosnBA2) /
+	torque[1] = (rotatedForce.data[2][0] * sinnBA2 - rotatedForce.data[1][0] * cosnBA2) /
 			(denom1)*distPtrFromCenter;//(AAOMNI_ARM_LENGTH1 / 1000.0);
-	}
 	double denom2 = sinBA1P2BA2*cosnBA2 - cosBA1P2BA2*sinnBA2;
-	if (abs(denom2) > 1e-9)
-	{
-		torque[2] = (rotatedForce.data[2][0] * sinBA1P2BA2 - rotatedForce.data[1][0] * cosBA1P2BA2) /
+	torque[2] = (rotatedForce.data[2][0] * sinBA1P2BA2 - rotatedForce.data[1][0] * cosBA1P2BA2) /
 			(denom2)*(AAOMNI_ARM_LENGTH2 / 1000.0);
-	}
 	torque[2] = -torque[2];//The motor configured reverse
 	//printf("calculated torque: %f,%f,%f\n", torque[0],torque[2],torque[2]);
-	if(torque[0]>3)
-		torque[0]=0;
-	if(torque[1]>3)
-		torque[1]=0;
-	if(torque[2]>3)
-		torque[2]=0;
-	int torqueScale=1024;
+	int torqueScale=256;
 	//torque[0] = 0; currentForce[0];
 	//torque[1] = 0;//currentForce[1];
 	//torque[2] = 0; currentForce[2];
@@ -262,17 +250,40 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 	torque[1] *= torqueScale;
 	torque[2] *= torqueScale;
 	//printf("calculated torque: %f,%f,%f\n", torque[0], torque[2], torque[2]);
-	dev->outData.mot1 = (abs(torque[0])>1024) ? 1024 : (abs(torque[0]));
-	dev->outData.mot2 = (abs(torque[1])>1024) ? 1024 : (abs(torque[1]));
-	dev->outData.mot3 = (abs(torque[2])>1024) ? 1024 : (abs(torque[2]));
-	//printf("AAOmni: sending torque %d,%d,%d\n", dev->outData.mot1, dev->outData.mot2, dev->outData.mot3);
-	//printf("AAOmni: torque dir %d,%d,%d\n", torque[0] >= 0, torque[1] >= 0, torque[2] >= 0);
-	if (torque[0]<0)
+	if (torque[0] > 1024)
+		torque[0] = 1024;
+	else if (torque[0] < -1024)
+		torque[0] = -1024;
+	if (torque[1] > 1024)
+		torque[1] = 1024;
+	else if (torque[1] < -1024)
+		torque[1] = -1024;
+	if (torque[2] > 1024)
+		torque[2] = 1024;
+	else if (torque[2] < -1024)
+		torque[2] = -1024;
+	/*static float torqueAvg[3];
+	torqueAvg[0] = torque[0] + (1 - dev->alphaFiltering)*torqueAvg[0];
+	torqueAvg[1] = torque[1] + (1 - dev->alphaFiltering)*torqueAvg[1];
+	torqueAvg[2] = torque[2] + (1 - dev->alphaFiltering)*torqueAvg[2];
+	dev->outData.mot1 = abs(torqueAvg[0]);
+	dev->outData.mot2 = abs(torqueAvg[1]);
+	dev->outData.mot3 = abs(torqueAvg[2]);
+	if (torqueAvg[0]<0)
         dev->outData.mot1|=0x8000;
-	if (torque[1]<0)
+	if (torqueAvg[1]<0)
         dev->outData.mot2|=0x8000;
+	if (torqueAvg[2]<0)
+        dev->outData.mot3|=0x8000;*/
+	dev->outData.mot1 = abs(torque[0]);
+	dev->outData.mot2 = abs(torque[1]);
+	dev->outData.mot3 = abs(torque[2]);
+	if (torque[0]<0)
+		dev->outData.mot1 |= 0x8000;
+	if (torque[1]<0)
+		dev->outData.mot2 |= 0x8000;
 	if (torque[2]<0)
-        dev->outData.mot3|=0x8000;
+		dev->outData.mot3 |= 0x8000;
 	int temp;
 	getLibUsbErrorString("interrupt transfer", libusb_interrupt_transfer(dev->libUsbDeviceHandle, AAOMNI_OUT_ENDPOINT_ADDR, 
 		(unsigned char*)&dev->outData, sizeof(omni_out), &temp, 0));
@@ -290,10 +301,14 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		dev->baseAngles[1] = (double)pi*actualAngles[1] / 180;
 		dev->baseAngles[2] = (double)pi*actualAngles[2] / 180;
 
-		dev->gimbalAngles[0] = (double)-pi*(GIMBAL1_CONST*dev->inData.pot1 - AAOMNI_GIMBAL1_RANGE / 2 + AAOMNI_GIMBAL1_OFFSET) / 180;
-		dev->gimbalAngles[1] = (double)-pi*(GIMBAL2_CONST*dev->inData.pot2 - AAOMNI_GIMBAL2_RANGE / 2 + AAOMNI_GIMBAL2_OFFSET) / 180;
-		dev->gimbalAngles[2] = (double)pi*(GIMBAL3_CONST*dev->inData.pot3 - AAOMNI_GIMBAL3_RANGE / 2 + AAOMNI_GIMBAL3_OFFSET) / 180;
-		
+		//Equation of a line with 2 points
+		dev->gimbalAngles[0] = (double)pi/180.0*(((AAOMNI_GIMBAL1_MAX_ANGLE - AAOMNI_GIMBAL1_MIN_ANGLE) / (AAOMNI_GIMBAL1_MAX_ENCODER - AAOMNI_GIMBAL1_MIN_ENCODER))*
+			(dev->inData.pot1 - AAOMNI_GIMBAL1_MIN_ENCODER) + AAOMNI_GIMBAL1_MIN_ANGLE);
+		dev->gimbalAngles[1] = (double)pi / 180.0*(((AAOMNI_GIMBAL2_MAX_ANGLE - AAOMNI_GIMBAL2_MIN_ANGLE) / (AAOMNI_GIMBAL2_MAX_ENCODER - AAOMNI_GIMBAL2_MIN_ENCODER))*
+			(dev->inData.pot2 - AAOMNI_GIMBAL2_MIN_ENCODER) + AAOMNI_GIMBAL2_MIN_ANGLE);
+		dev->gimbalAngles[2] = (double)pi / 180.0*(((AAOMNI_GIMBAL3_MAX_ANGLE - AAOMNI_GIMBAL3_MIN_ANGLE) / (AAOMNI_GIMBAL3_MAX_ENCODER - AAOMNI_GIMBAL3_MIN_ENCODER))*
+			(dev->inData.pot3 - AAOMNI_GIMBAL3_MIN_ENCODER) + AAOMNI_GIMBAL3_MIN_ANGLE);
+
 		dev->gimbalAnglesFiltered[0] = dev->alphaFiltering*dev->gimbalAnglesFiltered[0] + (1 - dev->alphaFiltering)*dev->gimbalAngles[0];
 		dev->gimbalAnglesFiltered[1] = dev->alphaFiltering*dev->gimbalAnglesFiltered[1] + (1 - dev->alphaFiltering)*dev->gimbalAngles[1];
 		dev->gimbalAnglesFiltered[2] = dev->alphaFiltering*dev->gimbalAnglesFiltered[2] + (1 - dev->alphaFiltering)*dev->gimbalAngles[2];
@@ -325,7 +340,7 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		Matrix4x4d mrot2;//rot x
 		populateRotate(&mrot2, gimAAvg[1], 0);
 		Matrix4x4d mrot3;//rot y
-		populateRotate(&mrot3, gimAAvg[0], 1);
+		populateRotate(&mrot3, gimAAvg[0]+gimAAvg[2]*0.05, 1);//Ugly hack to compensate for the hardware interference between gimbal 1 and gimbal 3
 		Matrix4x4d mtrans2;
 		populateTranslate(&mtrans2, 0, -AAOMNI_ARM_LENGTH2, 0);
 		Matrix4x4d mrot4;//rot x
