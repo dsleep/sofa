@@ -209,72 +209,52 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 {
 	Matrix4x4d rotyNTheta1;
 	populateRotate(&rotyNTheta1, -dev->baseAngles[0], 1);
-	//printf("base1 angle: %f\n", dev->baseAngles[0]);
 	Matrix4x4d forces;
 	initMat(&forces);
 	forces.data[0][0] = currentForce[0];
 	forces.data[1][0] = currentForce[1];
 	forces.data[2][0] = currentForce[2]; 
-	//printMat4x4d(&forces);
-	//printMat4x4d(&rotyNTheta1);
 	Matrix4x4d rotatedForce;
 	MatrixMultiply(&rotyNTheta1, &forces, &rotatedForce);
-	//printf("rotated force: %f,%f,%f\n",rotatedForce.data[0][0] , rotatedForce.data[1][0] , rotatedForce.data[2][0]);
 	double cosBA1 = cos(dev->baseAngles[1]);
 	double sinnBA2 = sin(-dev->baseAngles[2]);
 	double cosBA1P2BA2 = cos(dev->baseAngles[1] + pi / 2 + dev->baseAngles[2]);
 	double sinBA1P2BA2 = sin(dev->baseAngles[1] + pi / 2 + dev->baseAngles[2]);
 	double cosnBA2 = cos(-dev->baseAngles[2]);
+
+	double theta = atan2(AAOMNI_ARM_LENGTH1*sin(-dev->baseAngles[1]) - AAOMNI_ARM_LENGTH2*cosnBA2,
+		AAOMNI_ARM_LENGTH1*cos(-dev->baseAngles[1])+AAOMNI_ARM_LENGTH2*sinnBA2);
 	double torque[3] = { 0, 0, 0 };
 	double ret[4][4];
 	AAOmniGetTransformationMatrix(dev, ret);
-	double distPtrFromCenter = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] + 150)*(ret[2][3] + 150) + (ret[1][3] - 50)*(ret[1][3] - 50)) / 1000.0;
-	double ppdDistfromYaxis = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] + 150)*(ret[2][3] + 150)) / 1000.0;
-	//printf("base angles: %f,%f,%f\n", dev->baseAngles[0], dev->baseAngles[1], dev->baseAngles[2]);
-	//printf("distance from center: %f\n", distPtrFromCenter);
-	//printf("%f,%f\n", ppdDistfromYaxis, distPtrFromCenter);
+	double distPtrFromCenter = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] - AAOMNI_Z_OFFSET)*(ret[2][3] - AAOMNI_Z_OFFSET) + (ret[1][3] - AAOMNI_Y_OFFSET)*(ret[1][3] - AAOMNI_Y_OFFSET)) * AAOMNI_MM_TO_M;
+	double ppdDistfromYaxis = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] - AAOMNI_Z_OFFSET)*(ret[2][3] - AAOMNI_Z_OFFSET)) * AAOMNI_MM_TO_M;
 	torque[0] = rotatedForce.data[0][0] * ppdDistfromYaxis;
-	double denom1 = cosBA1P2BA2*sinnBA2 - sinBA1P2BA2*cosnBA2;
-	torque[1] = (rotatedForce.data[2][0] * sinnBA2 - rotatedForce.data[1][0] * cosnBA2) /
-			(denom1)*distPtrFromCenter;//(AAOMNI_ARM_LENGTH1 / 1000.0);
-	double denom2 = sinBA1P2BA2*cosnBA2 - cosBA1P2BA2*sinnBA2;
-	torque[2] = (rotatedForce.data[2][0] * sinBA1P2BA2 - rotatedForce.data[1][0] * cosBA1P2BA2) /
-			(denom2)*(AAOMNI_ARM_LENGTH2 / 1000.0);
+	double denom1 = cos(theta)*sin(pi/2+dev->baseAngles[2])-cos(pi/2+dev->baseAngles[2])*sin(theta);
+	torque[1] = (rotatedForce.data[1][0] * sin(pi / 2 + dev->baseAngles[2]) - rotatedForce.data[2][0] * cos(pi / 2 + dev->baseAngles[2])) /
+		(denom1)*distPtrFromCenter;//(AAOMNI_ARM_LENGTH1 / 1000.0);
+	double denom2 = cos(pi/2+dev->baseAngles[2])*sin(theta)+sin(pi/2+dev->baseAngles[2])*cos(theta);
+	torque[2] = (rotatedForce.data[1][0] * sin(theta) + rotatedForce.data[2][0] * cos(theta)) /
+		(denom2)*(AAOMNI_ARM_LENGTH2 * AAOMNI_MM_TO_M);
+	//torque[2] -= torque[1]; unsure of this equation
 	torque[2] = -torque[2];//The motor configured reverse
-	//printf("calculated torque: %f,%f,%f\n", torque[0],torque[2],torque[2]);
-	int torqueScale=256;
-	//torque[0] = 0; currentForce[0];
-	//torque[1] = 0;//currentForce[1];
-	//torque[2] = 0; currentForce[2];
-	torque[0] *= torqueScale;
-	torque[1] *= torqueScale;
-	torque[2] *= torqueScale;
-	//printf("calculated torque: %f,%f,%f\n", torque[0], torque[2], torque[2]);
-	if (torque[0] > 1024)
-		torque[0] = 1024;
-	else if (torque[0] < -1024)
-		torque[0] = -1024;
-	if (torque[1] > 1024)
-		torque[1] = 1024;
-	else if (torque[1] < -1024)
-		torque[1] = -1024;
-	if (torque[2] > 1024)
-		torque[2] = 1024;
-	else if (torque[2] < -1024)
-		torque[2] = -1024;
-	/*static float torqueAvg[3];
-	torqueAvg[0] = torque[0] + (1 - dev->alphaFiltering)*torqueAvg[0];
-	torqueAvg[1] = torque[1] + (1 - dev->alphaFiltering)*torqueAvg[1];
-	torqueAvg[2] = torque[2] + (1 - dev->alphaFiltering)*torqueAvg[2];
-	dev->outData.mot1 = abs(torqueAvg[0]);
-	dev->outData.mot2 = abs(torqueAvg[1]);
-	dev->outData.mot3 = abs(torqueAvg[2]);
-	if (torqueAvg[0]<0)
-        dev->outData.mot1|=0x8000;
-	if (torqueAvg[1]<0)
-        dev->outData.mot2|=0x8000;
-	if (torqueAvg[2]<0)
-        dev->outData.mot3|=0x8000;*/
+	
+	torque[0] *= AAOMNI_TORQUE_SCALE_F;
+	torque[1] *= AAOMNI_TORQUE_SCALE_F;
+	torque[2] *= AAOMNI_TORQUE_SCALE_F;
+	if (torque[0] > AAOMNI_MAX_FF_PWM)
+		torque[0] = AAOMNI_MAX_FF_PWM;
+	else if (torque[0] < -AAOMNI_MAX_FF_PWM)
+		torque[0] = -AAOMNI_MAX_FF_PWM;
+	if (torque[1] > AAOMNI_MAX_FF_PWM)
+		torque[1] = AAOMNI_MAX_FF_PWM;
+	else if (torque[1] < -AAOMNI_MAX_FF_PWM)
+		torque[1] = -AAOMNI_MAX_FF_PWM;
+	if (torque[2] > AAOMNI_MAX_FF_PWM)
+		torque[2] = AAOMNI_MAX_FF_PWM;
+	else if (torque[2] < -AAOMNI_MAX_FF_PWM)
+		torque[2] = -AAOMNI_MAX_FF_PWM;
+	
 	dev->outData.mot1 = abs(torque[0]);
 	dev->outData.mot2 = abs(torque[1]);
 	dev->outData.mot3 = abs(torque[2]);
@@ -334,13 +314,13 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		//Matrix4x4d mtransTip;//apparently not required
 		//populateTranslate(&mtransTip,0,0,-AAOMNI_TIP_LENGTH);
 		Matrix4x4d mtrans1;
-		populateTranslate(&mtrans1, 0, 50, -150);
+		populateTranslate(&mtrans1, 0, AAOMNI_Y_OFFSET, AAOMNI_Z_OFFSET);
 		Matrix4x4d mrot1;//rot z
 		populateRotate(&mrot1, gimAAvg[2], 2);
 		Matrix4x4d mrot2;//rot x
 		populateRotate(&mrot2, gimAAvg[1], 0);
 		Matrix4x4d mrot3;//rot y
-		populateRotate(&mrot3, gimAAvg[0]+gimAAvg[2]*0.05, 1);//Ugly hack to compensate for the hardware interference between gimbal 1 and gimbal 3
+		populateRotate(&mrot3, gimAAvg[0] + gimAAvg[2] * AAOMNI_GIM0_GIM2_COUPLING_F, 1);//Ugly hack to compensate for the hardware interference between gimbal 1 and gimbal 3
 		Matrix4x4d mtrans2;
 		populateTranslate(&mtrans2, 0, -AAOMNI_ARM_LENGTH2, 0);
 		Matrix4x4d mrot4;//rot x

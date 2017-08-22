@@ -9,7 +9,10 @@
 #define pi 3.1415926
 
 
-#define ALPHA_FILTERING 0.4
+#define ALPHA_FILTERING		0.4
+#define AAOMNI_Y_OFFSET		50.0
+#define AAOMNI_Z_OFFSET		-150.0
+#define AAOMNI_MM_TO_M		0.001
 
 typedef struct AAOmniDevice
 {

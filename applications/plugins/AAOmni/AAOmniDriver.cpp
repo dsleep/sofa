@@ -924,7 +924,8 @@ void AAOmniDriver::onAnimateBeginEvent()
 	if (data.deviceData.ready)
     {
 		if (stateButton2.getValue()) data.move2Pos = false;
-		if (data.stiffness < 1000) data.stiffness = data.stiffness + 1;
+		//if (data.stiffness < 1000) data.stiffness = data.stiffness + 1;
+		if (data.stiffness > -1000) data.stiffness = data.stiffness - 1;
 
         data.deviceData.quat.normalize();
 		
