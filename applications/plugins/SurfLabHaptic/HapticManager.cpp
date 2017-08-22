@@ -239,21 +239,17 @@ namespace sofa
 						std::string achi("Pouch.png");
 						std::string out = capturePath;
 						out = out + achi;
-						capture.saveScreen(out);
-						// if (!hasInstrumentTurnedGreen)
-						// {
-							// string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-							// string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
-							// hasInstrumentTurnedGreen = true;
-							// updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-								// search_string, replace_string);
-							// last_update_time = this->getContext()->getTime();
-
-						// }
-						this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
-						return;
-
-
+						capture.saveScreen(out,5);
+						//this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
+						if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
+						 {
+						 string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";						 
+						 string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+						 hasInstrumentTurnedGreen = true;
+						 updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+						 search_string, replace_string);
+						 last_update_time = this->getContext()->getTime();
+						 hasPutInBag = true;
 						 }
 
 				}
@@ -455,7 +451,7 @@ namespace sofa
 				int nbelems = 0;
 				helper::vector<int> elemsToRemove;
 				ToolModel *tm = toolModel.get();
-				float testColor[] = { 1.0f, 0.05f, 0.05f, 1.0f };
+				//float testColor[] = { 1.0f, 0.05f, 0.05f, 1.0f };
 
 				for (unsigned int j = 0; j < contacts->size(); ++j)
 				{
@@ -483,10 +479,17 @@ namespace sofa
 								std::string err("Dissect_vein.png");
 								std::string out = capturePath + int2string(50 - mistatkeTolerance);
 								out = out + err;
-						capture.saveScreen(out);
-						// mistake_time = this->getContext()->getRootContext()->getTime();	
+								capture.saveScreen(out, 5);
 								return;
 							}
+							return;
+						}
+						else if (tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)//marryland dissector does nothing on veins
+						{
+							return;
+						}			
+						
+					}
 					else if (surf->hasTag(core::objectmodel::Tag("SafetySurface")) && mistatkeTolerance > 0)
 					{
                         if(tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCut > 0)
@@ -542,7 +545,7 @@ namespace sofa
 					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
 					elemsToRemove.push_back(triangleIdx);
 
-					if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("DissectingTool")))
+					if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("DissectingTool")) && this->getContext()->getTime() - last_update_time >= 0.3)
 					{
 						core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
 						sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
@@ -551,7 +554,6 @@ namespace sofa
 						sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
 						surf->getContext()->get(hexContainer);
 						if (hexContainer == NULL) return;
-
 						sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(TriangleElem[0]);
 						sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(TriangleElem[1]);
 						sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(TriangleElem[2]);
@@ -566,6 +568,37 @@ namespace sofa
 						//std::cout << "idx of the hex to cut: " << idxHex << std::endl;
 						veinCutSet.insert(idxHex);
 							}
+							mistatkeTolerance--;
+							std::string SharePath = base_path_share;
+							std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
+							std::string err("_clips_not_enough.png");
+							std::string out = capturePath;
+							out = out + err;
+							capture.saveScreen(out,5);
+							last_update_time = this->getContext()->getTime();
+						}
+						else
+						{
+							if (!hasCutThisVein && clipVector.size() > 2)
+							{
+								if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
+								{
+									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+									string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+									hasInstrumentTurnedGreen = true;
+									updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+										search_string, replace_string);
+									last_update_time = this->getContext()->getTime();
+								}
+								std::string SharePath = base_path_share;
+								std::string capturePath(SharePath + "\/TIPS_screenshot\/achieve_");
+								std::string err("cut_the_vein.png");
+								std::string out = capturePath;
+								out = out + err;
+								capture.saveScreen(out,5);
+								last_update_time = this->getContext()->getTime();
+							}
+						}
 						
 					}
 				sofa::helper::AdvancedTimer::stepBegin("CarveElems");
@@ -578,14 +611,8 @@ namespace sofa
 					else
 						nbelems += manager.removeItemsFromCollisionModel(c.elem.first.getCollisionModel(), elemsToRemove);
 				}
-				/*if (hasInstrumentTurnedRed && this->getContext()->getTime() - last_update_time > 0)
-				{
-					hasInstrumentTurnedRed = false;
-					string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-					string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
-					updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-						replace_string, search_string);
-				}*/
+				//std::cout << "after final cut " << std::endl;
+				
 			}
 
 			void HapticManager::doIncise()
@@ -1041,6 +1068,7 @@ namespace sofa
 					break;
 				}
 				toolState.buttonState = newButtonState;
+				
 				//Changes for force feedback safety
 				const ContactVector* contacts = getContacts();
 				if (contacts != NULL) {
@@ -1083,7 +1111,7 @@ namespace sofa
 								std::string err("Safety_force_vein.png");
 								std::string out = capturePath + int2string(mistakeToleranceForce);
 								out = out + err;
-								capture.saveScreen(out);
+								capture.saveScreen(out,5);
 							}
 						}
 					}
@@ -1092,11 +1120,33 @@ namespace sofa
 
 			void HapticManager::handleEvent(Event* event)
 			{
+				if (dynamic_cast<core::objectmodel::KeypressedEvent *>(event))
+				{
+					
+					core::objectmodel::KeypressedEvent *kpe = dynamic_cast<core::objectmodel::KeypressedEvent *>(event);
+					std::cout << "you have pressed a key:" << kpe->getKey() << std::endl;
+					if (kpe->getKey() == 'Q')
+					{
+						//std::cout << "you have pressed q!" << std::endl;
+						switch (toolState.function)
+						{
+						case TOOLFUNCTION_CARVE:
+							doCarve();
+							break;
+						case TOOLFUNCTION_CLAMP:
+							doClamp();
+							break;
+						case TOOLFUNCTION_GRASP:
+							break;
+						}	
+					}
+				}
 				Controller::handleEvent(event);
 			}
 
 			void HapticManager::onHapticDeviceEvent(HapticDeviceEvent* ev)
 			{
+				//std::cout << "HM Received Haptic Event: evid, buttonstate  =  " << ev->getDeviceId()<<","<< ev->getButtonState() << std::endl;
 				if (ev->getDeviceId() == toolState.id) toolState.newButtonState = ev->getButtonState();
 			}
 
@@ -1111,7 +1161,7 @@ namespace sofa
 				if (hasInstrumentTurnedRed)
 				{
 					//Sleep(400);
-					if (this->getContext()->getTime() - last_update_time >= 0.3)
+					if (this->getContext()->getTime() - last_update_time >= 0.1)
 					{
 						hasInstrumentTurnedRed = false;
 						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -1123,7 +1173,7 @@ namespace sofa
 				}
 				if (hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
 				{
-					if (this->getContext()->getTime() - last_update_time >= 0.3)
+					if (this->getContext()->getTime() - last_update_time >= 0.05)
 					{
 						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
 						string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
