@@ -216,27 +216,30 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 	forces.data[2][0] = currentForce[2]; 
 	Matrix4x4d rotatedForce;
 	MatrixMultiply(&rotyNTheta1, &forces, &rotatedForce);
-	double cosBA1 = cos(dev->baseAngles[1]);
+	double sinnBA1 = sin(-dev->baseAngles[1]); 
+	double cosnBA1 = cos(-dev->baseAngles[1]);
 	double sinnBA2 = sin(-dev->baseAngles[2]);
-	double cosBA1P2BA2 = cos(dev->baseAngles[1] + pi / 2 + dev->baseAngles[2]);
-	double sinBA1P2BA2 = sin(dev->baseAngles[1] + pi / 2 + dev->baseAngles[2]);
 	double cosnBA2 = cos(-dev->baseAngles[2]);
+	double sinP2BA2 = sin(pi / 2 + dev->baseAngles[2]);
+	double cosP2BA2 = cos(pi / 2 + dev->baseAngles[2]);
 
-	double theta = atan2(AAOMNI_ARM_LENGTH1*sin(-dev->baseAngles[1]) - AAOMNI_ARM_LENGTH2*cosnBA2,
-		AAOMNI_ARM_LENGTH1*cos(-dev->baseAngles[1])+AAOMNI_ARM_LENGTH2*sinnBA2);
+
+	double theta = atan2(AAOMNI_ARM_LENGTH1*sinnBA1 - AAOMNI_ARM_LENGTH2*cosnBA2,
+		AAOMNI_ARM_LENGTH1*cosnBA1 + AAOMNI_ARM_LENGTH2*sinnBA2);
 	double torque[3] = { 0, 0, 0 };
 	double ret[4][4];
 	AAOmniGetTransformationMatrix(dev, ret);
-	double distPtrFromCenter = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] - AAOMNI_Z_OFFSET)*(ret[2][3] - AAOMNI_Z_OFFSET) + (ret[1][3] - AAOMNI_Y_OFFSET)*(ret[1][3] - AAOMNI_Y_OFFSET)) * AAOMNI_MM_TO_M;
+	double distPtrFromCenter = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] - AAOMNI_Z_OFFSET)*(ret[2][3] - AAOMNI_Z_OFFSET) + 
+		(ret[1][3] - AAOMNI_Y_OFFSET)*(ret[1][3] - AAOMNI_Y_OFFSET)) * AAOMNI_MM_TO_M;
 	double ppdDistfromYaxis = sqrt(ret[0][3] * ret[0][3] + (ret[2][3] - AAOMNI_Z_OFFSET)*(ret[2][3] - AAOMNI_Z_OFFSET)) * AAOMNI_MM_TO_M;
 	torque[0] = rotatedForce.data[0][0] * ppdDistfromYaxis;
-	double denom1 = cos(theta)*sin(pi/2+dev->baseAngles[2])-cos(pi/2+dev->baseAngles[2])*sin(theta);
-	torque[1] = (rotatedForce.data[1][0] * sin(pi / 2 + dev->baseAngles[2]) - rotatedForce.data[2][0] * cos(pi / 2 + dev->baseAngles[2])) /
+	double denom1 = cos(theta)*sinP2BA2 - cosP2BA2*sin(theta);
+	torque[1] = (rotatedForce.data[1][0] * sinP2BA2 - rotatedForce.data[2][0] * cosP2BA2) /
 		(denom1)*distPtrFromCenter;//(AAOMNI_ARM_LENGTH1 / 1000.0);
-	double denom2 = cos(pi/2+dev->baseAngles[2])*sin(theta)+sin(pi/2+dev->baseAngles[2])*cos(theta);
+	double denom2 = cosP2BA2*sin(theta) + sinP2BA2*cos(theta);
 	torque[2] = (rotatedForce.data[1][0] * sin(theta) + rotatedForce.data[2][0] * cos(theta)) /
 		(denom2)*(AAOMNI_ARM_LENGTH2 * AAOMNI_MM_TO_M);
-	//torque[2] -= torque[1]; unsure of this equation
+	//torque[2] -= torque[1]; //unsure of this equation
 	torque[2] = -torque[2];//The motor configured reverse
 	
 	torque[0] *= AAOMNI_TORQUE_SCALE_F;
@@ -259,11 +262,11 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 	dev->outData.mot2 = abs(torque[1]);
 	dev->outData.mot3 = abs(torque[2]);
 	if (torque[0]<0)
-		dev->outData.mot1 |= 0x8000;
+		dev->outData.mot1 |= (1 << AAOMNI_TORQUE_DIR_BIT);
 	if (torque[1]<0)
-		dev->outData.mot2 |= 0x8000;
+		dev->outData.mot2 |= (1 << AAOMNI_TORQUE_DIR_BIT);
 	if (torque[2]<0)
-		dev->outData.mot3 |= 0x8000;
+		dev->outData.mot3 |= (1 << AAOMNI_TORQUE_DIR_BIT);
 	int temp;
 	getLibUsbErrorString("interrupt transfer", libusb_interrupt_transfer(dev->libUsbDeviceHandle, AAOMNI_OUT_ENDPOINT_ADDR, 
 		(unsigned char*)&dev->outData, sizeof(omni_out), &temp, 0));

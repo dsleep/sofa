@@ -73,7 +73,7 @@ typedef struct omni_in
 
 #define AAOMNI_MAX_FF_PWM			1024
 #define AAOMNI_TORQUE_SCALE_F		1024
-#define AAOMNI_TORQUE_DIR_BIT		16
+#define AAOMNI_TORQUE_DIR_BIT		15 //Bit numbering starts from 0
 
 #define AAOMNI_GIM0_GIM2_COUPLING_F 0.05 //Why god? why?!
 
