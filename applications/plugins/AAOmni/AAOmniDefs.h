@@ -57,11 +57,6 @@ typedef struct omni_in
 #define AAOMNI_GIMBAL2_MAX_ANGLE 	62.0
 #define AAOMNI_GIMBAL3_MAX_ANGLE 	147.4
 
-#define AAOMNI_GIMBAL1_RANGE 		292//degrees measured with thread
-#define AAOMNI_GIMBAL2_RANGE 		150//degrees
-#define AAOMNI_GIMBAL3_RANGE 		316//degrees measured with thread
-
-
 #define AAOMNI_ARM_LENGTH1 			134
 #define AAOMNI_ARM_LENGTH2 			134
 #define AAOMNI_TIP_LENGTH			39 //measured with scale
