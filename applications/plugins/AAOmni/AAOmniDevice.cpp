@@ -1,3 +1,5 @@
+//Author- Abhay Gupta UF grad Summer 2017
+//For any queries contact - abhayg271@gmail.com
 #include "AAOmniDevice.h"
 void populateRotate(Matrix4x4d* in,double angle,int mode)
 {

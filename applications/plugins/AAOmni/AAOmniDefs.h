@@ -1,3 +1,5 @@
+//Author- Abhay Gupta UF grad Summer 2017
+//For any queries contact - abhayg271@gmail.com
 #pragma once
 #ifndef AA_OMNI_DEFS
 #define AA_OMNI_DEFS

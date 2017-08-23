@@ -1,3 +1,5 @@
+//Author- Abhay Gupta UF grad Summer 2017
+//For any queries contact - abhayg271@gmail.com
 #ifndef _AAOMNI_DEVICE_H
 #define _AAOMNI_DEVICE_H
 #include <libusb.h>
