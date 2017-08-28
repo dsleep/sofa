@@ -474,19 +474,22 @@ namespace sofa
 								mistatkeToleranceCutVein--;
 								mistatkeTolerance--;
 								//std::cout<<" Cut the vein "<<50 - mistatkeToleranceCutVein<<" times by accident"<<endl;
-								std::string SharePath = base_path_share;
-								std::string capturePath(SharePath + "\/TIPS_screenshot\/error"); //temp path for saving the screenshot
-								std::string err("Dissect_vein.png");
-								std::string out = capturePath + int2string(50 - mistatkeTolerance);
-								out = out + err;
-								capture.saveScreen(out, 5);
+								if (mistatkeToleranceCutVein % 5 == 0)
+								{
+									std::string SharePath = base_path_share;
+									std::string capturePath(SharePath + "\/TIPS_screenshot\/error"); //temp path for saving the screenshot
+									std::string err("Dissect_vein.png");
+									std::string out = capturePath + int2string(int((50-mistatkeTolerance)/5));
+									out = out + err;
+									capture.saveScreen(out, 5);
+								}		
 								return;
 							}
 							return;
 						}
-						else if (tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)//marryland dissector does nothing on veins
+						else if (tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)
 						{
-							return;
+							return; //'CuttingTool'(marryland dissector) does nothing on veins
 						}			
 						
 					}
@@ -506,15 +509,16 @@ namespace sofa
 							}
 
 							mistatkeToleranceCut--;
-							std::string SharePath = base_path_share;
-							std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
-                            //std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
 							mistatkeTolerance--;
-							std::string err("Dissect.png");
-							std::string out = capturePath + int2string(50 - mistatkeTolerance);
-							out = out + err;
+							if (mistatkeToleranceCut % 3 == 0)
+							{
+								std::string SharePath = base_path_share;
+								std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
+								std::string err("Dissect.png");
+								std::string out = capturePath + int2string(50 - mistatkeTolerance);
+								out = out + err;
                             capture.saveScreen(out);
-							//std::cout<<" Dissect the wrong organ-- "<<50 - mistatkeToleranceCut<<" times by accident"<<std::endl;
+							}
 							return;
 						}  
                         // else if(tm->hasTag(core::objectmodel::Tag("ClampingTool")) && mistatkeToleranceClamp > 0)
@@ -527,14 +531,17 @@ namespace sofa
 						{
 							mistatkeToleranceDissect--;
 							mistatkeTolerance--;
-							std::string SharePath = base_path_share;
-							std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
+							if (mistatkeToleranceDissect % 5 == 0)
+							{
+								std::string SharePath = base_path_share;
+								std::string capturePath(SharePath + "\/TIPS_screenshot\/error");
                             //std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
-							std::string err("Cut.png");
-							std::string out = capturePath + int2string(50 - mistatkeTolerance);
-							out = out + err;
+								std::string err("Cut.png");
+								std::string out = capturePath + int2string(50 - mistatkeTolerance);
+								out = out + err;
                             capture.saveScreen(out);
                             //std::cout<<" Cut the wrong organs" <<50 - mistatkeToleranceDissect<<" times by accident"<<std::endl;
+							}
 							return;
 						}
 
