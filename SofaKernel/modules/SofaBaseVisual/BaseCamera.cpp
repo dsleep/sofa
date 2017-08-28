@@ -545,10 +545,10 @@ void BaseCamera::rotateWorldAroundPoint(Quat &rotation, const Vec3 &point, Quat 
     updateOutputData();
 }
 
-bool hasComputedZ = false;
+bool firstComputedZ = false;
 void BaseCamera::computeZ()
 {
-	if (p_computeZClip.getValue() && !hasComputedZ)
+	if (p_computeZClip.getValue())
     {
         double zNear = 1e10;
         double zFar = -1e10;
@@ -559,12 +559,22 @@ void BaseCamera::computeZ()
         //get the same zFar and zNear calculations as QGLViewer
         sceneCenter = (minBBox + maxBBox)*0.5;
         sceneRadius = 0.5*(maxBBox - minBBox).norm();
-
+		if (sceneCenter.norm() > 5)
+		{
+			//std::cout << "sceneCenter dist : " << sceneCenter.norm() << std::endl;
+			sceneCenter = Vec3(0, 0, 0);
+		}
+		if (sceneRadius > 25)
+		{
+			//std::cout << "sceneRadius : " << sceneRadius << std::endl;
+			sceneRadius = 15;
+		}
         //modelview transform
         defaulttype::SolidTypes<SReal>::Transform world_H_cam(p_position.getValue(), this->getOrientation());
 
         //double distanceCamToCenter = fabs((world_H_cam.inversed().projectPoint(sceneCenter))[2]);
         double distanceCamToCenter = (p_position.getValue() - sceneCenter).norm();
+		//std::cout << "distanceCamToCenter : " << distanceCamToCenter << std::endl;
 
         double zClippingCoeff = 5;
         double zNearCoeff = 0.01;
@@ -581,11 +591,14 @@ void BaseCamera::computeZ()
 
 		//temporary fix the Znear expansion problem below:
 		if (zNear >= 1.5)
+		{
+			//std::cout << "zNear expanding : "<< zNear << std::endl;
 			zNear = 0.5;
+		}
 
         currentZNear = zNear;
         currentZFar = zFar;
-		//hasComputedZ = true;
+		
     }
     else
     {
