@@ -5,6 +5,7 @@
 #include "SofaGUIQt.h"
 #include "ui_instructions.h"
 #include <QtWidgets/QWidget>
+#include <QAction>
 
 namespace sofa
 {
@@ -19,6 +20,11 @@ namespace sofa
 			public:
 				Instructions();
 				~Instructions();
+				/*void Instructions::keyPressEvent(QKeyEvent *e){
+					if (e->key() == Qt::Key_Space){
+						this->close();
+					}
+				}*/
 
 			};
 		}

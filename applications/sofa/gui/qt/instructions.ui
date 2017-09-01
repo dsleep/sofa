@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>Instructions</class>
  <widget class="QDialog" name="Instructions">
+  <property name="windowModality">
+   <enum>Qt::NonModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -12,6 +15,9 @@
   </property>
   <property name="windowTitle">
    <string>Instructions</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
@@ -32,7 +38,7 @@
     <enum>QFrame::Box</enum>
    </property>
    <property name="text">
-    <string>C:/Users/SurfLab/Documents/sofa1216/Source/share/Instructions.png</string>
+    <string/>
    </property>
    <property name="textFormat">
     <enum>Qt::RichText</enum>
