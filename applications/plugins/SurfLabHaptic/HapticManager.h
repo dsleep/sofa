@@ -78,6 +78,8 @@
 #include <algorithm>
 #include <stdio.h>
 #include <windows.h>
+//#include <ctime>
+//#include <chrono>
 namespace sofa
 {
     
@@ -170,6 +172,7 @@ namespace sofa
 					std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;
 					std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
 					};
+				static std::string programStartDate; //system time in string format, used for screenshot filepath
 			private:
 				void updateTool();
 				void doContain();
@@ -207,6 +210,7 @@ namespace sofa
 				//bool hasCarvedtheVein = false;
 				static double last_update_time;//last time the shader has been updated
 				int hasBeenCut(std::string name);//check if a collision model has been cut or not, return 1 for yes, 0 for no.
+				
 			};
 
 		} // namespace collision
@@ -230,6 +234,7 @@ std::vector<int> HapticManager::clipVector;
 std::set<int> HapticManager::veinCutSet;
 std::set<std::string> HapticManager::namesOfVeinCutSet;
 double HapticManager::last_update_time;
+std::string HapticManager::programStartDate= "";
 std::string HapticManager::base_path_share = "";
 bool HapticManager::hasPutInBag = false;
 bool HapticManager::hasCutVein = false;
