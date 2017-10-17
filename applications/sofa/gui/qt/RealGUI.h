@@ -31,7 +31,7 @@
 #include "GraphListenerQListView.h"
 #include "QMenuFilesRecentlyOpened.h"
 #include "PickHandlerCallBacks.h"
-
+#include <ui_report_score.h>
 #include <sofa/gui/BaseGUI.h>
 #include <sofa/gui/ViewerFactory.h>
 
@@ -90,9 +90,11 @@ class QSofaStatWidget;
 class GraphListenerQListView;
 class DisplayFlagsDataWidget;
 class SofaPluginManager;
+class report_score;
 #ifdef SOFA_DUMP_VISITOR_INFO
 class WindowVisitor;
 class GraphVisitor;
+
 #endif
 
 class SofaMouseManager;
@@ -209,7 +211,7 @@ protected:
     QLineEdit *backgroundImage;
     SofaPluginManager* pluginManager_dialog;
     QMenuFilesRecentlyOpened recentlyOpenedFilesManager;
-
+    report_score* report;
     std::string simulation_name;
     std::string gnuplot_directory;
     std::string pathDumpVisitor;
@@ -332,10 +334,10 @@ private:
     void parseOptions();
 
     void createPluginManager();
-
+	void createReport();
     /// configure Recently Opened Menu
     void createRecentFilesMenu();
-
+    
     void createBackgroundGUIInfos();
     void createSimulationGraph();
     void createPropertyWidget();
@@ -398,6 +400,7 @@ public slots:
     virtual void showVideoRecorderManager();
     virtual void toolsDockMoved();
     virtual void showInstructions();
+	virtual void showReport();
 
     void setViewToolbar(bool);
     void tabGraphVisibilityChanged(bool);
@@ -406,7 +409,7 @@ protected slots:
     /// Allow to dynamicly change viewer. Called when click on another viewer in GUI Qt viewer list (see viewerMap).
     /// TODO: find a better way to propagate the argument when we construct the viewer
     virtual void changeViewer();
-
+    
     /// Update the viewerMap and create viewer if we haven't yet one (the first of the list)
     /// TODO: find a better way to propagate the argument when we construct the viewer
     virtual void updateViewerList();
