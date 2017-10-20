@@ -291,7 +291,7 @@ public:
     void dragEnterEvent( QDragEnterEvent* event) override;
 
     void dropEvent(QDropEvent* event) override;
-
+	void populateReport(std::string date);
 protected:
     /// init data member from RealGUI for the viewer initialisation in the GUI
     void init();
@@ -302,7 +302,7 @@ protected:
     void keyPressEvent ( QKeyEvent * e ) override;
     void startDumpVisitor();
     void stopDumpVisitor();
-
+	
     /// init the viewer for the GUI (embeded or not we have to connect some info about viewer in the GUI)
     void initViewer(BaseViewer* _viewer) override;
 
@@ -334,6 +334,7 @@ private:
     void parseOptions();
 
     void createPluginManager();
+
 	void createReport();
     /// configure Recently Opened Menu
     void createRecentFilesMenu();

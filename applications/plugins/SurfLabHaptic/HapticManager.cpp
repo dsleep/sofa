@@ -23,6 +23,12 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include "HapticManager.h"
+#include "GUIManager.h"
+#include "BaseGUI.h"
+#include "RealGUI.h"
+using sofa::gui::GUIManager;
+using sofa::gui::BaseGUI;
+using sofa::gui::qt::RealGUI;
 
 #define int2string(a) std::to_string(a)
 using namespace std;
@@ -61,7 +67,15 @@ namespace sofa
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
-
+				//string test = GUIManager::GetCurrentGUIName();
+				//std::cout << "GUIManager::GetCurrentGUIName()" << test << std::endl;
+				/*BaseGUI* thing = GUIManager::getGUI();
+				RealGUI* testreal = dynamic_cast<RealGUI*>(GUIManager::getGUI());
+				testreal->populateReport(programStartDate);
+				testreal->showReport();*/
+				/*RealGUI * t = thing;
+				thing->populateReport(programStartDate);
+				thing->showReport();*/
 				//std::cout << "haptic manager construction" << std::endl;
 			}
 
@@ -297,6 +311,12 @@ namespace sofa
 						 }
 
 				}
+				string test = GUIManager::GetCurrentGUIName();
+				std::cout << "GUIManager::GetCurrentGUIName()" << test << std::endl;
+				BaseGUI* thing = GUIManager::getGUI();
+				RealGUI* testreal = dynamic_cast<RealGUI*>(GUIManager::getGUI());
+				testreal->populateReport(programStartDate);
+				testreal->showReport();
 
 			}
 
@@ -1291,6 +1311,18 @@ namespace sofa
 						if (hasPutInBag){
 							hasPutInBag = false;
 							this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
+							//call up score report
+							//string test = GUIManager::GetCurrentGUIName();
+							//std::cout << "GUIManager::GetCurrentGUIName()" << test << std::endl;
+							//BaseGUI* thing = GUIManager::getGUI();
+							//RealGUI* testreal = dynamic_cast<RealGUI*>(GUIManager::getGUI());
+							//testreal->populateReport(programStartDate);
+							//testreal->showReport();
+							/*RealGUI * t = thing;
+							thing->populateReport(programStartDate);
+							thing->showReport();*/
+							//std::cout << "haptic manager construction" << std::endl;
+							
 						}
 					}	
 				}

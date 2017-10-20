@@ -19,7 +19,8 @@ namespace sofa
                     Q_OBJECT
 
                     public:
-                        report_score();
+						report_score();
+                        report_score(std::string date);
                         ~report_score();
                     };
                }

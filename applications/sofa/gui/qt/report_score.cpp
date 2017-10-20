@@ -11,6 +11,10 @@ namespace sofa
 			{
 				setupUi(this);
 			}
+			report_score::report_score(std::string date)
+			{
+				setupUi(this, date);
+			}
 
 			report_score::~report_score()
 			{
