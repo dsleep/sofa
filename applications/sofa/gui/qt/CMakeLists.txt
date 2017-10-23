@@ -39,6 +39,7 @@ set(HEADER_FILES
     PickHandlerCallBacks.h
     QMenuFilesRecentlyOpened.h
     QModelViewTableDataContainer.h
+	ui_report_score.h
     SofaGUIQt.h
     StructDataWidget.h
     TableDataWidget.h
