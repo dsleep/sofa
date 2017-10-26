@@ -70,6 +70,7 @@
 //Changes for force feedback safety
 #include <SofaHaptics/ForceFeedback.h>
 #include "NewOmniDriver.h"
+#include "AAOmniDriver.h"
 #include <math.h>
 
 #include <iostream>
@@ -157,6 +158,8 @@ namespace sofa
 				//sofa::component::topology::TriangleSetTopologyContainer* mesh;
 				//Changes for force feedback safety
 				sofa::component::controller::NewOmniDriver *newOmniDriver;
+				sofa::component::controller::AAOmniDriver *aaOmniDriver;
+
 				HapticManager();
 
 				virtual ~HapticManager();

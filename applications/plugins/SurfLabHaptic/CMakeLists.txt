@@ -25,9 +25,10 @@ add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${README_FILE
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_SURFLABHAPTIC")
 # target_link_libraries(${PROJECT_NAME} SofaComponentGeneral)
 # include_directories("${CMAKE_CURRENT_SOURCE_DIR
-target_link_libraries(${PROJECT_NAME} SofaComponentGeneral ${OPENHAPTICS_LIBRARIES} Sensable)
+target_link_libraries(${PROJECT_NAME} SofaComponentGeneral ${OPENHAPTICS_LIBRARIES} Sensable AAOmni)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/.."
 ${CMAKE_CURRENT_SOURCE_DIR}/../Sensable
+${CMAKE_CURRENT_SOURCE_DIR}/../AAOmni
 ${OPENHAPTICS_INCLUDE_DIR}
 ${OPENHAPTICS_UTIL_INCLUDE_DIR}
 )

@@ -123,7 +123,32 @@ namespace sofa
 					if (idData)
 					{
 						toolState.id = atoi(idData->getValueString().c_str());
-						newOmniDriver = dynamic_cast<sofa::component::controller::NewOmniDriver *>(omniDriver.get());
+						sofa::component::controller::AAOmniDriver* aaOmniDriverDummy;
+						sofa::component::controller::NewOmniDriver* newOmniDriverDummy;
+
+						if (omniDriver.get()->getClassName().compare(aaOmniDriverDummy->getName()) == 0)
+						{
+							//cast to aa omni
+							aaOmniDriver = dynamic_cast<sofa::component::controller::AAOmniDriver *>(omniDriver.get());
+							newOmniDriver = NULL;
+							std::cout << "haptic manager using AAOmni " << this << std::endl;
+						}
+						else
+						{
+							if (omniDriver.get()->getClassName().compare(newOmniDriverDummy->getName()) == 0)
+							{
+								//cast to New omni
+								newOmniDriver = dynamic_cast<sofa::component::controller::NewOmniDriver *>(omniDriver.get());
+								aaOmniDriver = NULL;
+								std::cout << "haptic manager using NewOmni " << this << std::endl;
+
+							}
+							else
+							{
+								//throw a warning
+								std::cout << "haptic manager found a rogue device" << std::endl;
+							}
+						}
 					}
 
 				}
@@ -1153,7 +1178,14 @@ namespace sofa
 						core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
 						if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein"))) {
 							//TODO: Take the force direction(sign) into account while calculating resultant
-							double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
+							//double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
+							double resultantForce = 0;
+							if (aaOmniDriver)
+								resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
+							else
+								if (newOmniDriver)
+									resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
+
 							
 							double safetyForceThreshold = INT_MAX;
 							std::string keywordThreshold = "SafetyForceThreshold_";
