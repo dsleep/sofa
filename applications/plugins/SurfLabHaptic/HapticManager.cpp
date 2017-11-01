@@ -67,15 +67,7 @@ namespace sofa
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
-				//string test = GUIManager::GetCurrentGUIName();
-				//std::cout << "GUIManager::GetCurrentGUIName()" << test << std::endl;
-				/*BaseGUI* thing = GUIManager::getGUI();
-				RealGUI* testreal = dynamic_cast<RealGUI*>(GUIManager::getGUI());
-				testreal->populateReport(programStartDate);
-				testreal->showReport();*/
-				/*RealGUI * t = thing;
-				thing->populateReport(programStartDate);
-				thing->showReport();*/
+
 				//std::cout << "haptic manager construction" << std::endl;
 			}
 
@@ -519,13 +511,11 @@ namespace sofa
 				ToolModel *tm = toolModel.get();
 				int active_contact_index = 0; // index of the contacts that has the collision model we want to carve.
 				bool contact_index_fixed = false;
-				//float testColor[] = { 1.0f, 0.05f, 0.05f, 1.0f };
 
 				for (unsigned int j = 0; j < contacts->size(); j++)
 				{
 					const ContactVector::value_type& c = (*contacts)[j];
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-					//HapticSurfaceVolume
 					if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceVolume")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))))
 					{
 						if (!contact_index_fixed)
@@ -543,6 +533,21 @@ namespace sofa
 					}
 					if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))) )
 					{		
+						if (tm->hasTag(core::objectmodel::Tag("CarvingTool")) || tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)
+						{
+							int hasCutThisVein = hasBeenCut(surf->getName());
+							double resultantForce = 0;
+							if (aaOmniDriver){
+								resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
+							}
+							else
+							{
+								if (newOmniDriver)
+									resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
+							}
+							if (!hasCutThisVein && resultantForce >= 1.1)
+							{
+								//std::cout << "current force on vein  " << resultantForce << std::endl;
 								if (!hasInstrumentTurnedRed)
 								{
 									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -570,14 +575,18 @@ namespace sofa
 							}
 							continue; // skip this element
 						}
-						else if (tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)
-						{
-							continue; //'CuttingTool'(marryland dissector) does nothing on veins, so we skip this element
-						}			
+						//else if (tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)
+						//{
+						//	continue; //'CuttingTool'(marryland dissector) does nothing on veins, so we skip this element
+						//}			
 					}
 					else if (surf->hasTag(core::objectmodel::Tag("SafetySurface")) && mistatkeTolerance > 0)
 					{
-                        if(tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCut > 0)
+						if (tm->hasTag(core::objectmodel::Tag("CuttingTool")))
+						{
+							continue; //'CuttingTool'(marryland dissector) does no harm, so we skip this element
+						}
+						else if (tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCut > 0)
 						{
 							if (!hasInstrumentTurnedRed)
 							{
@@ -636,26 +645,17 @@ namespace sofa
 
 					if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("DissectingTool")) && this->getContext()->getTime() - last_update_time >= 0.3)
 					{
-						core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-						sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
-						surf->getContext()->get(triangleContainer);
-						const sofa::core::topology::Topology::Triangle TriangleElem = triangleContainer->getTriangle(triangleIdx);
-						sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
-						surf->getContext()->get(hexContainer);
-						if (hexContainer == NULL) return;
-						sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(TriangleElem[0]);
-						sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(TriangleElem[1]);
-						sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(TriangleElem[2]);
-						sofa::helper::vector< unsigned int > ie1;
-						sofa::helper::vector< unsigned int > ie;
-						std::sort(e1.begin(), e1.end());
-						std::sort(e2.begin(), e2.end());
-						std::sort(e3.begin(), e3.end());
-						std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie1));
-						std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
-						int idxHex = ie[0];
-						//std::cout << "idx of the hex to cut: " << idxHex << std::endl;
-						veinCutSet.insert(idxHex);
+						int hasCutThisVein = hasBeenCut(surf->getName());
+						if ( clipVector.size() < 3*(1+veinCutSet.size()) && clipVector.size() < 3 + last_clips_count && !hasCutThisVein)
+						{
+							if (!hasInstrumentTurnedRed )
+							{
+								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+								hasInstrumentTurnedRed = true;
+								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+									search_string, replace_string);
+								last_update_time = this->getContext()->getTime();
 							}
 							mistatkeTolerance--;
 							std::string SharePath = base_path_share;
@@ -689,6 +689,34 @@ namespace sofa
 							}
 						}
 						
+						//the following are for checking the idx of the hex being cut
+						//core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+						//sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
+						//surf->getContext()->get(triangleContainer);
+						//const sofa::core::topology::Topology::Triangle TriangleElem = triangleContainer->getTriangle(triangleIdx);
+						//sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
+						//surf->getContext()->get(hexContainer);
+						//if (hexContainer == NULL) return;
+
+						//sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(TriangleElem[0]);
+						//sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(TriangleElem[1]);
+						//sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(TriangleElem[2]);
+						//sofa::helper::vector< unsigned int > ie1;
+						//sofa::helper::vector< unsigned int > ie;
+						//std::sort(e1.begin(), e1.end());
+						//std::sort(e2.begin(), e2.end());
+						//std::sort(e3.begin(), e3.end());
+						//std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie1));
+						//std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
+						//int idxHex = ie[0];
+						////std::cout << "idx of the hex to cut: " << idxHex << std::endl;
+						//veinCutSet.insert(idxHex);
+						//hasCutVein = true;
+						//std::cout << "surf been cut:" << surf->getName() << std::endl;
+						namesOfVeinCutSet.insert(surf->getName());
+						last_clips_count = clipVector.size();
+						cout << "clips count for last cut:" << last_clips_count << std::endl;
+
 					}
 					sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
 					if (topoMapping == NULL) return;
@@ -1200,12 +1228,14 @@ namespace sofa
 							//TODO: Take the force direction(sign) into account while calculating resultant
 							//double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
 							double resultantForce = 0;
-							if (aaOmniDriver)
+							if (aaOmniDriver){
 								resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
+							}
 							else
-								if (newOmniDriver)
+							{
+								if(newOmniDriver)
 									resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
-
+							}
 							
 							double safetyForceThreshold = INT_MAX;
 							std::string keywordThreshold = "SafetyForceThreshold_";
@@ -1311,18 +1341,6 @@ namespace sofa
 						if (hasPutInBag){
 							hasPutInBag = false;
 							this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
-							//call up score report
-							//string test = GUIManager::GetCurrentGUIName();
-							//std::cout << "GUIManager::GetCurrentGUIName()" << test << std::endl;
-							//BaseGUI* thing = GUIManager::getGUI();
-							//RealGUI* testreal = dynamic_cast<RealGUI*>(GUIManager::getGUI());
-							//testreal->populateReport(programStartDate);
-							//testreal->showReport();
-							/*RealGUI * t = thing;
-							thing->populateReport(programStartDate);
-							thing->showReport();*/
-							//std::cout << "haptic manager construction" << std::endl;
-							
 						}
 					}	
 				}

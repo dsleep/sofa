@@ -212,6 +212,7 @@ namespace sofa
 				bool hasInstrumentTurnedGreen = false;
 				//bool hasCarvedtheVein = false;
 				static double last_update_time;//last time the shader has been updated
+				static int last_clips_count;//last time the shader has been updated
 				int hasBeenCut(std::string name);//check if a collision model has been cut or not, return 1 for yes, 0 for no.
 				
 			};
@@ -237,6 +238,7 @@ std::vector<int> HapticManager::clipVector;
 std::set<int> HapticManager::veinCutSet;
 std::set<std::string> HapticManager::namesOfVeinCutSet;
 double HapticManager::last_update_time;
+int HapticManager::last_clips_count = 0;
 std::string HapticManager::programStartDate= "";
 std::string HapticManager::base_path_share = "";
 bool HapticManager::hasPutInBag = false;
