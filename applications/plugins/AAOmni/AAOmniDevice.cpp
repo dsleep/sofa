@@ -222,8 +222,8 @@ void AAOmniSetForceFeedback(AAOmniDevice* dev,double* currentForce)
 	double cosnBA1 = cos(-dev->baseAngles[1]);
 	double sinnBA2 = sin(-dev->baseAngles[2]);
 	double cosnBA2 = cos(-dev->baseAngles[2]);
-	double sinP2BA2 = sin(pi / 2 + dev->baseAngles[2]);
-	double cosP2BA2 = cos(pi / 2 + dev->baseAngles[2]);
+	double sinP2BA2 = sin(PI_AA / 2 + dev->baseAngles[2]);
+	double cosP2BA2 = cos(PI_AA / 2 + dev->baseAngles[2]);
 
 
 	double theta = atan2(AAOMNI_ARM_LENGTH1*sinnBA1 - AAOMNI_ARM_LENGTH2*cosnBA2,
@@ -282,16 +282,16 @@ void AAOmniUpdateValues(AAOmniDevice* dev)
 		actualAngles[1] = (double)(dev->inData.mot2)*(THETA2_MAX_DEGREES - THETA2_MIN_DEGREES) / (THETA2_MAX_COUNT - THETA2_MIN_COUNT) + THETA2_OFFSET_DEGREES;
 		actualAngles[2] = (double)(dev->inData.mot3)*(THETA3_MAX_DEGREES - THETA3_MIN_DEGREES) / (THETA3_MAX_COUNT - THETA3_MIN_COUNT) + THETA3_OFFSET_DEGREES;
 
-		dev->baseAngles[0] = (double)pi*actualAngles[0] / 180;
-		dev->baseAngles[1] = (double)pi*actualAngles[1] / 180;
-		dev->baseAngles[2] = (double)pi*actualAngles[2] / 180;
+		dev->baseAngles[0] = (double)PI_AA*actualAngles[0] / 180;
+		dev->baseAngles[1] = (double)PI_AA*actualAngles[1] / 180;
+		dev->baseAngles[2] = (double)PI_AA*actualAngles[2] / 180;
 
 		//Equation of a line with 2 points
-		dev->gimbalAngles[0] = (double)pi/180.0*(((AAOMNI_GIMBAL1_MAX_ANGLE - AAOMNI_GIMBAL1_MIN_ANGLE) / (AAOMNI_GIMBAL1_MAX_ENCODER - AAOMNI_GIMBAL1_MIN_ENCODER))*
+		dev->gimbalAngles[0] = (double)PI_AA / 180.0*(((AAOMNI_GIMBAL1_MAX_ANGLE - AAOMNI_GIMBAL1_MIN_ANGLE) / (AAOMNI_GIMBAL1_MAX_ENCODER - AAOMNI_GIMBAL1_MIN_ENCODER))*
 			(dev->inData.pot1 - AAOMNI_GIMBAL1_MIN_ENCODER) + AAOMNI_GIMBAL1_MIN_ANGLE);
-		dev->gimbalAngles[1] = (double)pi / 180.0*(((AAOMNI_GIMBAL2_MAX_ANGLE - AAOMNI_GIMBAL2_MIN_ANGLE) / (AAOMNI_GIMBAL2_MAX_ENCODER - AAOMNI_GIMBAL2_MIN_ENCODER))*
+		dev->gimbalAngles[1] = (double)PI_AA / 180.0*(((AAOMNI_GIMBAL2_MAX_ANGLE - AAOMNI_GIMBAL2_MIN_ANGLE) / (AAOMNI_GIMBAL2_MAX_ENCODER - AAOMNI_GIMBAL2_MIN_ENCODER))*
 			(dev->inData.pot2 - AAOMNI_GIMBAL2_MIN_ENCODER) + AAOMNI_GIMBAL2_MIN_ANGLE);
-		dev->gimbalAngles[2] = (double)pi / 180.0*(((AAOMNI_GIMBAL3_MAX_ANGLE - AAOMNI_GIMBAL3_MIN_ANGLE) / (AAOMNI_GIMBAL3_MAX_ENCODER - AAOMNI_GIMBAL3_MIN_ENCODER))*
+		dev->gimbalAngles[2] = (double)PI_AA / 180.0*(((AAOMNI_GIMBAL3_MAX_ANGLE - AAOMNI_GIMBAL3_MIN_ANGLE) / (AAOMNI_GIMBAL3_MAX_ENCODER - AAOMNI_GIMBAL3_MIN_ENCODER))*
 			(dev->inData.pot3 - AAOMNI_GIMBAL3_MIN_ENCODER) + AAOMNI_GIMBAL3_MIN_ANGLE);
 
 		dev->gimbalAnglesFiltered[0] = dev->alphaFiltering*dev->gimbalAnglesFiltered[0] + (1 - dev->alphaFiltering)*dev->gimbalAngles[0];

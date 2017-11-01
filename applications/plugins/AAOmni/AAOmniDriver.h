@@ -127,9 +127,9 @@ class AAOmniDriver : public Controller
 {
 
 public:
-    SOFA_CLASS(AAOmniDriver, Controller);
-	static std::string getName()
-		return AA_OMNI_DRIVER_NAME_S;
+	SOFA_CLASS(AAOmniDriver, Controller);
+	static std::string getName(){
+		return AA_OMNI_DRIVER_NAME_S;}
 	typedef RigidTypes::Coord Coord;
     typedef RigidTypes::VecCoord VecCoord;
 	typedef sofa::defaulttype::Vec3Types DataTypes;

@@ -1003,7 +1003,7 @@ void AAOmniDriver::onAnimateBeginEvent()
         transform_segr[2].set(Vec3d(0.0,0.0,0.0),q.axisToQuat(Vec3d(0.0,0.0,1.0),angle2[2]));//get pos articulation 2
         transform_segr[3].set(Vec3d(0.0,0.0,0.0),q.axisToQuat(Vec3d(1.0,0.0,0.0),angle2[1]));//get pos articulation 1
         transform_segr[4].set(Vec3d(0.0,0.0,0.0),q.axisToQuat(Vec3d(0.0,1.0,0.0),-angle2[0]));//get pos arm 2
-        transform_segr[5].set(Vec3d(0.0,13.33*data.scale/100,0.0),q.axisToQuat(Vec3d(1.0,0.0,0.0),-(float)(pi/2)+angle1[2]-angle1[1]));//get pos arm 1
+		transform_segr[5].set(Vec3d(0.0,13.33*data.scale/100,0.0),q.axisToQuat(Vec3d(1.0,0.0,0.0),-(float)(PI_AA/2)+angle1[2]-angle1[1]));//get pos arm 1
         transform_segr[6].set(Vec3d(0.0,13.33*data.scale/100,0.0),q.axisToQuat(Vec3d(1.0,0.0,0.0),angle1[1]));//get pos articulation 0
         transform_segr[7].set(Vec3d(0.0,0.0,0.0),q.axisToQuat(Vec3d(0.0,0.0,1.0),angle1[0]));//get pos base
 
@@ -1048,13 +1048,13 @@ void AAOmniDriver::onAnimateBeginEvent()
 				sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > tx = toolDOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::position());
 				sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > txfree = toolDOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::freePosition());
 								
-				sofa::defaulttype::SolidTypes<SReal>::Rot rot1 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(0.0, 1.0, 0.0), this->openTool.getValue().at(0));
+				sofa::defaulttype::SolidTypes<SReal>::Rot rot1 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0));
 				tx[1] = tx[0];
 				txfree[1] = txfree[0];
 				tx[1].getOrientation() = x[0].getOrientation()*rot1;
 				txfree[1].getOrientation() = xfree[0].getOrientation()*rot1;
 
-				sofa::defaulttype::SolidTypes<SReal>::Rot rot2 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(0.0, 1.0, 0.0), this->openTool.getValue().at(0)*(-1));
+				sofa::defaulttype::SolidTypes<SReal>::Rot rot2 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*(-1));
 				tx[2] = tx[0];
 				txfree[2] = txfree[0];
 				tx[2].getOrientation() = x[0].getOrientation()*rot2;
@@ -1062,6 +1062,18 @@ void AAOmniDriver::onAnimateBeginEvent()
 				
 				tx[3] = tx[0];
 				txfree[3] = txfree[0];
+
+				sofa::defaulttype::SolidTypes<SReal>::Rot rot3 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*0.15);
+				tx[4] = tx[0];
+				txfree[4] = txfree[0];
+				tx[4].getOrientation() = x[0].getOrientation()*rot3;
+				txfree[4].getOrientation() = xfree[0].getOrientation()*rot3;
+
+				sofa::defaulttype::SolidTypes<SReal>::Rot rot4 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*(-0.15));
+				tx[5] = tx[0];
+				txfree[5] = txfree[0];
+				tx[5].getOrientation() = x[0].getOrientation()*rot4;
+				txfree[5].getOrientation() = xfree[0].getOrientation()*rot4;
 
 			}
 		}

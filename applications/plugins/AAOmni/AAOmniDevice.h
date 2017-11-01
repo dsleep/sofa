@@ -8,7 +8,8 @@
 #include <cstdio>
 #include <cmath>
  
-#define pi 3.1415926
+//#define pi 3.1415926
+#define PI_AA 3.1415926
 
 
 #define ALPHA_FILTERING		0.4
