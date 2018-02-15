@@ -29,7 +29,7 @@
 using sofa::gui::GUIManager;
 using sofa::gui::BaseGUI;
 using sofa::gui::qt::RealGUI;
-
+bool usingAA = false;
 #define int2string(a) std::to_string(a)
 using namespace std;
 
@@ -129,15 +129,17 @@ namespace sofa
 					if (idData)
 					{
 						toolState.id = atoi(idData->getValueString().c_str());
-						sofa::component::controller::AAOmniDriver* aaOmniDriverDummy;
 						sofa::component::controller::NewOmniDriver* newOmniDriverDummy;
+						if (usingAA) {
+							//sofa::component::controller::AAOmniDriver* aaOmniDriverDummy;
 
-						if (omniDriver.get()->getClassName().compare(aaOmniDriverDummy->getName()) == 0)
-						{
-							//cast to aa omni
-							aaOmniDriver = dynamic_cast<sofa::component::controller::AAOmniDriver *>(omniDriver.get());
-							newOmniDriver = NULL;
-							std::cout << "haptic manager using AAOmni " << this << std::endl;
+							//if (omniDriver.get()->getClassName().compare(aaOmniDriverDummy->getName()) == 0)
+							//{
+							//	//cast to aa omni
+							//	aaOmniDriver = dynamic_cast<sofa::component::controller::AAOmniDriver *>(omniDriver.get());
+							//	newOmniDriver = NULL;
+							//	std::cout << "haptic manager using AAOmni " << this << std::endl;
+							//}
 						}
 						else
 						{
@@ -145,7 +147,7 @@ namespace sofa
 							{
 								//cast to New omni
 								newOmniDriver = dynamic_cast<sofa::component::controller::NewOmniDriver *>(omniDriver.get());
-								aaOmniDriver = NULL;
+								//aaOmniDriver = NULL;
 								std::cout << "haptic manager using NewOmni " << this << std::endl;
 
 							}
@@ -223,7 +225,6 @@ namespace sofa
 
 			void HapticManager::doContain()
 			{
-				//std::cout << "haptic manager: doing contain!" << std::endl;
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
 				for (unsigned int j = 0; j < 1; ++j)
@@ -316,6 +317,7 @@ namespace sofa
 			{
 				//std::cout << "haptic manager: doing grasp!" << std::endl;
 				const ContactVector* contacts = getContacts();
+
 				if (contacts == NULL) return;
 				for (unsigned int j = 0; j < 1; ++j)
 				{
@@ -516,6 +518,7 @@ namespace sofa
 				{
 					const ContactVector::value_type& c = (*contacts)[j];
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+					//cout << "surf->name: " << surf->getName() << endl;
 					if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceVolume")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))))
 					{
 						if (!contact_index_fixed)
@@ -537,8 +540,8 @@ namespace sofa
 						{
 							int hasCutThisVein = hasBeenCut(surf->getName());
 							double resultantForce = 0;
-							if (aaOmniDriver){
-								resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
+							if (usingAA /*&& aaOmniDriver*/){
+								//resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
 							}
 							else
 							{
@@ -637,7 +640,6 @@ namespace sofa
 						}
 
 					}
-
 					/*sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
 					if (topoMapping == NULL) return;
 					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
@@ -646,8 +648,10 @@ namespace sofa
 					if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("DissectingTool")) && this->getContext()->getTime() - last_update_time >= 0.3)
 					{
 						int hasCutThisVein = hasBeenCut(surf->getName());
-						if ( clipVector.size() < 3*(1+veinCutSet.size()) && clipVector.size() < 3 + last_clips_count && !hasCutThisVein)
+						//check below if enough clips has been placed
+						if (vein_clips_map[surf->getName()].size() < 3 && !hasCutThisVein)
 						{
+							cout << "vein_clips_map[surf->getName()].size():" << vein_clips_map[surf->getName()].size() << endl;
 							if (!hasInstrumentTurnedRed )
 							{
 								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -668,7 +672,7 @@ namespace sofa
 						}
 						else
 						{
-							if (!hasCutThisVein && clipVector.size() > 2)
+							if (!hasCutThisVein && vein_clips_map[surf->getName()].size()  >= 3)
 							{
 								if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
 								{
@@ -714,8 +718,7 @@ namespace sofa
 						//hasCutVein = true;
 						//std::cout << "surf been cut:" << surf->getName() << std::endl;
 						namesOfVeinCutSet.insert(surf->getName());
-						last_clips_count = clipVector.size();
-						cout << "clips count for last cut:" << last_clips_count << std::endl;
+						//cout << "clips count for last cut:" << last_clips_count << std::endl;
 
 					}
 					sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
@@ -744,8 +747,7 @@ namespace sofa
 					else
 						nbelems += manager.removeItemsFromCollisionModel(c.elem.first.getCollisionModel(), elemsToRemove);
 				
-				}
-				//std::cout << "after final cut " << std::endl;				
+				}			
 			}
 
 			void HapticManager::doIncise()
@@ -1001,25 +1003,30 @@ namespace sofa
 				const ContactVector* contacts = getContacts();
 				if (contacts == NULL) return;
 				int active_contact_index = 0; // index of the contacts that has the collision model we want to clamp.
+				//cout << "contacts->size() : " << contacts->size() << endl;
 				if (contacts->size() > 0)
 				{
-					for (unsigned int j = 0; j < contacts->size(); j++)
+					for (unsigned int j = 0; j < contacts->size(); j++)//look for the vein
 					{
 						const ContactVector::value_type& cc = (*contacts)[j];
+						
 						core::CollisionModel* surf = (cc.elem.first.getCollisionModel() == toolState.modelTool ? cc.elem.second.getCollisionModel() : cc.elem.first.getCollisionModel());
-						if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein"))))
-						{
-							//std::cout << "found the vein!" << std::endl;
-							active_contact_index = j;
-							break;
-						}
+						
+						int r = 0;
+						if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")))
+							r = 1;
+					//	cout << "contact : " << j << ", value = " << cc.value << ", is vein? " << r << endl;
+					//	if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein"))))
+					//	{
+					//		//std::cout << "found the vein!" << std::endl;
+					//		active_contact_index = j;
+					//		break;
+					//	}
 					}
 				}
 				//std::cout << "in doClamp,contacts size,  active index = " << contacts->size() << active_contact_index << std::endl;
 				const ContactVector::value_type& c = (*contacts)[active_contact_index];
 				unsigned int idx1 = (c.elem.first.getCollisionModel() == toolModelPt ? c.elem.second.getIndex() : c.elem.first.getIndex());
-				//std::cout << "inside do clamp()" << std::endl;
-				//std::cout << "index of the triangle of the organ:" << idx1 << std::endl;
 
 				if (idx1 >= 0)
 				{
@@ -1053,16 +1060,17 @@ namespace sofa
 					std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
 
 					const component::topology::Hexahedron hex = hexContainer->getHexahedron(ie[0]);
-					//std::cout << "index of the hex:" << ie[0] << std::endl;
-					int idxclip = ie[0];
+					int idxclip = ie[0];//index of the hex
 					std::vector<int>::iterator it;
-					it = find(clipVector.begin(), clipVector.end(), idxclip);
-					if (it != clipVector.end())
+					it = find(vein_clips_map[surf->getName()].begin(), vein_clips_map[surf->getName()].end(), idxclip);
+					if (it != vein_clips_map[surf->getName()].end())
 						std::cout << "Applying a clip on an existing one!" << *it << '\n';
-					else
-						clipVector.push_back(idxclip);
+					else {
+						//clipVector.push_back(idxclip);
+						vein_clips_map[surf->getName()].push_back(idxclip);
+					}
 					std::cout << "current clip vector: ";
-					for (auto i = clipVector.begin(); i != clipVector.end(); ++i)
+					for (auto i = vein_clips_map[surf->getName()].begin(); i != vein_clips_map[surf->getName()].end(); ++i)
 						std::cout << *i << ' ';
 					std::cout << endl;
 
@@ -1228,8 +1236,8 @@ namespace sofa
 							//TODO: Take the force direction(sign) into account while calculating resultant
 							//double resultantForce = sqrt(std::pow(newOmniDriver->data.currentForce[0], 2) + std::pow(newOmniDriver->data.currentForce[1], 2) + std::pow(newOmniDriver->data.currentForce[2], 2));
 							double resultantForce = 0;
-							if (aaOmniDriver){
-								resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
+							if (usingAA){
+								//resultantForce = sqrt(std::pow(aaOmniDriver->data.currentForce[0], 2) + std::pow(aaOmniDriver->data.currentForce[1], 2) + std::pow(aaOmniDriver->data.currentForce[2], 2));
 							}
 							else
 							{

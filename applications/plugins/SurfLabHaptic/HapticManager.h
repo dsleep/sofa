@@ -70,7 +70,7 @@
 //Changes for force feedback safety
 #include <SofaHaptics/ForceFeedback.h>
 #include "NewOmniDriver.h"
-#include "AAOmniDriver.h"
+//#include "AAOmniDriver.h"
 #include <math.h>
 
 #include <iostream>
@@ -158,7 +158,7 @@ namespace sofa
 				//sofa::component::topology::TriangleSetTopologyContainer* mesh;
 				//Changes for force feedback safety
 				sofa::component::controller::NewOmniDriver *newOmniDriver;
-				sofa::component::controller::AAOmniDriver *aaOmniDriver;
+				//sofa::component::controller::AAOmniDriver *aaOmniDriver;
 
 				HapticManager();
 
@@ -197,7 +197,7 @@ namespace sofa
 				static std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
 				static std::vector<double> hexDimensions;
 				static std::vector<bool> edge12along; // if edge 12 is along vessel
-				static std::vector<int> clipVector;
+				static std::map <string, vector<int>> vein_clips_map;//maps the name of vein to a vector of indices of clips
 				static std::set<int> veinCutSet;
 				static std::set<std::string> namesOfVeinCutSet;
 				static bool hasPutInBag;
@@ -210,9 +210,8 @@ namespace sofa
 				static std::string base_path_share ;
 				bool hasInstrumentTurnedRed = false;
 				bool hasInstrumentTurnedGreen = false;
-				//bool hasCarvedtheVein = false;
 				static double last_update_time;//last time the shader has been updated
-				static int last_clips_count;//last time the shader has been updated
+				static int last_clips_count;//not used
 				int hasBeenCut(std::string name);//check if a collision model has been cut or not, return 1 for yes, 0 for no.
 				
 			};
@@ -234,7 +233,8 @@ std::vector<std::pair<Hexahedron, int> > HapticManager::clampPairs;
 std::vector<MechanicalState<HapticManager::DataTypes>*> HapticManager::clipperStates;
 std::vector<double> HapticManager::hexDimensions;
 std::vector<bool> HapticManager::edge12along;
-std::vector<int> HapticManager::clipVector;
+//std::vector<int> HapticManager::clipVector;
+std::map< string, vector<int> > HapticManager::vein_clips_map;
 std::set<int> HapticManager::veinCutSet;
 std::set<std::string> HapticManager::namesOfVeinCutSet;
 double HapticManager::last_update_time;
