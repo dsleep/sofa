@@ -278,6 +278,7 @@ private:
     void	DisplayMenu(void);
     virtual void	drawScene() override ;
     void  MakeStencilMask();
+	void  MakeCircularStencilMask();//For tips Laproscopic surgical simulation
 
     void	ApplySceneTransformation(int x, int y);
     //int		handle(int event);	// required by FLTK

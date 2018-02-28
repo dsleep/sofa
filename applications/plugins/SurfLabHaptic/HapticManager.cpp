@@ -233,65 +233,16 @@ namespace sofa
 					// get the triangle index in the collision model of the surface
 					int idx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
 					// get the actual collision point. The point may lie inside in the triangle and its coordinates are calculated as barycentric coordinates w.r.t. the triangle. 
-					Vector3 pnt = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.point[1] : c.point[0]);
-					if (idx >= 0)
-					{
-						toolState.m1 = ContactMapper::Create(c.elem.first.getCollisionModel());
-						toolState.m2 = ContactMapper::Create(c.elem.second.getCollisionModel());
-
-						core::behavior::MechanicalState<DataTypes>* mstateCollision1 = toolState.m1->createMapping(GenerateStirngID::generate().c_str());
-						toolState.m1->resize(1);
-						core::behavior::MechanicalState<DataTypes>* mstateCollision2 = toolState.m2->createMapping(GenerateStirngID::generate().c_str());
-						toolState.m2->resize(1);
-
-						toolState.m_constraints = sofa::core::objectmodel::New<sofa::component::constraintset::BilateralInteractionConstraint<DataTypes> >(mstateCollision1, mstateCollision2);
-						toolState.m_constraints->clear(1);
-
-						int index1 = c.elem.first.getIndex();
-						int index2 = c.elem.second.getIndex();
-
-						double r1 = 0.0;
-						double r2 = 0.0;
-
-						index1 = toolState.m1->addPointB(c.point[0], index1, r1);
-						index2 = toolState.m2->addPointB(c.point[1], index2, r2);
-
-						double distance = c.elem.first.getCollisionModel()->getProximity() + c.elem.second.getCollisionModel()->getProximity() + intersectionMethod->getContactDistance() + r1 + r2;
-
-						toolState.m_constraints->addContact(c.normal, c.point[0], c.point[1], distance, index1, index2, c.point[0], c.point[1]);
-
-						if (c.elem.first.getCollisionModel() == toolState.modelTool)
-						{
-							mstateCollision2->getContext()->addObject(toolState.m_constraints);
-						}
-						else
-						{
-							mstateCollision1->getContext()->addObject(toolState.m_constraints);
-						}
-
-						toolState.m1->update();
-						toolState.m2->update();
-						toolState.m1->updateXfree();
-						toolState.m2->updateXfree();
-
-					}
-
-					if (c.elem.first.getCollisionModel() == toolState.modelTool)
-						toolState.modelTool->setGroups(c.elem.second.getCollisionModel()->getGroups());
-					else
-						toolState.modelTool->setGroups(c.elem.first.getCollisionModel()->getGroups());
-
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
 					if ((surf->hasTag(core::objectmodel::Tag("HapticSurface")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))))
 					{
-						//std::cout << "you have made an achievement by putting the organ in pouch! " << std::endl;
+						achievementsCount++;
 						std::string SharePath = base_path_share;
-						std::string capturePath(SharePath + "\/TIPS_screenshot\/Achievements\/" + programStartDate + "Achievement_");
+						std::string capturePath(SharePath + "\/TIPS_screenshot\/Achievements\/" + programStartDate + "achievement_");
 						std::string achi("Pouch.png");
-						std::string out = capturePath;
+						std::string out = capturePath + int2string(achievementsCount);
 						out = out + achi;
 						capture.saveScreen(out,5);
-						//this->getContext()->getRootContext()->setAnimate(false);//pause the simulation after the final achievement
 						if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
 						 {
 						 string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";						 
@@ -305,11 +256,10 @@ namespace sofa
 
 				}
 				string test = GUIManager::GetCurrentGUIName();
-				std::cout << "GUIManager::GetCurrentGUIName()" << test << std::endl;
 				BaseGUI* thing = GUIManager::getGUI();
-				RealGUI* testreal = dynamic_cast<RealGUI*>(GUIManager::getGUI());
-				testreal->populateReport(programStartDate);
-				testreal->showReport();
+				RealGUI* realGUI = dynamic_cast<RealGUI*>(GUIManager::getGUI());
+				realGUI->populateReport(programStartDate);
+				realGUI->showReport();
 
 			}
 
@@ -501,7 +451,6 @@ namespace sofa
 			int mistatkeToleranceClamp = 50;
 			int mistatkeToleranceDissect = 50;
 			int mistakeToleranceForce = 0;
-
 			
 			void HapticManager::doCarve()
 			{
@@ -591,20 +540,9 @@ namespace sofa
 						}
 						else if (tm->hasTag(core::objectmodel::Tag("CarvingTool")) && mistatkeToleranceCut > 0)
 						{
-							if (!hasInstrumentTurnedRed)
-							{
-								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
-								hasInstrumentTurnedRed = true;
-								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-									search_string, replace_string);
-								last_update_time = this->getContext()->getTime();
-								//std::cout << "last_update_time is " << last_update_time << std::endl;
-							}
-
 							mistatkeToleranceCut--;
 							mistatkeTolerance--;
-							if (mistatkeToleranceCut % 3 == 0)
+							if ((this->getContext()->getTime() - last_update_time) > 1.0)
 							{
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
@@ -615,17 +553,11 @@ namespace sofa
 							}
 							continue; // skip this element of safety surface
 						}  
-                        // else if(tm->hasTag(core::objectmodel::Tag("ClampingTool")) && mistatkeToleranceClamp > 0)
-                        // {
-                            // mistatkeToleranceClamp --;
-                            // cout<<" Clamp the wrong organs "<<50 - mistatkeToleranceClamp<<" times by accident"<<endl;
-                            // return; 
-                        // }    
-                        else if(tm->hasTag(core::objectmodel::Tag("DissectingTool")) && mistatkeToleranceDissect > 0)//RG: only dissectingTool(like scissor) can cut the vein
+						else if (tm->hasTag(core::objectmodel::Tag("DissectingTool")) && mistatkeToleranceDissect > 0)
 						{
 							mistatkeToleranceDissect--;
 							mistatkeTolerance--;
-							if (mistatkeToleranceDissect % 5 == 0)
+							if ((this->getContext()->getTime() - last_update_time) > 1.0)
 							{
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
@@ -636,6 +568,15 @@ namespace sofa
                             capture.saveScreen(out);
                             //std::cout<<" Cut the wrong organs" <<50 - mistatkeToleranceDissect<<" times by accident"<<std::endl;
 							}
+							if (!hasInstrumentTurnedRed)
+							{
+								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+								hasInstrumentTurnedRed = true;
+								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+									search_string, replace_string);
+								last_update_time = this->getContext()->getTime();
+							}			
 							continue; // skip this element of safety surface
 						}
 
@@ -651,7 +592,7 @@ namespace sofa
 						//check below if enough clips has been placed
 						if (vein_clips_map[surf->getName()].size() < 3 && !hasCutThisVein)
 						{
-							cout << "vein_clips_map[surf->getName()].size():" << vein_clips_map[surf->getName()].size() << endl;
+							//cout << "vein_clips_map[surf->getName()].size():" << vein_clips_map[surf->getName()].size() << endl;
 							if (!hasInstrumentTurnedRed )
 							{
 								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -665,7 +606,7 @@ namespace sofa
 							std::string SharePath = base_path_share;
 							std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
 							std::string err("_clips_not_enough.png");
-							std::string out = capturePath;
+							std::string out = capturePath + int2string(50 - mistatkeTolerance);
 							out = out + err;
 							capture.saveScreen(out,5);
 							last_update_time = this->getContext()->getTime();
@@ -683,10 +624,11 @@ namespace sofa
 										search_string, replace_string);
 									last_update_time = this->getContext()->getTime();
 								}
+								achievementsCount++;
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/Achievements\/" + programStartDate + "achieve_");
 								std::string err("cut_the_vein.png");
-								std::string out = capturePath;
+								std::string out = capturePath + int2string(achievementsCount);
 								out = out + err;
 								capture.saveScreen(out,5);
 								last_update_time = this->getContext()->getTime();
