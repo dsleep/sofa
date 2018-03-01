@@ -136,7 +136,7 @@ private:
 
     double lastProjectionMatrix[16];
     double lastModelviewMatrix[16];
-
+	bool laproscopic; // TIPS circular camera view
 public:
 
     static const std::string VIEW_FILE_EXTENSION;
