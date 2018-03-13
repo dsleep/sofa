@@ -1103,20 +1103,36 @@ namespace sofa
 					}
 				} // endif
 			}
-
+			bool keyDown = false;
+			bool doneContain = false;
+			bool doneGrasp = false;
+			bool doneClamp = false;
 			void HapticManager::updateTool()
 			{
+				//cout << "toolState.id = " << toolState.id << endl;
 				unsigned char newButtonState = toolState.newButtonState;
 				const unsigned char FIRST = 1, SECOND = 2;
-
+				keyDown = false;
+				if ((toolState.id == 1) && newOmniDriver->key_Q_down)
+					keyDown = true;
+				else if ((toolState.id == 0) && newOmniDriver->key_W_down)
+					keyDown = true;
 				switch (toolState.function)
 				{
-				case TOOLFUNCTION_CARVE:
-					if ((newButtonState & SECOND) != 0) doCarve();//Continue carving as long as the first button been pressed down	
+				case TOOLFUNCTION_CARVE:	
+					if ((newButtonState & SECOND) != 0)  doCarve();//Continue carving as long as the first button been pressed down	
+					else if (keyDown)
+						doCarve();
 					break;
 				case TOOLFUNCTION_CLAMP:
 					if (((toolState.buttonState ^ newButtonState) & SECOND) != 0 && (newButtonState & SECOND) != 0)
 						doClamp(); /* button down */
+					else if (keyDown && !doneClamp) {
+						doClamp();
+						doneClamp = true;
+					}
+					else
+						doneClamp = false;
 					break;
 				case TOOLFUNCTION_CONTAIN:
 					if (((toolState.buttonState ^ newButtonState) & SECOND) != 0) /* the state of the first button is changing */
@@ -1126,6 +1142,10 @@ namespace sofa
 							doContain(); /* button down */
 						}
 					}
+					else if (keyDown && !doneContain) {
+						doContain();
+						doneContain = true;
+					}
 					break;
 				case TOOLFUNCTION_GRASP:
 					if (((toolState.buttonState ^ newButtonState) & SECOND) != 0)
@@ -1133,11 +1153,20 @@ namespace sofa
 						/* the state of the first button is changing */
 						if ((newButtonState & SECOND) != 0)
 						{
-							doGrasp(); /* button down */		
+							doGrasp(); /* button down */
 						}
 						else
 							unGrasp(); /* button up */
 						}
+					}
+					else if (keyDown && !doneGrasp) {
+						doGrasp();
+						doneGrasp = true;
+					}
+					else if (doneGrasp){
+						unGrasp();
+						doneGrasp = false;
+					}
 					break;
 				case TOOLFUNCTION_SUTURE:
 					if (((toolState.buttonState ^ newButtonState) & FIRST) != 0)
@@ -1231,7 +1260,7 @@ namespace sofa
 				{
 					
 					core::objectmodel::KeypressedEvent *kpe = dynamic_cast<core::objectmodel::KeypressedEvent *>(event);
-					std::cout << "you have pressed a key:" << kpe->getKey() << std::endl;
+					std::cout << "hapticManager : you pressed a key:" << kpe->getKey() << std::endl;
 					if (kpe->getKey() == 'Q')
 					{
 						//std::cout << "you have pressed q!" << std::endl;
@@ -1253,7 +1282,7 @@ namespace sofa
 
 			void HapticManager::onHapticDeviceEvent(HapticDeviceEvent* ev)
 			{
-				//std::cout << "HM Received Haptic Event: evid, buttonstate  =  " << ev->getDeviceId()<<","<< ev->getButtonState() << std::endl;
+				//std::cout << "HM Received Haptic Event: devId, buttonstate  =  " << ev->getDeviceId()<<","<< ev->getButtonState() << std::endl;
 				if (ev->getDeviceId() == toolState.id) toolState.newButtonState = ev->getButtonState();
 			}
 
