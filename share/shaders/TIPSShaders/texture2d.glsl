@@ -102,7 +102,7 @@ void main()
 
   // color below = ambient + specular
   gl_FragColor.xyz = vec3(0.1,0.05,0.0) + 0.25 * color.xyz
-                      + 0.5 * color.xyz * clamp(dot(mylightDir, myN), -0.2, 1.0)
-                      + 1 * vec3(0.8, 0.8, 0.8) * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), 200) * fresnel;
+                      + 0.4 * color.xyz * clamp(dot(mylightDir, myN), -0.2, 1.0)
+                      + 1.0 * vec3(0.8, 0.8, 0.8) * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), 100) * fresnel * 5;
 }
 #endif
