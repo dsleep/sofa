@@ -107,9 +107,12 @@ void main()
   float exponential = pow(base, 5.0);
   float fresnel = exponential + F0 * (1.0 - exponential);
 
+  //gl_FragColor = vec4(myN,1);
+  //gl_FragColor = gl_FrontMaterial.diffuse * clamp(dot(mylightDir, myN), -0.2, 1.0);
+  //gl_FragColor = gl_FrontMaterial.specular * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), gl_FrontMaterial.shininess) * fresnel * basicNoise(vdata.position.xy);
   // color below = ambient + specular
-  gl_FragColor = gl_FrontMaterial.ambient
-                      + 0.5 * gl_FrontMaterial.diffuse * clamp(dot(mylightDir, myN), -0.2, 1.0)
-                      + 1 * gl_FrontMaterial.specular * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), gl_FrontMaterial.shininess) * fresnel * basicNoise(vdata.position.xy) * 5;
+   gl_FragColor = gl_FrontMaterial.ambient
+                      + 0.8 * gl_FrontMaterial.diffuse * clamp(dot(mylightDir, myN), -0.2, 1.0)
+                      + 1 * gl_FrontMaterial.specular * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), gl_FrontMaterial.shininess) * fresnel * basicNoise(vdata.position.xy);
 }
 #endif
