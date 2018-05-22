@@ -267,7 +267,7 @@ void main() {
   float exponential = pow(base, 5.0);
   float fresnel = exponential + F0 * (1.0 - exponential);
   // color below = ambient + specular
-	gl_FragColor.xyz = vec3(0.15,0.05,0.05) + 0.4 * color.xyz
+  gl_FragColor.xyz = vec3(0.15,0.05,0.05) + 0.4 * color.xyz
                       + 1.0 * vec3(0.8, 0.8, 0.8) * pow(max(0.0, clamp(dot(CamDir,ReflectedRay),-0.2,1.0)), 200) * fresnel * basicNoise(in_texcoord2.xy) * 5
                       + 0.5*color.xyz * clamp(dot(mylightDir, myN), -0.8,1.0);
   gl_FragColor.a = 0.5;

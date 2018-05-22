@@ -169,8 +169,8 @@ float fnoise(vec3 x) {
 void main()
 {
 	//Adapted from Ruiliang's Texture3D shader
-	vec4 pos = gl_ModelViewMatrix * vec4(tedata.position, 1);
-	vec3 mylightDir = normalize(vec3(0.1, 0.1, 0) - pos.xyz);//light position in ViewCoord
+  vec4 pos = gl_ModelViewMatrix * vec4(tedata.position, 1);
+  vec3 mylightDir = normalize(vec3(0.1, 0.1, 0) - pos.xyz);//light position in ViewCoord
 
   //Generating a bump map from noise
   float noiseVal = fnoise(tedata.position.xyz) * 0.5 + 0.5;
@@ -188,10 +188,10 @@ void main()
 
   vec3 pN = normalize(tedata.normal.xyz - grad);
 
-	vec4 Nr = gl_ModelViewMatrixInverseTranspose * vec4(pN, 1);
-	vec3 myN = normalize(Nr.xyz);//This step is so important that the Rasteration step will use interpolattion to get N, which must be normalized.
-	vec3 ReflectedRay = reflect(mylightDir, myN );
-	vec3 CamDir = normalize(pos.xyz);//Cam position in ViewCoord is 0,0,0
+  vec4 Nr = gl_ModelViewMatrixInverseTranspose * vec4(pN, 1);
+  vec3 myN = normalize(Nr.xyz);//This step is so important that the Rasteration step will use interpolattion to get N, which must be normalized.
+  vec3 ReflectedRay = reflect(mylightDir, myN );
+  vec3 CamDir = normalize(pos.xyz);//Cam position in ViewCoord is 0,0,0
 
 //Fresnel Term
   float F0 = 0.5;
@@ -199,9 +199,8 @@ void main()
   float base = 1 - dot(CamDir, h);
   float exponential = pow(base, 5.0);
   float fresnel = exponential + F0 * (1.0 - exponential);
-
   gl_FragColor = gl_FrontMaterial.ambient
                       + 0.5 * gl_FrontMaterial.diffuse * clamp(dot(mylightDir, myN), -0.2, 1.0)
-                      + 1 * gl_FrontMaterial.specular * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), gl_FrontMaterial.shininess) * fresnel * basicNoise(tedata.position.xy) * 5;
-}
+                      + 1.0 * vec4(0.9, 0.9, 0.9, 1.0) * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), 30) * fresnel * 5;;
+ }
 #endif

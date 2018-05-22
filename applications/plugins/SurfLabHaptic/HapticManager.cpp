@@ -1229,7 +1229,9 @@ namespace sofa
 									safetyForceThreshold = atof(tagString.substr(keywordThreshold.length(), tagString.length() - keywordThreshold.length()).c_str());
 								}
 							}
-							if (resultantForce > safetyForceThreshold && mistakeToleranceForce <= 5)
+							//if (resultantForce > safetyForceThreshold && mistakeToleranceForce <= 5)
+							//std::cout << "current force on vein  " << resultantForce << " and threshold " << veinForceThreshold.getValue() << std::endl;
+							if (resultantForce > safetyForceThreshold && mistakeToleranceForce <= 15 && this->getContext()->getTime() - last_update_time >= 0.5)
 							{
 								if (!hasInstrumentTurnedRed)
 								{

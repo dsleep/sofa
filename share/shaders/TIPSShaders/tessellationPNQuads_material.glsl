@@ -234,8 +234,8 @@ void main() {
 
   vec4 Nr = gl_ModelViewMatrixInverseTranspose * vec4(pN, 1);
   vec3 myN = normalize(Nr.xyz);//This step is so important that the Rasteration step will use interpolattion to get N, which must be normalized.
-	vec3 ReflectedRay = reflect(mylightDir, myN );
-	vec3 CamDir = normalize(pos.xyz);//Cam position in ViewCoord is 0,0,0
+  vec3 ReflectedRay = reflect(mylightDir, myN );
+  vec3 CamDir = normalize(pos.xyz);//Cam position in ViewCoord is 0,0,0
 
   //Fresnel Term
   float F0 = 0.5;
@@ -244,8 +244,7 @@ void main() {
   float exponential = pow(base, 5.0);
   float fresnel = exponential + F0 * (1.0 - exponential);
 
-  // color below = ambient + specular
-	gl_FragColor = gl_FrontMaterial.ambient
+  gl_FragColor = gl_FrontMaterial.ambient
                       + 0.5 * gl_FrontMaterial.diffuse * clamp(dot(mylightDir, myN), -0.2, 1.0)
                       + 1 * gl_FrontMaterial.specular * pow(max(0.0, clamp(dot(CamDir, ReflectedRay), -0.2, 1.0)), gl_FrontMaterial.shininess) * fresnel * basicNoise(tedata.position.xy) * 5;
 }
