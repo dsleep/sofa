@@ -222,7 +222,7 @@ protected:
     HFFHexahedronHandler* hexahedronHandler;
 
     topology::HexahedronSetTopologyContainer* _topology;
-
+	
     defaulttype::Mat<8,3,int> _coef; ///< coef of each vertices to compute the strain stress matrix
 };
 

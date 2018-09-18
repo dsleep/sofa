@@ -148,7 +148,7 @@ namespace sofa
 								//cast to New omni
 								newOmniDriver = dynamic_cast<sofa::component::controller::NewOmniDriver *>(omniDriver.get());
 								//aaOmniDriver = NULL;
-								std::cout << "haptic manager using NewOmni " << this << std::endl;
+								//std::cout << "haptic manager using NewOmni " << this << std::endl;
 
 							}
 							else
@@ -255,8 +255,8 @@ namespace sofa
 						 }
 
 				}
-				string test = GUIManager::GetCurrentGUIName();
-				BaseGUI* thing = GUIManager::getGUI();
+				//string test = GUIManager::GetCurrentGUIName();
+				//BaseGUI* thing = GUIManager::getGUI();
 				RealGUI* realGUI = dynamic_cast<RealGUI*>(GUIManager::getGUI());
 				realGUI->populateReport(programStartDate);
 				realGUI->showReport();
@@ -394,7 +394,7 @@ namespace sofa
 
 					// update *sc*
 					if (edge12along[i]){ sc[0] = relativeScale*sc[0]; sc[1] = relativeScale / 4 * sc[1]; }
-					else{ sc[0] = relativeScale / 4 * sc[0]; sc[1] = relativeScale*sc[1]; };
+					else{ sc[0] = relativeScale / 4 * sc[0]; sc[1] = relativeScale*0.8*sc[1]; };
 					sc[2] = relativeScale*sc[2];
 
 					for (int t = 0; t < vertices.size(); t++) {  // adjust clip model (scale, etc) along edge-directions of quad
@@ -408,6 +408,7 @@ namespace sofa
 					}
 
 					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+					glColor3f(0.8f, 0.8f, 0.8f);
 					//glEnable(GL_COLOR_MATERIAL);
 					glBegin(GL_TRIANGLES);  // display clip in OGL: 2 triangles per quad
 					for (int t = 0; t < facets.size(); t++) {
@@ -467,7 +468,8 @@ namespace sofa
 				{
 					const ContactVector::value_type& c = (*contacts)[j];
 					core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-					//cout << "surf->name: " << surf->getName() << endl;
+					
+					//find the correct carvable model index below
 					if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceVolume")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))))
 					{
 						if (!contact_index_fixed)
@@ -480,9 +482,10 @@ namespace sofa
 									active_contact_index = j;
 								}
 							}	
-						}
-						
+						}					
 					}
+
+					//find vein or thick-curve
 					if ((surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) || surf->hasTag(core::objectmodel::Tag("HapticSurfaceCurve"))) )
 					{		
 						if (tm->hasTag(core::objectmodel::Tag("CarvingTool")) || tm->hasTag(core::objectmodel::Tag("CuttingTool")) && mistatkeToleranceCutVein > 0)
@@ -499,7 +502,6 @@ namespace sofa
 							}
 							if (!hasCutThisVein && resultantForce >= 1.1)
 							{
-								//std::cout << "current force on vein  " << resultantForce << std::endl;
 								if (!hasInstrumentTurnedRed)
 								{
 									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -513,16 +515,14 @@ namespace sofa
 
 								mistatkeToleranceCutVein--;
 								mistatkeTolerance--;
-								//std::cout<<" Cut the vein "<<50 - mistatkeToleranceCutVein<<" times by accident"<<endl;
-								if (mistatkeToleranceCutVein % 5 == 0)
-								{
-									std::string SharePath = base_path_share;
-									std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error"); //temp path for saving the screenshot
-									std::string err("Dissect_vein.png");
-									std::string out = capturePath + int2string(int((50-mistatkeTolerance)/5));
-									out = out + err;
-									capture.saveScreen(out, 5);
-								}		
+								
+								std::string SharePath = base_path_share;
+								std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error"); //temp path for saving the screenshot
+								std::string err("_dissecting_vein.png");
+								std::string out = capturePath + int2string(int((50-mistatkeTolerance)/5));
+								out = out + err;
+								capture.saveScreen(out, 5);
+								
 								continue; // skip this element
 							}
 							continue; // skip this element
@@ -546,7 +546,7 @@ namespace sofa
 							{
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
-								std::string err("Dissect.png");
+								std::string err("_dissecting_safety.png");
 								std::string out = capturePath + int2string(50 - mistatkeTolerance);
 								out = out + err;
                             capture.saveScreen(out);
@@ -561,8 +561,7 @@ namespace sofa
 							{
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
-                            //std::string capturePath("C:\\Users\\Ruiliang\\Desktop\\TIPS_screenshot\\error"); //path for saving the screenshot
-								std::string err("Cut.png");
+								std::string err("_cutting_safety.png");
 								std::string out = capturePath + int2string(50 - mistatkeTolerance);
 								out = out + err;
                             capture.saveScreen(out);
@@ -581,15 +580,14 @@ namespace sofa
 						}
 
 					}
-					/*sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
+					sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
 					if (topoMapping == NULL) return;
 					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
-					elemsToRemove.push_back(triangleIdx);*/
 
 					if (surf->hasTag(core::objectmodel::Tag("HapticSurfaceVein")) && tm->hasTag(core::objectmodel::Tag("DissectingTool")) && this->getContext()->getTime() - last_update_time >= 0.3)
 					{
 						int hasCutThisVein = hasBeenCut(surf->getName());
-						//check below if enough clips has been placed
+						//check below if enough clips has been placed on this vein
 						if (vein_clips_map[surf->getName()].size() < 3 && !hasCutThisVein)
 						{
 							//cout << "vein_clips_map[surf->getName()].size():" << vein_clips_map[surf->getName()].size() << endl;
@@ -605,68 +603,124 @@ namespace sofa
 							mistatkeTolerance--;
 							std::string SharePath = base_path_share;
 							std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
-							std::string err("_clips_not_enough.png");
+							std::string err("_cut_without_enough_clips.png");
 							std::string out = capturePath + int2string(50 - mistatkeTolerance);
 							out = out + err;
 							capture.saveScreen(out,5);
 							last_update_time = this->getContext()->getTime();
 						}
 						else
-						{
-							if (!hasCutThisVein && vein_clips_map[surf->getName()].size()  >= 3)
+						{	//check if the cut is proper or not
+							int hasClipBeforeCut = 0, hasClipAfterCut = 0, hasClipOnCut = 0;
+							//the following are for checking the idx of the hex being cut
+							core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
+							sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
+							surf->getContext()->get(triangleContainer);
+							const sofa::core::topology::Topology::Triangle TriangleElem = triangleContainer->getTriangle(triangleIdx);
+							sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
+							surf->getContext()->get(hexContainer);
+							if (hexContainer == NULL) return;
+
+							sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(TriangleElem[0]);
+							sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(TriangleElem[1]);
+							sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(TriangleElem[2]);
+							sofa::helper::vector< unsigned int > ie1;
+							sofa::helper::vector< unsigned int > ie;
+							std::sort(e1.begin(), e1.end());
+							std::sort(e2.begin(), e2.end());
+							std::sort(e3.begin(), e3.end());
+							std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie1));
+							std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
+							int idxHexCut = ie[0];
+							if ( vein_clips_map[surf->getName()].size()  >= 3)
 							{
-								if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
+								//check if cut is between clips
+								
+								//std::cout << "idx of the hex to be cut: " << idxHexCut << std::endl;
+								
+								for (auto i = vein_clips_map[surf->getName()].begin(); i != vein_clips_map[surf->getName()].end(); ++i)
 								{
-									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-									string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
-									hasInstrumentTurnedGreen = true;
-									updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-										search_string, replace_string);
+									if (*i == idxHexCut)
+										hasClipOnCut = 1;
+									else if (*i < idxHexCut)
+										hasClipBeforeCut = 1;
+									else if (*i > idxHexCut)
+										hasClipAfterCut = 1;
+								}
+
+								if (hasClipBeforeCut + hasClipAfterCut < 2) //meaning cut position is wrong
+								{
+									if (!hasInstrumentTurnedRed)
+									{
+										string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+										string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+										hasInstrumentTurnedRed = true;
+										updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+											search_string, replace_string);
+										last_update_time = this->getContext()->getTime();
+									}
+									mistatkeTolerance--;
+									std::string SharePath = base_path_share;
+									std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
+									std::string err("_cut_at_wrong_position.png");
+									std::string out = capturePath + int2string(50 - mistatkeTolerance);
+									out = out + err;
+									capture.saveScreen(out, 5);
 									last_update_time = this->getContext()->getTime();
 								}
-								achievementsCount++;
-								std::string SharePath = base_path_share;
-								std::string capturePath(SharePath + "\/TIPS_screenshot\/Achievements\/" + programStartDate + "achieve_");
-								std::string err("cut_the_vein.png");
-								std::string out = capturePath + int2string(achievementsCount);
-								out = out + err;
-								capture.saveScreen(out,5);
-								last_update_time = this->getContext()->getTime();
+								else if (hasClipOnCut == 1)
+								{
+									if (!hasInstrumentTurnedRed)
+									{
+										string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+										string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
+										hasInstrumentTurnedRed = true;
+										updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+											search_string, replace_string);
+										last_update_time = this->getContext()->getTime();
+									}
+									mistatkeTolerance--;
+									std::string SharePath = base_path_share;
+									std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
+									std::string err("_left_clips_inside_body.png");
+									std::string out = capturePath + int2string(50 - mistatkeTolerance);
+									out = out + err;
+									capture.saveScreen(out, 5);
+									last_update_time = this->getContext()->getTime();
+								}
+								//Visual feedbakc and screenshot - achievement
+								else if(!hasCutThisVein)
+								{
+									if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
+									{
+										string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
+										string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
+										hasInstrumentTurnedGreen = true;
+										updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
+											search_string, replace_string);
+										last_update_time = this->getContext()->getTime();
+									}
+									achievementsCount++;
+									std::string SharePath = base_path_share;
+									std::string capturePath(SharePath + "\/TIPS_screenshot\/Achievements\/" + programStartDate + "achieve_");
+									std::string err("cut_the_vein.png");
+									std::string out = capturePath + int2string(achievementsCount);
+									out = out + err;
+									capture.saveScreen(out, 5);
+									last_update_time = this->getContext()->getTime();
+								}
 							}
+							
 						}
-						
-						//the following are for checking the idx of the hex being cut
-						//core::CollisionModel* surf = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getCollisionModel() : c.elem.first.getCollisionModel());
-						//sofa::component::topology::TriangleSetTopologyContainer* triangleContainer;
-						//surf->getContext()->get(triangleContainer);
-						//const sofa::core::topology::Topology::Triangle TriangleElem = triangleContainer->getTriangle(triangleIdx);
-						//sofa::component::topology::HexahedronSetTopologyContainer* hexContainer;
-						//surf->getContext()->get(hexContainer);
-						//if (hexContainer == NULL) return;
 
-						//sofa::helper::vector< unsigned int > e1 = hexContainer->getHexahedraAroundVertex(TriangleElem[0]);
-						//sofa::helper::vector< unsigned int > e2 = hexContainer->getHexahedraAroundVertex(TriangleElem[1]);
-						//sofa::helper::vector< unsigned int > e3 = hexContainer->getHexahedraAroundVertex(TriangleElem[2]);
-						//sofa::helper::vector< unsigned int > ie1;
-						//sofa::helper::vector< unsigned int > ie;
-						//std::sort(e1.begin(), e1.end());
-						//std::sort(e2.begin(), e2.end());
-						//std::sort(e3.begin(), e3.end());
-						//std::set_intersection(e1.begin(), e1.end(), e2.begin(), e2.end(), std::back_inserter(ie1));
-						//std::set_intersection(ie1.begin(), ie1.end(), e3.begin(), e3.end(), std::back_inserter(ie));
-						//int idxHex = ie[0];
-						////std::cout << "idx of the hex to cut: " << idxHex << std::endl;
-						//veinCutSet.insert(idxHex);
-						//hasCutVein = true;
 						//std::cout << "surf been cut:" << surf->getName() << std::endl;
 						namesOfVeinCutSet.insert(surf->getName());
-						//cout << "clips count for last cut:" << last_clips_count << std::endl;
 
 					}
-					sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
+					/*sofa::core::topology::TopologicalMapping * topoMapping = surf->getContext()->get<sofa::core::topology::TopologicalMapping>();
 					if (topoMapping == NULL) return;
 					int triangleIdx = (c.elem.first.getCollisionModel() == toolState.modelTool ? c.elem.second.getIndex() : c.elem.first.getIndex());
-					elemsToRemove.push_back(triangleIdx);
+					*/elemsToRemove.push_back(triangleIdx);
 					//indexActiveContacts.push_back(triangleIdx);
 					//active_contact_index = j;
 				}
@@ -1120,7 +1174,9 @@ namespace sofa
 				switch (toolState.function)
 				{
 				case TOOLFUNCTION_CARVE:	
-					if ((newButtonState & SECOND) != 0)  doCarve();//Continue carving as long as the first button been pressed down	
+					//if ((newButtonState & SECOND) != 0)  doCarve();//Continue carving as long as the first button been pressed down	
+					if (((toolState.buttonState ^ newButtonState) & SECOND) != 0 && (newButtonState & SECOND) != 0)//button down
+						doCarve();
 					else if (keyDown)
 						doCarve();
 					break;
@@ -1163,7 +1219,7 @@ namespace sofa
 						doGrasp();
 						doneGrasp = true;
 					}
-					else if (doneGrasp){
+					else if (!keyDown && doneGrasp){
 						unGrasp();
 						doneGrasp = false;
 					}
@@ -1229,9 +1285,8 @@ namespace sofa
 									safetyForceThreshold = atof(tagString.substr(keywordThreshold.length(), tagString.length() - keywordThreshold.length()).c_str());
 								}
 							}
-							//if (resultantForce > safetyForceThreshold && mistakeToleranceForce <= 5)
 							//std::cout << "current force on vein  " << resultantForce << " and threshold " << veinForceThreshold.getValue() << std::endl;
-							if (resultantForce > safetyForceThreshold && mistakeToleranceForce <= 15 && this->getContext()->getTime() - last_update_time >= 0.5)
+							if (resultantForce > safetyForceThreshold && !hasBeenCut(surf->getName()) && this->getContext()->getTime() - last_update_time >= 0.5)
 							{
 								if (!hasInstrumentTurnedRed)
 								{
@@ -1243,13 +1298,15 @@ namespace sofa
 									last_update_time = this->getContext()->getTime();
 		
 								}
+								mistatkeTolerance--;
 								std::string SharePath = base_path_share;
 								std::string capturePath(SharePath + "\/TIPS_screenshot\/Errors\/" + programStartDate + "error");
 								mistakeToleranceForce++;
-								std::string err("Safety_force_vein.png");
-								std::string out = capturePath + int2string(mistakeToleranceForce);
+								std::string err("_too_much_force_on_vein.png");
+								std::string out = capturePath + std::to_string(resultantForce);
 								out = out + err;
 								capture.saveScreen(out,5);
+								last_update_time = this->getContext()->getTime();
 							}
 						}
 					}
@@ -1259,13 +1316,11 @@ namespace sofa
 			void HapticManager::handleEvent(Event* event)
 			{
 				if (dynamic_cast<core::objectmodel::KeypressedEvent *>(event))
-				{
-					
+				{			
 					core::objectmodel::KeypressedEvent *kpe = dynamic_cast<core::objectmodel::KeypressedEvent *>(event);
 					std::cout << "hapticManager : you pressed a key:" << kpe->getKey() << std::endl;
 					if (kpe->getKey() == 'Q')
 					{
-						//std::cout << "you have pressed q!" << std::endl;
 						switch (toolState.function)
 						{
 						case TOOLFUNCTION_CARVE:
@@ -1299,7 +1354,7 @@ namespace sofa
 				if (hasInstrumentTurnedRed)
 				{
 					//Sleep(400);
-					if (this->getContext()->getTime() - last_update_time >= 0.1)
+					if (this->getContext()->getTime() - last_update_time >= 0.2)
 					{
 						hasInstrumentTurnedRed = false;
 						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
@@ -1311,7 +1366,7 @@ namespace sofa
 				}
 				if (hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
 				{
-					if (this->getContext()->getTime() - last_update_time >= 0.05)
+					if (this->getContext()->getTime() - last_update_time >= 0.1)
 					{
 						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
 						string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";

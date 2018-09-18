@@ -57,6 +57,7 @@ namespace component
 namespace forcefield
 {
 
+//applyCreateFunction : init per hexahedron
 template< class DataTypes>
 void HexahedralFEMForceField<DataTypes>::HFFHexahedronHandler::applyCreateFunction(unsigned int hexahedronIndex,
         HexahedronInformation &,
@@ -87,7 +88,7 @@ HexahedralFEMForceField<DataTypes>::HexahedralFEMForceField()
     , hexahedronInfo(initData(&hexahedronInfo, "hexahedronInfo", "Internal hexahedron data"))
     , hexahedronHandler(NULL)
 {
-
+	// coef of each vertices <Mat 8x3, int> for a hexa
     _coef[0][0]= -1;		_coef[0][1]= -1;		_coef[0][2]= -1;
     _coef[1][0]=  1;		_coef[1][1]= -1;		_coef[1][2]= -1;
     _coef[2][0]=  1;		_coef[2][1]=  1;		_coef[2][2]= -1;
@@ -136,7 +137,6 @@ void HexahedralFEMForceField<DataTypes>::reinit()
         this->setMethod(POLAR);
 
     helper::vector<typename HexahedralFEMForceField<DataTypes>::HexahedronInformation>& hexahedronInf = *(hexahedronInfo.beginEdit());
-
 
     hexahedronInf.resize(_topology->getNbHexahedra());
 
@@ -221,8 +221,9 @@ template<class DataTypes>
 void HexahedralFEMForceField<DataTypes>::computeElementStiffness( ElementStiffness &K, const MaterialStiffness &M, const defaulttype::Vec<8,Coord> &nodes)
 {
     Mat33 J_1; // only accurate for orthogonal regular hexa
+	//J_1 approximates the (inverse Jacobian) of reference(natural) coord X0 with respect to deformed coord x
     J_1.fill( 0.0 );
-    Coord l = nodes[6] - nodes[0];
+    Coord l = nodes[6] - nodes[0];//diag
     J_1[0][0]=2.0f / l[0];
     J_1[1][1]=2.0f / l[1];
     J_1[2][2]=2.0f / l[2];
@@ -356,7 +357,7 @@ typename HexahedralFEMForceField<DataTypes>::Mat33 HexahedralFEMForceField<DataT
 
 template<class DataTypes>
 void HexahedralFEMForceField<DataTypes>::computeMaterialStiffness(MaterialStiffness &m, double youngModulus, double poissonRatio)
-{
+{	// Hooke's Law in Stiffness Form; This is matrix is the "D" in the paper, sig = D * eps
     m[0][0] = m[1][1] = m[2][2] = 1;
     m[0][1] = m[0][2] = m[1][0]= m[1][2] = m[2][0] =  m[2][1] = (Real)(poissonRatio/(1-poissonRatio));
     m[0][3] = m[0][4] =	m[0][5] = 0;
@@ -392,18 +393,17 @@ void HexahedralFEMForceField<DataTypes>::initLarge(const int i)
 
     const VecCoord& X0=this->mstate->read(core::ConstVecCoordId::restPosition())->getValue();
 
-    defaulttype::Vec<8,Coord> nodes;
+    defaulttype::Vec<8,Coord> nodes; // coord of the 8 nodes for the ith hex
     for(int w=0; w<8; ++w)
         nodes[w] = (X0)[_topology->getHexahedron(i)[w]];
 
 
-    Coord horizontal;
+    Coord horizontal; //average of four horizontal sides
     horizontal = (nodes[1]-nodes[0] + nodes[2]-nodes[3] + nodes[5]-nodes[4] + nodes[6]-nodes[7])*.25;
-    Coord vertical;
+    Coord vertical; //average of four vertical sides
     vertical = (nodes[3]-nodes[0] + nodes[2]-nodes[1] + nodes[7]-nodes[4] + nodes[6]-nodes[5])*.25;
-    Transformation R_0_1;
+    Transformation R_0_1; //3x3 matrix for rigid transformations like rotations
     computeRotationLarge( R_0_1, horizontal,vertical);
-
 
     helper::vector<typename HexahedralFEMForceField<DataTypes>::HexahedronInformation>& hexahedronInf = *(hexahedronInfo.beginEdit());
 
@@ -607,7 +607,7 @@ void HexahedralFEMForceField<DataTypes>::addKToMatrix(const core::MechanicalPara
 
     for(unsigned int e=0 ; e<_topology->getNbHexahedra() ; ++e)
     {
-        const ElementStiffness &Ke = hexahedronInf[e].stiffness;
+        const ElementStiffness &Ke = hexahedronInf[e].stiffness; //Mat<24, 24, Real>
 
         // find index of node 1
         for (n1=0; n1<8; n1++)
@@ -622,7 +622,7 @@ void HexahedralFEMForceField<DataTypes>::addKToMatrix(const core::MechanicalPara
                         Coord(Ke[3*n1+1][3*n2+0],Ke[3*n1+1][3*n2+1],Ke[3*n1+1][3*n2+2]),
                         Coord(Ke[3*n1+2][3*n2+0],Ke[3*n1+2][3*n2+1],Ke[3*n1+2][3*n2+2])) ) * hexahedronInf[e].rotation;
                 for(i=0; i<3; i++)
-                    for (j=0; j<3; j++)
+                    for (j=0; j<3; j++)// Add value to the element (using 0-based indices)
                         r.matrix->add(r.offset+3*node1+i, r.offset+3*node2+j, - tmp[i][j]*kFactor);
             }
         }

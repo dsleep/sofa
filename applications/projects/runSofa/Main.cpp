@@ -387,8 +387,10 @@ int main(int argc, char** argv)
 
 	//For TIPS project, we have turned on the interactive mode all the time
     if(enableInteraction || true){
-        msg_warning("Main") << "you activated the interactive mode. This is currently an experimental feature "
-                               "that may change or be removed in the future. " ;
+      /*  msg_warning("Main") << "you activated the interactive mode. This is currently an experimental feature "
+                               "that may change or be removed in the future. " ;*/
+		std::cout << std::endl;
+		msg_advice("TIPS instructions:") << "########### Welcome to TIPS surgical simulator! ############";
         GUIManager::AddGUIOption("enableInteraction");
     }
     else
