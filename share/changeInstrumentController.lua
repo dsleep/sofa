@@ -45,7 +45,7 @@ function handlers.onKeyPressed(c)
     if haptics[1] then 
       changeInstrument(haptics[1])
     end
-  elseif c == 'H' then
+  elseif c == 'V' then
     if haptics[2] then
       changeInstrument(haptics[2])
     end
