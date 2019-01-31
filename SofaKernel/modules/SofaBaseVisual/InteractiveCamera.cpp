@@ -38,7 +38,7 @@ int InteractiveCameraClass = core::RegisterObject("InteractiveCamera")
 
 
 InteractiveCamera::InteractiveCamera()
-    :p_zoomSpeed(initData(&p_zoomSpeed, (double) 250.0 , "zoomSpeed", "Zoom Speed"))
+    :p_zoomSpeed(initData(&p_zoomSpeed, (double) 150.0 , "zoomSpeed", "Zoom Speed")) //TIPS:reduced from 250 to 150
     ,p_panSpeed(initData(&p_panSpeed, (double) 0.1 , "panSpeed", "Pan Speed"))
     ,p_pivot(initData(&p_pivot, 2 , "pivot", "Pivot (0 => Camera lookAt, 1 => Camera position, 2 => Scene center, 3 => World center"))
     ,currentMode(InteractiveCamera::NONE_MODE)
@@ -199,11 +199,11 @@ void InteractiveCamera::processMouseEvent(core::objectmodel::MouseEvent* me)
         lastMousePosY = posY;
     }
     else if(me->getState() == core::objectmodel::MouseEvent::MiddlePressed)
-    {
-        isMoving = true;
+    {	//TIPS: disabled middle button since middle button is used by surflab haptic devices
+        /*isMoving = true;
         currentMode = ZOOM_MODE;
         lastMousePosX = posX;
-        lastMousePosY = posY;
+        lastMousePosY = posY;*/
     }
     else
         //Mouse Move
