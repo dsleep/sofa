@@ -1,0 +1,21 @@
+<Node name="root">
+  <LCPConstraintSolver tolerance="1e-3" maxIt="1000" initial_guess="false" build_lcp="false"  printLog="0" mu="0.2"/>
+  <FreeMotionAnimationLoop />
+  <CollisionPipeline depth="15" verbose="0" draw="0" />
+  <BruteForceDetection name="N2" />
+  <MinProximityIntersection name="Proximity" tags="pri" alarmDistance="1.5" contactDistance="1" />
+
+  <LightManager tags="pri" />
+  <SpotLight name="light1" color="1 1 1" position="0 80 25" direction="0 -1 -0.8" cutoff="30" exponent="1" />
+  <SpotLight name="light2" color="1 1 1" position="0 40 100" direction="0 0 -1" cutoff="30" exponent="1" />
+  <Node>
+    <Node name="target" tags="some">
+    </Node>
+    <Node  name="neutral">
+    </Node>
+    <Node name="other" tags="some thing">
+    </Node>
+  </Node>
+  <CollisionResponse name="Response" response="FrictionContact" />
+  <LuaController source="node_search.lua" />
+</Node>

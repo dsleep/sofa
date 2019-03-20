@@ -1,0 +1,4 @@
+<Node name="root">
+  <RequiredPlugin pluginName="SaLua" />
+  <LuaController source="included_controller_example.lua" listening="1"/>
+</Node>

@@ -1,0 +1,45 @@
+print('Loading the Lua scene')
+root = sofa.simulation:newGraph("my sample graph")
+root.gravity = { 1, 0, 1 }
+
+n = sofa.simulation:newNode("dynamicNode")
+root:addChild(n)
+
+function visualObject(ctx, fn)
+  o = ctx:newObject("OglModel", "ExtVec3f")
+  o.fileMesh = fn
+  return o
+end
+
+caduceas = visualObject(root, "mesh/caducee_snake.obj")
+caduceas.translation = { 0, -10, 0 }
+
+
+handlers = {}
+-- onKeyPressed is only called if you hold Control down
+-- so to add the dragon one must type Ctrl+[
+function handlers.onKeyPressed(c)
+  if c == '[' then
+    print('Adding the dragon')
+    local n = sofa.simulation:newNode("eventNode")
+    dragon = visualObject(n, "mesh/dragon.obj")
+    dragon.name = "Dragon"
+    n:addObject(dragon)
+    root:addChild(n)
+    n:init()
+    return true
+  end
+end
+function handlers.onLoad()
+  print("Loaded the Lua controller")
+end
+function handlers.onBeginAnimationStep(dt)
+  t = caduceas.translation
+  t[1] = t[1] + dt * 1000
+  caduceas.translation = t
+end
+
+root:addObject(sofa.newController(handlers))
+
+print('Press Ctrl+[ to add the dragon')
+return root
