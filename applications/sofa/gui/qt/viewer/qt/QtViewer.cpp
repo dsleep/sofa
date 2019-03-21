@@ -1603,7 +1603,7 @@ void QtViewer::resetView()
     // and with a Up vector in the same axis as the gravity
     if (!fileRead)
     {
-        //newView();
+        newView();
     }
 
     update();
@@ -1676,17 +1676,7 @@ QString QtViewer::helpString() const
 {
     static QString
     text(
-        "<H1>TIPS Instructions</H1><hr>\
-<ul>\
-<li><b>Before animation</b>: Strech out the arms of your haptic device to your ideal working place<br></li>\
-<li><b>Start animation</b>: Start the animation by pressing SPACE or click the 'animate' button<br></li>\
-<li><b>Haptic initialize</b>: Press the 2nd BUTTON(the button closer to the user) to initialize the haptic devices<br></li>\
-<li><b>Switch instruments</b>: Press the 2nd button on haptic device (or click 'CTRL + C') to switch between the instruments.<br></li>\
-</ul>\
-\
-\
-\
-<H1>QtViewer</H1><hr>\
+        "<H1>QtViewer</H1><hr>\
 <ul>\
 <li><b>Mouse</b>: TO NAVIGATE<br></li>\
 <li><b>Shift & Left Button</b>: TO PICK OBJECTS<br></li>\

@@ -31,7 +31,7 @@
 #include "GraphListenerQListView.h"
 #include "QMenuFilesRecentlyOpened.h"
 #include "PickHandlerCallBacks.h"
-#include <ui_report_score.h>
+
 #include <sofa/gui/BaseGUI.h>
 #include <sofa/gui/ViewerFactory.h>
 
@@ -90,11 +90,9 @@ class QSofaStatWidget;
 class GraphListenerQListView;
 class DisplayFlagsDataWidget;
 class SofaPluginManager;
-class report_score;
 #ifdef SOFA_DUMP_VISITOR_INFO
 class WindowVisitor;
 class GraphVisitor;
-
 #endif
 
 class SofaMouseManager;
@@ -204,6 +202,7 @@ protected:
     std::map< helper::SofaViewerFactory::Key, QAction* > viewerMap;
     InformationOnPickCallBack informationOnPickCallBack;
 
+    QWidget* currentTab;
     QSofaStatWidget* statWidget;
     QTimer* timerStep;
     QTimer* timerIdle;
@@ -211,7 +210,7 @@ protected:
     QLineEdit *backgroundImage;
     SofaPluginManager* pluginManager_dialog;
     QMenuFilesRecentlyOpened recentlyOpenedFilesManager;
-    report_score* report;
+
     std::string simulation_name;
     std::string gnuplot_directory;
     std::string pathDumpVisitor;
@@ -291,7 +290,7 @@ public:
     void dragEnterEvent( QDragEnterEvent* event) override;
 
     void dropEvent(QDropEvent* event) override;
-	void populateReport(std::string date);
+
 protected:
     /// init data member from RealGUI for the viewer initialisation in the GUI
     void init();
@@ -302,7 +301,7 @@ protected:
     void keyPressEvent ( QKeyEvent * e ) override;
     void startDumpVisitor();
     void stopDumpVisitor();
-	
+
     /// init the viewer for the GUI (embeded or not we have to connect some info about viewer in the GUI)
     void initViewer(BaseViewer* _viewer) override;
 
@@ -335,10 +334,9 @@ private:
 
     void createPluginManager();
 
-	void createReport();
     /// configure Recently Opened Menu
     void createRecentFilesMenu();
-    
+
     void createBackgroundGUIInfos();
     void createSimulationGraph();
     void createPropertyWidget();
@@ -400,17 +398,12 @@ public slots:
     virtual void showMouseManager();
     virtual void showVideoRecorderManager();
     virtual void toolsDockMoved();
-    virtual void showInstructions();
-	virtual void showReport();
 
-    void setViewToolbar(bool);
-    void tabGraphVisibilityChanged(bool);
-    void tabStatsVisibilityChanged(bool);
 protected slots:
     /// Allow to dynamicly change viewer. Called when click on another viewer in GUI Qt viewer list (see viewerMap).
     /// TODO: find a better way to propagate the argument when we construct the viewer
     virtual void changeViewer();
-    
+
     /// Update the viewerMap and create viewer if we haven't yet one (the first of the list)
     /// TODO: find a better way to propagate the argument when we construct the viewer
     virtual void updateViewerList();

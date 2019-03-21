@@ -65,6 +65,13 @@ void GUIManager::RegisterParameters(ArgumentParser* argumentParser)
     }
 }
 
+//UF - DS TODO
+//void GUIManager::AddGUIOption(const char* option)
+//{
+//	guiOptions.push_back(option);
+//}
+
+
 const std::string &GUIManager::GetCurrentGUIName()
 {
     return currentGUI->GetGUIName();
@@ -225,6 +232,11 @@ int GUIManager::Init(const char* argv0, const char* name)
         return 1;
     }
     valid_guiname = name; // at this point we must have a valid name for the gui.
+
+	//UF - DS needs init options
+	//if (creator->init)
+		//return (*creator->init)(valid_guiname, guiOptions);
+	///else
 
     return 0;
 }

@@ -243,14 +243,8 @@ void RealGUI::SetPixmap(std::string pixmap_filename, QPushButton* b)
 
 //------------------------------------
 
-
 void RealGUI::CreateApplication(int /*_argc*/, char** /*_argv*/)
 {
-#ifdef WIN32
-    char c[256];
-    GetModuleFileNameA(NULL, c, sizeof(c));
-    QCoreApplication::addLibraryPath(QDir(QString::fromLatin1(c) + "/..").absolutePath());
-#endif
     int  *argc = new int;
     char **argv=new char*[2];
     *argc = 1;

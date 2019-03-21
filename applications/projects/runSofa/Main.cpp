@@ -372,26 +372,33 @@ int main(int argc, char** argv)
     std::string configPluginPath = TOSTRING(CONFIG_PLUGIN_FILENAME);
     std::string defaultConfigPluginPath = TOSTRING(DEFAULT_CONFIG_PLUGIN_FILENAME);
 
-    if (!noAutoloadPlugins)
-    {
-        if (PluginRepository.findFile(configPluginPath, "", nullptr))
-        {
-            msg_info("runSofa") << "Loading automatically plugin list in " << configPluginPath;
-            PluginManager::getInstance().readFromIniFile(configPluginPath);
-    }
-        else if (PluginRepository.findFile(defaultConfigPluginPath, "", nullptr))
-    {
-            msg_info("runSofa") << "Loading automatically plugin list in " << defaultConfigPluginPath;
-            PluginManager::getInstance().readFromIniFile(defaultConfigPluginPath);
-    }
+	if (!noAutoloadPlugins)
+	{
+		if (PluginRepository.findFile(configPluginPath, "", nullptr))
+		{
+			msg_info("runSofa") << "Loading automatically plugin list in " << configPluginPath;
+			PluginManager::getInstance().readFromIniFile(configPluginPath);
+		}
+		else if (PluginRepository.findFile(defaultConfigPluginPath, "", nullptr))
+		{
+			msg_info("runSofa") << "Loading automatically plugin list in " << defaultConfigPluginPath;
+			PluginManager::getInstance().readFromIniFile(defaultConfigPluginPath);
+		}
+		else
+			msg_info("runSofa") << "No plugin list found. No plugin will be automatically loaded.";
+	}
+	else
+		msg_info("runSofa") << "Automatic plugin loading disabled.";
 
 	//For TIPS project, we have turned on the interactive mode all the time
-    if(enableInteraction || true){
+    if(enableInteraction || true)
+	{
       /*  msg_warning("Main") << "you activated the interactive mode. This is currently an experimental feature "
                                "that may change or be removed in the future. " ;*/
 		std::cout << std::endl;
 		msg_advice("TIPS instructions:") << "########### Welcome to TIPS surgical simulator! ############";
-        GUIManager::AddGUIOption("enableInteraction");
+		//UF - DS TODO
+        //GUIManager::AddGUIOption("enableInteraction");
     }
     else
         msg_info("runSofa") << "Automatic plugin loading disabled.";
