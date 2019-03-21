@@ -1,6 +1,6 @@
 /******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, development version     *
-*                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
+*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
 * This program is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -15,12 +15,16 @@
 * You should have received a copy of the GNU Lesser General Public License    *
 * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
 *******************************************************************************
+*                               SOFA :: Plugins                               *
+*                                                                             *
 * Authors: The SOFA Team and external contributors (see Authors.txt)          *
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #ifndef SOFA_COMPONENT_ODESOLVER_NEWOMNISOLVER_H
 #define SOFA_COMPONENT_ODESOLVER_NEWOMNISOLVER_H
+#define NEW_OMNI_DRIVER_NAME_S "NewOmniDriver"
+
 
 //Sensable include
 #include <HD/hd.h>
@@ -61,186 +65,194 @@
 
 namespace sofa
 {
-namespace simulation { class Node; }
+	namespace simulation { class Node; }
 
-namespace component
-{
-namespace visualModel { class OglModel; }
+	namespace component
+	{
+		namespace visualModel { class OglModel; }
 
-namespace controller
-{
+		namespace controller
+		{
 
-class ForceFeedback;
+			class ForceFeedback;
 
-using namespace sofa::defaulttype;
-using namespace sofa::helper;
-using core::objectmodel::Data;
+			using namespace sofa::defaulttype;
+			using namespace sofa::helper;
+			using core::objectmodel::Data;
 
-/** Holds data retrieved from HDAPI. */
-struct NewDeviceData
-{
-    HHD id;
-    int nupdates;
-    int m_buttonState;					/* Has the device button has been pressed. */
-    hduVector3Dd m_devicePosition;	/* Current device coordinates. */
-    HDErrorInfo m_error;
-    Vec3d pos;
-    Quat quat;
-    bool ready;
-    bool stop;
-};
+			/** Holds data retrieved from HDAPI. */
+			struct NewDeviceData
+			{
+				HHD id;
+				int nupdates;
+				int m_buttonState;					/* Has the device button has been pressed. */
+				hduVector3Dd m_devicePosition;	/* Current device coordinates. */
+				HDErrorInfo m_error;
+				Vec3d pos;
+				Quat quat;
+				bool ready;
+				bool stop;
+			};
 
-struct NewOmniData
-{
-    ForceFeedback::SPtr forceFeedback;
-    simulation::Node::SPtr *context;
+			struct NewOmniData
+			{
+				ForceFeedback::SPtr forceFeedback;
+				simulation::Node::SPtr *context;
 
-    sofa::defaulttype::SolidTypes<double>::Transform endOmni_H_virtualTool;
-    //Transform baseOmni_H_endOmni;
-    sofa::defaulttype::SolidTypes<double>::Transform world_H_baseOmni;
-    double forceScale;
-    double scale;
-    bool permanent_feedback;
+				sofa::defaulttype::SolidTypes<double>::Transform endOmni_H_virtualTool;
+				//Transform baseOmni_H_endOmni;
+				sofa::defaulttype::SolidTypes<double>::Transform world_H_baseOmni;
+				double forceScale;
+				double scale;
+				bool permanent_feedback;
+				Vec3d desirePosition;
+				bool move2Pos;
+				//bool isDominantHand;
+				double stiffness;
 
-    // API OMNI //
-    NewDeviceData servoDeviceData;  // for the haptic loop
-    NewDeviceData deviceData;		 // for the simulation loop
+				// API OMNI //
+				NewDeviceData servoDeviceData;  // for the haptic loop
+				NewDeviceData deviceData;		 // for the simulation loop
 
-    double currentForce[3];
+				double currentForce[3];
 
-};
+			};
 
-struct AllNewOmniData
-{
-    vector<NewOmniData> omniData;
-} ;
+			struct AllNewOmniData
+			{
+				vector<NewOmniData> omniData;
+			};
 
-/**
-* Omni driver
-*/
-class NewOmniDriver : public Controller
-{
+			/**
+			* Omni driver
+			*/
+			class NewOmniDriver : public Controller
+			{
 
-public:
-    SOFA_CLASS(NewOmniDriver, Controller);
-    typedef RigidTypes::Coord Coord;
-    typedef RigidTypes::VecCoord VecCoord;
-    typedef component::container::MechanicalObject<sofa::defaulttype::Rigid3Types> MMechanicalObject;
+			public:
+				SOFA_CLASS(NewOmniDriver, Controller);
+				static std::string getName(){
+					return NEW_OMNI_DRIVER_NAME_S;
+				}
 
+				typedef RigidTypes::Coord Coord;
+				typedef RigidTypes::VecCoord VecCoord;
+				typedef sofa::defaulttype::Vec3Types DataTypes;
+				typedef component::container::MechanicalObject<sofa::defaulttype::Rigid3dTypes> MMechanicalObject;
 
+				struct VisualComponent
+				{
+					simulation::Node::SPtr node;
+					sofa::component::visualmodel::OglModel::SPtr visu;
+					sofa::component::mapping::RigidMapping< Rigid3dTypes, ExtVec3fTypes  >::SPtr mapping;
+				};
 
-    struct VisualComponent
-    {
-        simulation::Node::SPtr node;
-        sofa::component::visualmodel::OglModel::SPtr visu;
-        sofa::component::mapping::RigidMapping< Rigid3Types , ExtVec3Types  >::SPtr mapping;
-    };
+				Data<double> forceScale;
+				Data<double> scale;
+				Data<Vec3d> positionBase;
+				Data<Quat> orientationBase;
+				Data<Vec3d> positionTool;
+				Data<Quat> orientationTool;
+				Data<bool> permanent;
+				Data<bool> omniVisu;
+				Data< VecCoord > posDevice;
+				Data< VecCoord > posStylus;
+				Data< std::string > locDOF;
+				Data< std::string > deviceName;
+				Data< int > deviceIndex;
+				Data<Vec1d> openTool;
+				Data<double> maxTool;
+				Data<double> minTool;
+				Data<double> openSpeedTool;
+				Data<double> closeSpeedTool;
+				Data<bool> setRestShape;
+				Data<bool> applyMappings;
+				Data<bool> alignOmniWithCamera;
+				Data<bool> stateButton1;
+				Data<bool> stateButton2;
+				Data<bool> setDesirePosition;
+				Data<bool> isDominantHand;
+				Data<Vec3d> desirePosition;
 
+				sofa::component::container::MechanicalObject<sofa::defaulttype::Rigid3dTypes>::SPtr DOF;
+				sofa::component::container::MechanicalObject<sofa::defaulttype::Rigid3dTypes>::SPtr toolDOF;
+				sofa::component::visualmodel::BaseCamera::SPtr camera;
 
+				bool initVisu;
 
-    Data<double> forceScale; ///< Default forceScale applied to the force feedback. 
-    Data<double> scale; ///< Default scale applied to the Phantom Coordinates. 
-    Data<Vec3d> positionBase; ///< Position of the interface base in the scene world coordinates
-    Data<Quat> orientationBase; ///< Orientation of the interface base in the scene world coordinates
-    Data<Vec3d> positionTool; ///< Position of the tool in the omni end effector frame
-    Data<Quat> orientationTool; ///< Orientation of the tool in the omni end effector frame
-    Data<bool> permanent; ///< Apply the force feedback permanently
-    Data<bool> omniVisu; ///< Visualize the position of the interface in the virtual scene
-    Data< VecCoord > posDevice; ///< position of the base of the part of the device
-    Data< VecCoord > posStylus; ///< position of the base of the stylus
-    Data< std::string > locDOF; ///< localisation of the DOFs MechanicalObject
-    Data< std::string > deviceName; ///< name of the device
-    Data< int > deviceIndex; ///< index of the device
-    Data<Vec1d> openTool; ///< opening of the tool
-    Data<double> maxTool; ///< maxTool value
-    Data<double> minTool; ///< minTool value
-    Data<double> openSpeedTool; ///< openSpeedTool value
-    Data<double> closeSpeedTool; ///< closeSpeedTool value
-    Data<bool> useScheduler; ///< Enable use of OpenHaptics Scheduler methods to synchronize haptics thread
-    Data<bool> setRestShape; ///< True to control the rest position instead of the current position directly
-    Data<bool> applyMappings; ///< True to enable applying the mappings after setting the position
-    Data<bool> alignOmniWithCamera; ///< True to keep the Omni's movements in the same reference frame as the camera
-    Data<bool> stateButton1; ///< True if the First button of the Omni is pressed
-    Data<bool> stateButton2; ///< True if the Second button of the Omni is pressed
+				NewOmniData data;
+				AllNewOmniData allData;
+				bool key_Q_down, key_W_down;//TIPS bluetooth map
+				int key_Q_count, key_W_count;//TIPS bluetooth filter
 
+				NewOmniDriver();
+				virtual ~NewOmniDriver();
 
-    sofa::component::container::MechanicalObject<sofa::defaulttype::Rigid3dTypes> *DOFs;
-    sofa::component::visualmodel::BaseCamera::SPtr camera;
+				virtual void init();
+				virtual void bwdInit();
+				virtual void reset();
+				void reinit();
 
-    bool initVisu;
+				int initDevice();
 
-    NewOmniData data;
-    AllNewOmniData allData;
+				void cleanup();
+				virtual void draw(const core::visual::VisualParams*) override;
+				virtual void draw();
 
-    NewOmniDriver();
-    virtual ~NewOmniDriver();
+				void setForceFeedback(ForceFeedback* ff);
 
-    virtual void init() override;
-    virtual void bwdInit() override;
-    virtual void reset() override;
-    void reinit() override;
+				void onKeyPressedEvent(core::objectmodel::KeypressedEvent *);
+				void onKeyReleasedEvent(core::objectmodel::KeyreleasedEvent *);
+				void onAnimateBeginEvent();
 
-    int initDevice();
+				void setDataValue();
 
-    void cleanup() override;
-    virtual void draw(const core::visual::VisualParams*) override;
-    virtual void draw();
+				//variable pour affichage graphique
+				simulation::Node *parent;
+				enum
+				{
+					VN_stylus = 0,
+					VN_joint2 = 1,
+					VN_joint1 = 2,
+					VN_arm2 = 3,
+					VN_arm1 = 4,
+					VN_joint0 = 5,
+					VN_base = 6,
+					VN_X = 7,
+					VN_Y = 8,
+					VN_Z = 9,
+					NVISUALNODE = 10
+				};
+				VisualComponent visualNode[NVISUALNODE];
+				static const char* visualNodeNames[NVISUALNODE];
+				static const char* visualNodeFiles[NVISUALNODE];
+				simulation::Node::SPtr nodePrincipal;
+				MMechanicalObject::SPtr rigidDOF;
+				bool changeScale;
+				bool firstInit;
+				float oldScale;
+				bool visuActif;
+				bool isInitialized;
+				Vec3d positionBase_buf;
+				bool modX;
+				bool modY;
+				bool modZ;
+				bool modS;
+				bool axesActif;
+				HDfloat angle1[3];
+				HDfloat angle2[3];
+				bool firstDevice;
+				//vector<NewOmniDriver*> autreOmniDriver;
 
-    void setForceFeedback(ForceFeedback* ff);
+			private:
+				void handleEvent(core::objectmodel::Event *);
+				bool noDevice;
 
-    void onKeyPressedEvent(core::objectmodel::KeypressedEvent *) override;
-    void onKeyReleasedEvent(core::objectmodel::KeyreleasedEvent *) override;
-    void onAnimateBeginEvent();
+			};
 
-    void setDataValue();
+		} // namespace controller
 
-    //variable pour affichage graphique
-    enum
-    {
-        VN_stylus = 0,
-        VN_joint2 = 1,
-        VN_joint1 = 2,
-        VN_arm2   = 3,
-        VN_arm1   = 4,
-        VN_joint0 = 5,
-        VN_base   = 6,
-        VN_X      = 7,
-        VN_Y      = 8,
-        VN_Z      = 9,
-        NVISUALNODE = 10
-    };
-    VisualComponent visualNode[NVISUALNODE];
-    static const char* visualNodeNames[NVISUALNODE];
-    static const char* visualNodeFiles[NVISUALNODE];
-    simulation::Node::SPtr nodePrincipal;
-    MMechanicalObject::SPtr rigidDOF;
-    bool changeScale;
-    bool firstInit;
-    float oldScale;
-    bool visuActif;
-    bool isInitialized;
-    Vec3d positionBase_buf;
-    bool modX;
-    bool modY;
-    bool modZ;
-    bool modS;
-    bool axesActif;
-    HDfloat angle1[3];
-    HDfloat angle2[3];
-    bool firstDevice;
-    //vector<NewOmniDriver*> autreOmniDriver;
-
-private:
-    void handleEvent(core::objectmodel::Event *) override;
-    bool noDevice;
-
-
-
-};
-
-} // namespace controller
-
-} // namespace component
+	} // namespace component
 
 } // namespace sofa
 

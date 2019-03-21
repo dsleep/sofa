@@ -124,6 +124,8 @@ int EnslavementForceFeedbackClass = core::RegisterObject("Updates force to the h
         .add< EnslavementForceFeedback >()
         ;
 
+SOFA_DECL_CLASS(EnslavementForceFeedback)
+
 }
 
 }
