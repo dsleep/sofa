@@ -458,41 +458,41 @@ void BilateralInteractionConstraint<DataTypes>::getConstraintResolution(const Co
 
 template<class DataTypes>
 void BilateralInteractionConstraint<DataTypes>::addContact(Deriv /*norm*/, Coord P, Coord Q,
-                                                           Real /*contactDistance*/, int m1, int m2,
-                                                           Coord /*Pfree*/, Coord /*Qfree*/,
-                                                           long /*id*/, PersistentID /*localid*/)
+	Real /*contactDistance*/, int m1, int m2,
+	Coord /*Pfree*/, Coord /*Qfree*/,
+	long /*id*/, PersistentID /*localid*/)
 {
-    WriteAccessor<Data<helper::vector<int> > > wm1 = this->m1;
-    WriteAccessor<Data<helper::vector<int> > > wm2 = this->m2;
-    WriteAccessor<Data<VecDeriv > > wrest = this->restVector;
-    wm1.push_back(m1);
-    wm2.push_back(m2);
-    wrest.push_back(Q-P);
+	WriteAccessor<Data<helper::vector<int> > > wm1 = this->m1;
+	WriteAccessor<Data<helper::vector<int> > > wm2 = this->m2;
+	WriteAccessor<Data<VecDeriv > > wrest = this->restVector;
+	wm1.push_back(m1);
+	wm2.push_back(m2);
+	wrest.push_back(Q - P);
 }
 
 
 template<class DataTypes>
 void BilateralInteractionConstraint<DataTypes>::addContact(Deriv norm, Coord P, Coord Q, Real
-                                                           contactDistance, int m1, int m2,
-                                                           long id, PersistentID localid)
-    {
-   addContact(norm, P, Q, contactDistance, m1, m2,
-               this->getMState2()->read(ConstVecCoordId::freePosition())->getValue()[m2],
-               this->getMState1()->read(ConstVecCoordId::freePosition())->getValue()[m1],
-               id, localid);
+	contactDistance, int m1, int m2,
+	long id, PersistentID localid)
+{
+	addContact(norm, P, Q, contactDistance, m1, m2,
+		this->getMState2()->read(ConstVecCoordId::freePosition())->getValue()[m2],
+		this->getMState1()->read(ConstVecCoordId::freePosition())->getValue()[m1],
+		id, localid);
 }
 
 template<class DataTypes>
 void BilateralInteractionConstraint<DataTypes>::addContact(Deriv norm, Real contactDistance,
-                                                           int m1, int m2, long id, PersistentID localid)
+	int m1, int m2, long id, PersistentID localid)
 {
-    addContact(norm,
-               this->getMState2()->read(ConstVecCoordId::position())->getValue()[m2],
-               this->getMState1()->read(ConstVecCoordId::position())->getValue()[m1],
-               contactDistance, m1, m2,
-               this->getMState2()->read(ConstVecCoordId::freePosition())->getValue()[m2],
-               this->getMState1()->read(ConstVecCoordId::freePosition())->getValue()[m1],
-               id, localid);
+	addContact(norm,
+		this->getMState2()->read(ConstVecCoordId::position())->getValue()[m2],
+		this->getMState1()->read(ConstVecCoordId::position())->getValue()[m1],
+		contactDistance, m1, m2,
+		this->getMState2()->read(ConstVecCoordId::freePosition())->getValue()[m2],
+		this->getMState1()->read(ConstVecCoordId::freePosition())->getValue()[m1],
+		id, localid);
 }
 
 
@@ -567,19 +567,6 @@ void BilateralInteractionConstraint<DataTypes>::handleEvent(Event *event)
             activated = true;
         }
     }
-}
-
-template<class DataTypes>
-void BilateralInteractionConstraint<DataTypes>::addContact(Deriv /*norm*/, Coord P, Coord Q, Real /*contactDistance*/, int m1, int m2, Coord /*Pfree*/, Coord /*Qfree*/, long /*id*/, PersistentID /*localid*/)
-{
-	helper::WriteAccessor<Data<helper::vector<int> > > wm1 = this->m1;
-    helper::WriteAccessor<Data<helper::vector<int> > > wm2 = this->m2;
-	
-    helper::WriteAccessor<Data<VecDeriv > > wrest = this->restVector;
-    wm1.push_back(m1);
-    wm2.push_back(m2);
-    wrest.push_back(Q-P);
-	
 }
 
 } // namespace bilateralinteractionconstraint

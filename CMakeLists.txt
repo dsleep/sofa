@@ -154,7 +154,7 @@ option(SOFA_WITH_DEVTOOLS "Compile with developement extra features." ON)
 option(SOFA_WITH_THREADING "Compile sofa with thread-safetiness support (PARTIAL/EXPERIMENTAL)" ON)
 
 ### Testing
-option(SOFA_BUILD_TESTS "Compile the automatic tests for Sofa, along with the gtest library." ON)
+option(SOFA_BUILD_TESTS "Compile the automatic tests for Sofa, along with the gtest library." OFF)
 if(SOFA_BUILD_TESTS)
     # Enable testing features of cmake, like the add_test() command.
     enable_testing()

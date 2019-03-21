@@ -58,20 +58,18 @@ const std::string OglShadowShader::PATH_TO_SOFT_SHADOW_VERTEX_SHADERS = "shaders
 const std::string OglShadowShader::PATH_TO_SOFT_SHADOW_FRAGMENT_SHADERS = "shaders/softShadows/VSM/variance_shadow_mapping.frag";
 
 OglShadowShader::OglShadowShader()
-	: vertPath(initData(&vertPath, PATH_TO_SOFT_SHADOW_VERTEX_SHADERS, "vertPath", "path to shadow vertex shader")),
-	fragPath(initData(&fragPath, PATH_TO_SOFT_SHADOW_FRAGMENT_SHADERS, "fragPath", "path to shadow fragment shader"))
 {
     passive.setValue(false);
     turnOn.setValue(true);
     helper::vector<std::string>& vertF = *vertFilename.beginEdit();
     vertF.resize(2);
-    vertF[0] = vertPath.getValue();
-    vertF[1] = vertPath.getValue();
+    vertF[0] = PATH_TO_SHADOW_VERTEX_SHADERS;
+    vertF[1] = PATH_TO_SHADOW_VERTEX_SHADERS;
     vertFilename.endEdit();
     helper::vector<std::string>& fragF = *fragFilename.beginEdit();
     fragF.resize(2);
-    fragF[0] = fragPath.getValue();
-    fragF[1] = fragPath.getValue();
+    fragF[0] = PATH_TO_SHADOW_FRAGMENT_SHADERS;
+    fragF[1] = PATH_TO_SHADOW_FRAGMENT_SHADERS;
     fragFilename.endEdit();
 }
 
@@ -96,17 +94,14 @@ void OglShadowShader::initShaders(unsigned int /* numberOfLights */, bool softSh
 {
     helper::vector<std::string>& vertF = *vertFilename.beginEdit();
     vertF.resize(2);
-	vertF[0] = vertPath.getValue();
-	vertF[1] = vertPath.getValue();
+    vertF[0] = (softShadow ? PATH_TO_SOFT_SHADOW_VERTEX_SHADERS : PATH_TO_SHADOW_VERTEX_SHADERS);
+    vertF[1] = (softShadow ? PATH_TO_SOFT_SHADOW_VERTEX_SHADERS : PATH_TO_SHADOW_VERTEX_SHADERS);
     vertFilename.endEdit();
-	std::cout << vertPath.getValue() << std::endl;
     helper::vector<std::string>& fragF = *fragFilename.beginEdit();
     fragF.resize(2);
-	fragF[0] = fragPath.getValue();
-	fragF[1] = fragPath.getValue();
+    fragF[0] = (softShadow ? PATH_TO_SOFT_SHADOW_FRAGMENT_SHADERS : PATH_TO_SHADOW_FRAGMENT_SHADERS);
+    fragF[1] = (softShadow ? PATH_TO_SOFT_SHADOW_FRAGMENT_SHADERS : PATH_TO_SHADOW_FRAGMENT_SHADERS);
     fragFilename.endEdit();
-
-	std::cout << fragPath.getValue() << std::endl;
 }
 
 }//namespace visualmodel
