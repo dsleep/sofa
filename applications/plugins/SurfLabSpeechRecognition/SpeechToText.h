@@ -54,6 +54,7 @@ public:
 	int moveCount = 0;
 	std::string base_path = "";
 	sofa::simulation::Node::SPtr groot;
+	bool stopCameraMotion = false;
 	bool enableSpeechRec = true;
 	time_t last_command_time;
 

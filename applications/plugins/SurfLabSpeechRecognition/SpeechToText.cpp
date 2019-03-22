@@ -2,11 +2,11 @@
 #include <SphinxLib.h>
 #include <sofa/core/ObjectFactory.h>
 
-#include <sofa/simulation/common/AnimateBeginEvent.h>
+#include <sofa/simulation/AnimateBeginEvent.h>
 #include <sofa/core/objectmodel/HapticDeviceEvent.h>
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 
-#include <sofa/simulation/common/Node.h>
+#include <sofa/simulation/Node.h>
 
 
 #include <sofa/core/objectmodel/BaseObject.h>
@@ -136,41 +136,49 @@ namespace sofa
 								/* TRANSLATIONS */
 								if (strcmp(result.hyp, "camera left") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->RIGHT);
 									speechtotext->setMoveCount(default_translate_count);
 								}
-						else if (strcmp(result.hyp, "right") == 0)
+								else if (strcmp(result.hyp, "camera right") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->LEFT);
 									speechtotext->setMoveCount(default_translate_count);
 								}
-						else if (strcmp(result.hyp, "up") == 0)
+								else if (strcmp(result.hyp, "camera up") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->DOWN);
 									speechtotext->setMoveCount(default_translate_count);
 								}
-						else if (strcmp(result.hyp, "down") == 0)
+								else if (strcmp(result.hyp, "camera down") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->UP);
 									speechtotext->setMoveCount(default_translate_count);
 								}
-						else if (strcmp(result.hyp, "slightly left") == 0)
+								else if (strcmp(result.hyp, "camera slightly left") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->SLIGHTLY_RIGHT);
 									speechtotext->setMoveCount(default_translate_count / 2);
 								}
-						else if (strcmp(result.hyp, "slightly right") == 0)
+								else if (strcmp(result.hyp, "camera slightly right") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->SLIGHTLY_LEFT);
 									speechtotext->setMoveCount(default_translate_count / 2);
 								}
-						else if (strcmp(result.hyp, "slightly up") == 0)
+								else if (strcmp(result.hyp, "camera slightly up") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->SLIGHTLY_DOWN);
 									speechtotext->setMoveCount(default_translate_count / 2);
 								}
-						else if (strcmp(result.hyp, "slightly down") == 0)
+								else if (strcmp(result.hyp, "camera slightly down") == 0)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->SLIGHTLY_UP);
 									speechtotext->setMoveCount(default_translate_count / 2);
 								}				
@@ -201,11 +209,13 @@ namespace sofa
 								}
 								else if (result_str.find("zoom in") != std::string::npos)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->ZOOM_IN);
 									speechtotext->setMoveCount(default_zoom_count);
 								}
 								else if (result_str.find("zoom out") != std::string::npos || result_str.find("zoom up") != std::string::npos)
 								{
+									*stopCameraMotion = false;
 									speechtotext->setMoveMode(speechtotext->ZOOM_OUT);
 									speechtotext->setMoveCount(default_zoom_count);
 								}
@@ -368,7 +378,7 @@ namespace sofa
 			{
 				if (dynamic_cast<sofa::simulation::AnimateBeginEvent *>(event))
 				{
-					if (moveCount > 0)
+					if (moveCount > 0 && !stopCameraMotion)
 					{
 						switch (moveMode)
 						{
@@ -636,6 +646,10 @@ namespace sofa
 
 						moveCount--;
 					}//if
+					if (stopCameraMotion)
+					{
+						moveCount = 0;
+					}
 
 				}//if
 

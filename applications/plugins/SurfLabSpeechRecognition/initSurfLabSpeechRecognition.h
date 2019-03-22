@@ -2,7 +2,7 @@
 #define INITSURFLABSPEECHRECOGNITION_H
 
 #include <sofa/helper/system/config.h>
-#include <sofa/simulation/common/Simulation.h>
+#include <sofa/simulation/Simulation.h>
 
 #ifdef SOFA_BUILD_SURFLABSPEECHRECOGNITION
 #define SOFA_SURFLABSPEECHRECOGNITION_API SOFA_EXPORT_DYNAMIC_LIBRARY
