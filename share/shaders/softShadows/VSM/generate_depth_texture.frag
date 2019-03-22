@@ -33,6 +33,5 @@ void main()
 	vec4 moments = vec4(0.0,0.0,0.0,0.0);
 	moments.xy = ComputeMoments(depth);
 	gl_FragColor = moments;
-  //gl_FragColor = vec4(1,0,0,0);
 }
 
