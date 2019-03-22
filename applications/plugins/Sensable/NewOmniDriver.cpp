@@ -201,7 +201,6 @@ namespace sofa
 
 
 					//partie pour ff simulatnnée
-#if 1
 					positionDevs[i].getCenter() = world_H_virtualTool.getOrigin();
 					positionDevs[i].getOrientation() = world_H_virtualTool.getOrientation();
 
@@ -223,17 +222,20 @@ namespace sofa
 
 				}
 
-				for (unsigned int i = 0; i<autreOmniDriver.size(); i++)
+				for (unsigned int i = 0; i<autreOmniDriver.size(); i++)				
 				{
 
 					ForceFeedback *ff = autreOmniDriver[i]->data.forceFeedback.get();
-					if (ff != NULL){
-						SReal fx, fy, fz;
-						if (!autreOmniDriver[i]->data.move2Pos) {
+					if (ff != NULL)
+					{						
+						if (!autreOmniDriver[i]->data.move2Pos) 
+						{
+							SReal fx = 0, fy = 0, fz = 0;
 							ff->computeForce(positionDevs[i].getCenter().x(), positionDevs[i].getCenter().y(), positionDevs[i].getCenter().z(), 0, 0, 0, 0, fx, fy, fz);
 							forceDevs[i] = RigidTypes::Deriv(Vec3d(fx, fy, fz), Vec3d());
 						}
-						else {
+						else 
+						{
 							Vec3d vec = autreOmniDriver[i]->data.desirePosition - positionDevs[i].getCenter();
 							forceDevs[i] = RigidTypes::Deriv(autreOmniDriver[i]->data.stiffness*vec, Vec3d());
 						}
@@ -271,54 +273,6 @@ namespace sofa
 
 					autreOmniDriver[i]->data.servoDeviceData.nupdates++;
 				}
-
-#else
-
-					Vec3d world_pos_tool = world_H_virtualTool.getOrigin();
-					Quat world_quat_tool = world_H_virtualTool.getOrientation();
-					//truc sur le forcefeedback
-					/////////////// 6D rendering ////////////////
-					sofa::defaulttype::SolidTypes<double>::SpatialVector Twist_tool_inWorld(Vec3d(0.0, 0.0, 0.0), Vec3d(0.0, 0.0, 0.0)); // Todo: compute a velocity !!
-					sofa::defaulttype::SolidTypes<double>::SpatialVector Wrench_tool_inWorld(Vec3d(0.0, 0.0, 0.0), Vec3d(0.0, 0.0, 0.0));
-
-					if (autreOmniDriver[i]->data.forceFeedback != NULL)
-						(autreOmniDriver[i]->data.forceFeedback)->computeWrench(world_H_virtualTool, Twist_tool_inWorld, Wrench_tool_inWorld); //en faire qu'un et uttiliser compute force
-
-					// we compute its value in the current Tool frame:
-					sofa::defaulttype::SolidTypes<double>::SpatialVector Wrench_tool_inTool(world_quat_tool.inverseRotate(Wrench_tool_inWorld.getForce()), world_quat_tool.inverseRotate(Wrench_tool_inWorld.getTorque()));
-					// we transport (change of application point) its value to the endOmni frame
-					sofa::defaulttype::SolidTypes<double>::SpatialVector Wrench_endOmni_inEndOmni = autreOmniDriver[i]->data.endOmni_H_virtualTool * Wrench_tool_inTool;
-					// we compute its value in the baseOmni frame
-					sofa::defaulttype::SolidTypes<double>::SpatialVector Wrench_endOmni_inBaseOmni(baseOmni_H_endOmni.projectVector(Wrench_endOmni_inEndOmni.getForce()), baseOmni_H_endOmni.projectVector(Wrench_endOmni_inEndOmni.getTorque()));
-
-					double currentForce[3];
-					currentForce[0] = Wrench_endOmni_inBaseOmni.getForce()[0] * autreOmniDriver[i]->data.forceScale;
-					currentForce[1] = Wrench_endOmni_inBaseOmni.getForce()[1] * autreOmniDriver[i]->data.forceScale;
-					currentForce[2] = Wrench_endOmni_inBaseOmni.getForce()[2] * autreOmniDriver[i]->data.forceScale;
-
-					if (autreOmniDriver[i]->data.permanent_feedback)
-					{
-						hdSetDoublev(HD_CURRENT_FORCE, currentForce);
-						HDErrorInfo error;
-						if (HD_DEVICE_ERROR(error = hdGetError()))
-						{
-							std::cout << hdGetErrorString(error.errorCode) << std::endl;
-							std::cout << "HHD: " << error.hHD << std::endl;
-							std::cout << "Error Code: " << error.hHD << std::endl;
-							std::cout << "Internal Error Code: " << error.internalErrorCode << std::endl;
-						}
-					}
-
-					autreOmniDriver[i]->data.servoDeviceData.nupdates++;
-
-					//angles
-					hdGetFloatv(HD_CURRENT_JOINT_ANGLES, autreOmniDriver[i]->angle1);
-					hdGetFloatv(HD_CURRENT_GIMBAL_ANGLES, autreOmniDriver[i]->angle2);
-
-					hdEndFrame(hapticHD);
-			}
-
-#endif
 
 
 				return HD_CALLBACK_CONTINUE;
@@ -696,6 +650,13 @@ namespace sofa
 
 				if (autreOmniDriver[this->deviceIndex.getValue()]->DOF == NULL)
 					serr << " no MechanicalObject with template = Rigid found" << sendl;
+				else
+				{
+					sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > xfree = *autreOmniDriver[this->deviceIndex.getValue()]->DOF->write(this->setRestShape.getValue() ?
+						sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::freePosition());
+					if (xfree.size() == 0)
+						xfree.resize(1);
+				}
 
 				sout << "Device " << this->deviceIndex.getValue() << " ready " << (data.deviceData.ready ? " true " : " false ") << sendl;
 			}
@@ -1130,44 +1091,50 @@ namespace sofa
 						sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > xfree = DOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::freePosition());
 
 						unsigned int index = 0;
-						x[index].getCenter() = world_H_virtualTool.getOrigin();
-						xfree[index].getCenter() = world_H_virtualTool.getOrigin();
-						x[index].getOrientation() = world_H_virtualTool.getOrientation();
-						xfree[index].getOrientation() = world_H_virtualTool.getOrientation();
 
-						if (toolDOF != NULL)
+						if (x.size() >= 1 && xfree.size() >= 1)
 						{
-							sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > tx = toolDOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::position());
-							sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > txfree = toolDOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::freePosition());
+							x[index].getCenter() = world_H_virtualTool.getOrigin();
+							xfree[index].getCenter() = world_H_virtualTool.getOrigin();
+							x[index].getOrientation() = world_H_virtualTool.getOrientation();
+							xfree[index].getOrientation() = world_H_virtualTool.getOrientation();
 
-							sofa::defaulttype::SolidTypes<SReal>::Rot rot1 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0));
-							tx[1] = tx[0];
-							txfree[1] = txfree[0];
-							tx[1].getOrientation() = x[0].getOrientation()*rot1;
-							txfree[1].getOrientation() = xfree[0].getOrientation()*rot1;
+							if (toolDOF != NULL)
+							{
+								sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > tx = toolDOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::position());
+								sofa::helper::WriteAccessor<sofa::core::objectmodel::Data<VecCoord> > txfree = toolDOF->write(this->setRestShape.getValue() ? sofa::core::VecCoordId::restPosition() : sofa::core::VecCoordId::freePosition());
 
-							sofa::defaulttype::SolidTypes<SReal>::Rot rot2 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*(-1));
-							tx[2] = tx[0];
-							txfree[2] = txfree[0];
-							tx[2].getOrientation() = x[0].getOrientation()*rot2;
-							txfree[2].getOrientation() = xfree[0].getOrientation()*rot2;
+								if (tx.size() >= 6 && txfree.size() >= 6)
+								{
+									sofa::defaulttype::SolidTypes<SReal>::Rot rot1 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0));
+									tx[1] = tx[0];
+									txfree[1] = txfree[0];
+									tx[1].getOrientation() = x[0].getOrientation()*rot1;
+									txfree[1].getOrientation() = xfree[0].getOrientation()*rot1;
 
-							tx[3] = tx[0];
-							txfree[3] = txfree[0];
+									sofa::defaulttype::SolidTypes<SReal>::Rot rot2 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*(-1));
+									tx[2] = tx[0];
+									txfree[2] = txfree[0];
+									tx[2].getOrientation() = x[0].getOrientation()*rot2;
+									txfree[2].getOrientation() = xfree[0].getOrientation()*rot2;
 
-							sofa::defaulttype::SolidTypes<SReal>::Rot rot3 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*0.15);
-							tx[4] = tx[0];
-							txfree[4] = txfree[0];
-							tx[4].getOrientation() = x[0].getOrientation()*rot3;
-							txfree[4].getOrientation() = xfree[0].getOrientation()*rot3;
+									tx[3] = tx[0];
+									txfree[3] = txfree[0];
 
-							sofa::defaulttype::SolidTypes<SReal>::Rot rot4 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*(-0.15));
-							tx[5] = tx[0];
-							txfree[5] = txfree[0];
-							tx[5].getOrientation() = x[0].getOrientation()*rot4;
-							txfree[5].getOrientation() = xfree[0].getOrientation()*rot4;
+									sofa::defaulttype::SolidTypes<SReal>::Rot rot3 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*0.15);
+									tx[4] = tx[0];
+									txfree[4] = txfree[0];
+									tx[4].getOrientation() = x[0].getOrientation()*rot3;
+									txfree[4].getOrientation() = xfree[0].getOrientation()*rot3;
 
-						}
+									sofa::defaulttype::SolidTypes<SReal>::Rot rot4 = sofa::defaulttype::SolidTypes<SReal>::Rot(sofa::defaulttype::Vec3d(1.0, 0.0, 0.0), this->openTool.getValue().at(0)*(-0.15));
+									tx[5] = tx[0];
+									txfree[5] = txfree[0];
+									tx[5].getOrientation() = x[0].getOrientation()*rot4;
+									txfree[5].getOrientation() = xfree[0].getOrientation()*rot4;
+								}
+							}
+						}						
 					}
 					if (applyMappings.getValue())
 					{

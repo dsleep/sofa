@@ -92,6 +92,11 @@ namespace sofa
 				Quat quat;
 				bool ready;
 				bool stop;
+
+				/*NewDeviceData()
+				{
+					memset(this, 0, sizeof(NewDeviceData));
+				}*/
 			};
 
 			struct NewOmniData
@@ -116,6 +121,14 @@ namespace sofa
 
 				double currentForce[3];
 
+				/*NewOmniData()
+				{
+					forceScale = 0;
+					scale = 0;
+					permanent_feedback = false;					
+					 move2Pos = false;
+					memset(currentForce, 0, sizeof(double) * 3);
+				}*/				
 			};
 
 			struct AllNewOmniData

@@ -11,7 +11,7 @@
   <CollisionResponse name="response" response="default" />
   <MinProximityIntersection name="proximity" alarmDistance="0.8" contactDistance="0.5" useSurfaceNormals="true"/>
 
-  <NewOmniDriver name="Omni Driver"  listening="true" tags="Omni" forceScale="0.5" scale="500"  permanent="true" />
+  <NewOmniDriver name="Omni Driver" deviceName="Default Device" listening="true" tags="Omni" forceScale="0.5" scale="500"  permanent="true" setDesirePosition="false"/>
 
   <Node 	name="Instrument"  >
     
