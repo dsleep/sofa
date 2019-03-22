@@ -225,7 +225,8 @@ namespace sofa
 
 				for (unsigned int i = 0; i<autreOmniDriver.size(); i++)
 				{
-					EnslavementForceFeedback *ff = autreOmniDriver[i]->data.forceFeedback.get();
+
+					ForceFeedback *ff = autreOmniDriver[i]->data.forceFeedback.get();
 					if (ff != NULL){
 						SReal fx, fy, fz;
 						if (!autreOmniDriver[i]->data.move2Pos) {
@@ -487,7 +488,7 @@ namespace sofa
 
 			//configure l'effort
 			//void NewOmniDriver::setForceFeedback(LCPForceFeedback<Rigid3dTypes>* ff)
-			void NewOmniDriver::setForceFeedback(EnslavementForceFeedback* ff)
+			void NewOmniDriver::setForceFeedback(ForceFeedback* ff)
 			{
 				// the forcefeedback is already set
 				if (data.forceFeedback == ff)
@@ -670,8 +671,7 @@ namespace sofa
 			{
 				simulation::Node *context = dynamic_cast<simulation::Node *>(this->getContext()); // access to current node
 
-				//UF - DS maybe better abstraction...
-				EnslavementForceFeedback* ff = context->get<EnslavementForceFeedback>(this->getTags(), sofa::core::objectmodel::BaseContext::SearchRoot);
+				ForceFeedback* ff = context->get<ForceFeedback>(this->getTags(), sofa::core::objectmodel::BaseContext::SearchRoot);
 				typedef sofa::component::container::MechanicalObject<sofa::defaulttype::Rigid3dTypes> MO;
 
 				if (ff)
@@ -825,8 +825,7 @@ namespace sofa
 
 				if (kpe->getKey() == 126 + deviceIndex.getValue())
 				{
-					//UF - DS check this...
-					EnslavementForceFeedback* gf = getContext()->get<EnslavementForceFeedback>(core::objectmodel::Tag("GraspingForceFeedback" + std::to_string((long long)deviceIndex.getValue())), core::objectmodel::BaseContext::SearchRoot);
+					ForceFeedback* gf = getContext()->get<ForceFeedback>(core::objectmodel::Tag("GraspingForceFeedback" + std::to_string((long long)deviceIndex.getValue())), core::objectmodel::BaseContext::SearchRoot);
 					if (gf)
 					{
 						this->setForceFeedback(gf);
@@ -949,15 +948,14 @@ namespace sofa
 				if (kre->getKey() == 126 + deviceIndex.getValue())
 				{
 					this->setForceFeedback(NULL);
-					EnslavementForceFeedback* gf = getContext()->get<EnslavementForceFeedback>(core::objectmodel::Tag("GraspingForceFeedback" + std::to_string((long long)deviceIndex.getValue())), core::objectmodel::BaseContext::SearchRoot);
+					ForceFeedback* gf = getContext()->get<ForceFeedback>(core::objectmodel::Tag("GraspingForceFeedback" + std::to_string((long long)deviceIndex.getValue())), core::objectmodel::BaseContext::SearchRoot);
 					if (gf)
 					{
 						sout << "Force feedback for the device " << deviceIndex.getValue() << " released " << sendl;
 						gf->cleanup();
 						gf->getContext()->removeObject(gf);
 					}
-					//UF - DS another check
-					EnslavementForceFeedback* ff = getContext()->get<EnslavementForceFeedback>(this->getTags(), core::objectmodel::BaseContext::SearchRoot);
+					ForceFeedback* ff = getContext()->get<ForceFeedback>(this->getTags(), core::objectmodel::BaseContext::SearchRoot);
 					if (ff) this->setForceFeedback(ff);
 				}
 

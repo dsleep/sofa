@@ -61,8 +61,6 @@
 #include <SofaBaseTopology/TopologyData.h>
 #include <SofaBaseVisual/InteractiveCamera.h>
 
-#include "EnslavementForceFeedback.h"
-
 #include <math.h>
 
 namespace sofa
@@ -76,7 +74,7 @@ namespace sofa
 		namespace controller
 		{
 
-			class EnslavementForceFeedback;
+			class ForceFeedback;
 
 			using namespace sofa::defaulttype;
 			using namespace sofa::helper;
@@ -98,7 +96,7 @@ namespace sofa
 
 			struct NewOmniData
 			{
-				EnslavementForceFeedback::SPtr forceFeedback;
+				ForceFeedback::SPtr forceFeedback;
 				simulation::Node::SPtr *context;
 
 				sofa::defaulttype::SolidTypes<double>::Transform endOmni_H_virtualTool;
@@ -201,7 +199,7 @@ namespace sofa
 				virtual void draw(const core::visual::VisualParams*) override;
 				virtual void draw();
 
-				void setForceFeedback(EnslavementForceFeedback* ff);
+				void setForceFeedback(ForceFeedback* ff);
 
 				void onKeyPressedEvent(core::objectmodel::KeypressedEvent *);
 				void onKeyReleasedEvent(core::objectmodel::KeyreleasedEvent *);
