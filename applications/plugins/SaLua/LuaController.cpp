@@ -28,7 +28,7 @@
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 #include <sofa/core/objectmodel/KeyreleasedEvent.h>
 #include <sofa/core/objectmodel/HapticDeviceEvent.h>
-
+#include <sofa/helper/system/FileRepository.h>
 
 
 #include "LuaBindings.h"
