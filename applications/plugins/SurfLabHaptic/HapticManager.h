@@ -38,15 +38,16 @@
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 #include <sofa/core/objectmodel/KeyreleasedEvent.h>
 #include <sofa/core/objectmodel/MouseEvent.h>
-#include <sofa/simulation/common/AnimateBeginEvent.h>
-#include <sofa/simulation/common/AnimateEndEvent.h>
+#include <sofa/simulation/AnimateBeginEvent.h>
+#include <sofa/simulation/AnimateEndEvent.h>
 #include <sofa/core/objectmodel/HapticDeviceEvent.h>
 
-#include <sofa/simulation/tree/GNode.h>
-#include <sofa/simulation/common/Simulation.h>
-#include <sofa/simulation/tree/TreeSimulation.h>
+#include <SofaGeneralDeformable/VectorSpringForceField.h>
+
+#include <SofaSimulationTree/GNode.h>
+#include <sofa/simulation/Simulation.h>
+#include <SofaSimulationTree/TreeSimulation.h>
 #include <SofaBaseCollision/BaseContactMapper.h>
-#include <sofa/component/typedef/Sofa_typedef.h>
 #include <SofaConstraint/StickContactConstraint.h>
 
 #include <sofa/core/topology/TopologicalMapping.h>
@@ -59,6 +60,9 @@
 #include <SofaMeshCollision/TriangleModel.h>
 #include <SofaMeshCollision/LineModel.h>
 #include <SofaMeshCollision/PointModel.h>
+
+#include <SofaDeformable/StiffSpringForceField.h>
+#include <SofaDeformable/SpringForceField.h>
 
 #include "GraspingForceFeedback.h"
 #include "initSurfLabHaptic.h"
@@ -89,6 +93,8 @@ namespace sofa
 
 		namespace collision
 		{
+			using sofa::defaulttype::Vec3dTypes;
+
 			//Changes for force feedback safety
 			class ForceFeedback;
 
@@ -103,6 +109,7 @@ namespace sofa
 				typedef defaulttype::Vec3f Vec3f;
 				typedef defaulttype::Vec4f Vec4f;
 				typedef defaulttype::RigidTypes RigidTypes;
+				typedef defaulttype::Vector3 Vector3;
 				typedef DataTypes::Coord Coord;
 				typedef DataTypes::VecCoord VecCoord;
 				typedef DataTypes::Real Real;
@@ -118,6 +125,9 @@ namespace sofa
 				Data < Real > duration;
 				Data < Vec3f > clampScale;
 				sofa::core::objectmodel::DataFileName clampMesh;
+
+				//UF - DS TODO where was this originally
+				std::string warnings;
 
 				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> toolModel;
 				/* we need a link to the omni driver just so we can get the proper ID */
@@ -136,10 +146,10 @@ namespace sofa
 				struct Tool
 				{
 					ToolModel* modelTool;
-					helper::set<int> modelGroup;
+					std::set<int> modelGroup;
 					sofa::component::constraintset::BilateralInteractionConstraint<DataTypes>::SPtr m_constraints; //for grasp
 					sofa::component::interactionforcefield::VectorSpringForceField<DataTypes>::SPtr m_forcefield; //for suture
-					StiffSpringForceField3::SPtr ff; //for suture
+					sofa::component::interactionforcefield::StiffSpringForceField<Vec3dTypes>::SPtr ff; //for suture
 					ContactMapper* m1;
 					ContactMapper* m2;
 					/* First button is for grasping, second button is for Haptic */
@@ -172,10 +182,14 @@ namespace sofa
 				void drawVisual(const core::visual::VisualParams* vparams);
 				void updateVisual();
 				void initializeStaticDataMembers(){ 
-					std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;
+					//std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;
+					std::vector<std::pair<sofa::core::topology::Topology::Hexahedron, int> > clampPairs;				
 					std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
 					};
 				static std::string programStartDate; //system time in string format, used for screenshot filepath
+				static std::string programCompletionTime;
+				static int numOfElementsCutonVeins;
+				static int numOfElementsCutonFat;
 			private:
 				void updateTool();
 				void doContain();
@@ -193,11 +207,11 @@ namespace sofa
 				double delta_time;
 				// the following variables used in clamping			
 				boost::scoped_ptr<sofa::helper::io::Mesh> clipperMesh;				
-				static std::vector<std::pair<component::topology::Hexahedron, int> > clampPairs;				
+				static std::vector<std::pair<sofa::core::topology::Topology::Hexahedron, int> > clampPairs;
 				static std::vector<core::behavior::MechanicalState<DataTypes>*> clipperStates;
 				static std::vector<double> hexDimensions;
 				static std::vector<bool> edge12along; // if edge 12 is along vessel
-				static std::map <string, vector<int>> vein_clips_map;//maps the name of vein to a vector of indices of clips
+				static std::map <std::string, std::vector<int>> vein_clips_map;//maps the name of vein to a vector of indices of clips
 				static std::set<int> veinCutSet;
 				static std::set<std::string> namesOfVeinCutSet;
 				static bool hasPutInBag;
@@ -206,7 +220,7 @@ namespace sofa
 				
 				//updateShader is used for replace a string in shader file, it will replace 
 				//the searchstring from the input file to be the replacestring of the output file
-				int updateShader(string Input, string Output, string searchstring, string replacestring);
+				int updateShader(std::string Input, std::string Output, std::string searchstring, std::string replacestring);
 				static std::string base_path_share ;
 				bool hasInstrumentTurnedRed = false;
 				bool hasInstrumentTurnedGreen = false;
@@ -230,19 +244,22 @@ using namespace sofa::core::behavior;
 using namespace sofa::simulation;
 using sofa::simulation::getSimulation;
 
-std::vector<std::pair<Hexahedron, int> > HapticManager::clampPairs;
+std::vector<std::pair<sofa::core::topology::Topology::Hexahedron, int> > HapticManager::clampPairs;
 std::vector<MechanicalState<HapticManager::DataTypes>*> HapticManager::clipperStates;
 std::vector<double> HapticManager::hexDimensions;
 std::vector<bool> HapticManager::edge12along;
 //std::vector<int> HapticManager::clipVector;
-std::map< string, vector<int> > HapticManager::vein_clips_map;
+std::map< std::string, std::vector<int> > HapticManager::vein_clips_map;
 std::set<int> HapticManager::veinCutSet;
 std::set<std::string> HapticManager::namesOfVeinCutSet;
 double HapticManager::last_update_time;
 int HapticManager::last_clips_count = 0;
 int HapticManager::achievementsCount = 0;
 std::string HapticManager::programStartDate= "";
+std::string HapticManager::programCompletionTime = "";
 std::string HapticManager::base_path_share = "";
+int HapticManager::numOfElementsCutonVeins = 0;
+int HapticManager::numOfElementsCutonFat = 0;
 bool HapticManager::hasPutInBag = false;
 bool HapticManager::hasCutVein = false;
 

@@ -49,10 +49,10 @@ namespace sofa
 				, object2(initLink("object2", "Second object to connect to"))
 				, useConstraint(initData(&useConstraint,true,"useConstraint", "Second object to connect to"))
 				, connectingStiffness(initData(&connectingStiffness, 3000.0, "connectingStiffness", "stiffness of springs if useConstraint is false"))
-        , naturalLength(initData(&naturalLength, 0.5, "naturalLength", "natural length of springs as a percentage of the 2-node-distance"))
+				, naturalLength(initData(&naturalLength, 0.5, "naturalLength", "natural length of springs as a percentage of the 2-node-distance"))
         
 			{
-				this->f_listening.setValue(true);
+				BaseObject::f_listening.setValue(true);
 			}
 
 			ConnectingTissue::~ConnectingTissue()
@@ -159,7 +159,7 @@ namespace sofa
 
 						for (int j = 0; j < tlist.size(); j++) {
 							// Find the projection
-							const component::topology::Triangle t = triangleContainer->getTriangle(tlist[j]);
+							const sofa::core::topology::Topology::Triangle t = triangleContainer->getTriangle(tlist[j]);
 							Vec3d AB = x2[t[1]] - x2[t[0]];
 							Vec3d AC = x2[t[2]] - x2[t[0]];
 							Vec3d AP = P - x2[t[0]];
@@ -194,7 +194,7 @@ namespace sofa
 							projPnts.push_back(Q);
 						}
 						else {
-							const component::topology::Triangle t = triangleContainer->getTriangle(tlist[0]);
+							const sofa::core::topology::Topology::Triangle t = triangleContainer->getTriangle(tlist[0]);
 							int localIndex = triangleContainer->getVertexIndexInTriangle(t, qidx);
 							bary[0] = 0; bary[1] = 0; bary[2] = 0;
 							bary[(localIndex + 2) % 3] = 1.0;
@@ -214,9 +214,9 @@ namespace sofa
 					
 					
 					if (useConstraint.getValue())
-						this->getContext()->addObject(constraints);
+						BaseObject::getContext()->addObject(constraints);
 					else
-						this->getContext()->addObject(ff);
+						BaseObject::getContext()->addObject(ff);
 				}
 
 			}

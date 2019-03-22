@@ -27,10 +27,9 @@
 
 #include <SofaHaptics/ForceFeedback.h>
 #include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/simulation/tree/GNode.h>
-#include <sofa/simulation/common/Simulation.h>
-#include <sofa/simulation/tree/TreeSimulation.h>
-#include <sofa/component/typedef/Sofa_typedef.h>
+#include <SofaSimulationTree/GNode.h>
+#include <sofa/simulation/Simulation.h>
+#include <SofaSimulationTree/TreeSimulation.h>
 
 namespace sofa
 {

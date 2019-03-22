@@ -32,13 +32,16 @@
 #include <sofa/core/behavior/MechanicalState.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/simulation/tree/GNode.h>
-#include <sofa/simulation/common/Simulation.h>
+#include <SofaSimulationTree/GNode.h>
+#include <sofa/simulation/Simulation.h>
 #include <SofaBaseMechanics/BarycentricMapping.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/core/ObjectFactory.h>
-#include <SofaDeformable/VectorSpringForceField.h>
+#include <SofaGeneralDeformable/VectorSpringForceField.h>
 #include <SofaConstraint/BilateralInteractionConstraint.h>
+
+#include <SofaBaseMechanics/BarycentricMappers/BarycentricMapperMeshTopology.h>
+
 namespace sofa
 {
 
@@ -71,7 +74,7 @@ namespace sofa
 				Data<helper::vector<unsigned int> > m_indices2;
 				Data<Real> threshold;
 				Data<Real> connectingStiffness;
-        Data<Real> naturalLength;
+				Data<Real> naturalLength;
 				Data<bool> useConstraint;
 				SingleLink<ConnectingTissue, simulation::Node, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object1;
 				SingleLink<ConnectingTissue, simulation::Node, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> object2;
