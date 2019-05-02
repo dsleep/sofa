@@ -38,7 +38,7 @@ sofa_add_plugin(SensableEmulation SensableEmulation)
 sofa_add_plugin(SofaHAPI SofaHAPI)
 sofa_add_plugin(THMPGSpatialHashing THMPGSpatialHashing)
 sofa_add_plugin(SurfLabHaptic SurfLabHaptic ON)
-sofa_add_plugin(SaLua SaLua ON)
+sofa_add_plugin(SaLua SaLua)
 sofa_add_plugin(SurfLabHexahedralIGA SurfLabHexahedralIGA)
 sofa_add_plugin(SurfLabSplineSurface SurfLabSplineSurface)
 sofa_add_plugin(SurfLabConnectingTissue SurfLabConnectingTissue ON)
@@ -47,7 +47,7 @@ sofa_add_plugin(AAOmni AAOmni)
     
 sofa_add_plugin(RigidScale RigidScale)
 sofa_add_plugin(LeapMotion LeapMotion)
-sofa_add_plugin(Geomagic Geomagic ON)
+sofa_add_plugin(Geomagic Geomagic)
 sofa_add_plugin(SofaAssimp SofaAssimp)
 
 # SOFA_WITH_EXPERIMENTAL_FEATURES_17_12
