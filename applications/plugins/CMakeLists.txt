@@ -43,7 +43,7 @@ sofa_add_plugin(SurfLabHexahedralIGA SurfLabHexahedralIGA)
 sofa_add_plugin(SurfLabSplineSurface SurfLabSplineSurface)
 sofa_add_plugin(SurfLabConnectingTissue SurfLabConnectingTissue ON)
 sofa_add_plugin(SurfLabSpeechRecognition SurfLabSpeechRecognition ON)
-sofa_add_plugin(AAOmni AAOmni ON)
+sofa_add_plugin(AAOmni AAOmni)
     
 sofa_add_plugin(RigidScale RigidScale)
 sofa_add_plugin(LeapMotion LeapMotion)
