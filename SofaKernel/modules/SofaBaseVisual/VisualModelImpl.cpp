@@ -193,9 +193,11 @@ VisualModelImpl::VisualModelImpl() //const std::string &name, std::string filena
     , m_handleDynamicTopology (initData   (&m_handleDynamicTopology, true, "handleDynamicTopology", "True if topological changes should be handled"))
     , m_fixMergedUVSeams (initData   (&m_fixMergedUVSeams, true, "fixMergedUVSeams", "True if UV seams should be handled even when duplicate UVs are merged"))
     , m_keepLines (initData   (&m_keepLines, false, "keepLines", "keep and draw lines (false by default)"))
-    , m_vertices2       (initData   (&m_vertices2, "vertices", "vertices of the model (only if vertices have multiple normals/texcoords, otherwise positions are used)"))
+	, m_genTex3d		(initData(&m_genTex3d, false, "genTex3d", "True to enable computation for 3d texture"))
+	, m_vertices2       (initData   (&m_vertices2, "vertices", "vertices of the model (only if vertices have multiple normals/texcoords, otherwise positions are used)"))
     , m_vtexcoords      (initData   (&m_vtexcoords, "texcoords", "coordinates of the texture"))
-    , m_vtangents       (initData   (&m_vtangents, "tangents", "tangents for normal mapping"))
+	, m_vtexcoords3		(initData(&m_vtexcoords3, "texcoords3", "3d coordinates of the texture"))
+	, m_vtangents       (initData   (&m_vtangents, "tangents", "tangents for normal mapping"))
     , m_vbitangents     (initData   (&m_vbitangents, "bitangents", "tangents for normal mapping"))
     , m_edges           (initData   (&m_edges, "edges", "edges of the model"))
     , m_triangles       (initData   (&m_triangles, "triangles", "triangles of the model"))
@@ -208,7 +210,9 @@ VisualModelImpl::VisualModelImpl() //const std::string &name, std::string filena
     , m_rotation        (initData   (&m_rotation, Vec3Real(), "rotation", "Initial Rotation of the object"))
     , m_scale           (initData   (&m_scale, Vec3Real(1.0,1.0,1.0), "scale3d", "Initial Scale of the object"))
     , m_scaleTex        (initData   (&m_scaleTex, TexCoord(1.0,1.0), "scaleTex", "Scale of the texture"))
-    , m_translationTex  (initData   (&m_translationTex, TexCoord(0.0,0.0), "translationTex", "Translation of the texture"))
+	, m_scaleTex3		(initData(&m_scaleTex3, TexCoord3(1.0, 1.0, 1.0), "scaleTex3", "Scale of the 3d texture"))
+	, m_translationTex3	(initData(&m_translationTex3, TexCoord3(0.0, 0.0, 0.0), "translationTex3", "Translation of the 3d texture"))
+	, m_translationTex  (initData   (&m_translationTex, TexCoord(0.0,0.0), "translationTex", "Translation of the texture"))
     , material			(initData	(&material, "material", "Material")) // tex(NULL)
     , putOnlyTexCoords	(initData	(&putOnlyTexCoords, (bool) false, "putOnlyTexCoords", "Give Texture Coordinates without the texture binding"))
     , srgbTexturing		(initData	(&srgbTexturing, (bool) false, "srgbTexturing", "When sRGB rendering is enabled, is the texture in sRGB colorspace?"))
@@ -224,6 +228,7 @@ VisualModelImpl::VisualModelImpl() //const std::string &name, std::string filena
     m_vertices2     .setGroup("Vector");
     m_vnormals      .setGroup("Vector");
     m_vtexcoords    .setGroup("Vector");
+	m_vtexcoords3	.setGroup("Vector");
     m_vtangents     .setGroup("Vector");
     m_vbitangents   .setGroup("Vector");
     m_edges         .setGroup("Vector");
@@ -663,6 +668,37 @@ void VisualModelImpl::applyUVTransformation()
     m_translationTex.setValue(TexCoord(0,0));
 }
 
+void VisualModelImpl::applyUVWTransformation()
+{
+	SReal dU = m_translationTex3.getValue()[0];
+	SReal dV = m_translationTex3.getValue()[1];
+	SReal dW = m_translationTex3.getValue()[2];
+
+	SReal sU = m_scaleTex3.getValue()[0];
+	SReal sV = m_scaleTex3.getValue()[1];
+	SReal sW = m_scaleTex3.getValue()[2];
+
+	VecTexCoord3& vtexcoords3 = *(m_vtexcoords3.beginEdit());
+
+	for (unsigned int i = 0; i < vtexcoords3.size(); i++)
+	{
+		vtexcoords3[i][0] *= sU;
+		vtexcoords3[i][1] *= sV;
+		vtexcoords3[i][2] *= sW;
+	}
+
+	for (unsigned int i = 0; i < vtexcoords3.size(); i++)
+	{
+		vtexcoords3[i][0] += dU;
+		vtexcoords3[i][1] += dV;
+		vtexcoords3[i][2] += dW;
+	}
+	m_vtexcoords3.endEdit();
+
+	m_scaleTex3.setValue(TexCoord3(1, 1, 1));
+	m_translationTex3.setValue(TexCoord3(0, 0, 0));
+}
+
 void VisualModelImpl::applyTranslation(const SReal dx, const SReal dy, const SReal dz)
 {
     Coord d((Real)dx,(Real)dy,(Real)dz);
@@ -882,6 +918,7 @@ void VisualModelImpl::init()
             //addTopoHandler(&m_restPositions);
             //addTopoHandler(&m_vnormals);
             addTopoHandler(&m_vtexcoords,(m_fixMergedUVSeams.getValue()?1:0));
+			addTopoHandler(&m_vtexcoords3, (m_fixMergedUVSeams.getValue() ? 1 : 0));
             //addTopoHandler(&m_vtangents);
             //addTopoHandler(&m_vbitangents);
         }
@@ -1294,6 +1331,49 @@ void VisualModelImpl::updateVisual()
 
 }
 
+void VisualModelImpl::computeTextureCoords3()
+{
+	VecTexCoord3& my_texCoords = *(m_vtexcoords3.beginEdit());
+	const VecCoord& coords = this->m_positions.getValue();
+	my_texCoords.clear();
+	my_texCoords.resize(coords.size());
+
+	SReal Cmin[3]; Cmin[0] = 100000, Cmin[1] = 100000, Cmin[2] = 100000;
+	SReal Cmax[3]; Cmax[0] = -100000, Cmax[1] = -100000, Cmax[2] = -100000;
+
+
+	// creating BB
+	for (unsigned int i = 0; i<coords.size(); ++i)
+	{
+		const Coord& p0 = coords[i];
+		for (unsigned int j = 0; j<3; ++j)
+		{
+			if (p0[j] < Cmin[j]) Cmin[j] = p0[j];
+			if (p0[j] > Cmax[j]) Cmax[j] = p0[j];
+		}
+	}
+
+	unsigned int axe1 = 0, axe2 = 1, axe3 = 2;
+	SReal Uscale = 1 / (SReal)(Cmax[axe1] - Cmin[axe1]);
+	SReal Vscale = 1 / (SReal)(Cmax[axe2] - Cmin[axe2]);
+	SReal Wscale = 1 / (SReal)(Cmax[axe3] - Cmin[axe3]);
+
+	for (unsigned int i = 0; i<coords.size(); ++i)
+	{
+		const Coord& p0 = coords[i];
+		TexCoord3& textC = my_texCoords[i];
+		SReal x = (p0[axe1] - Cmin[axe1])*Uscale;
+		SReal y = (p0[axe2] - Cmin[axe2])*Vscale;
+		SReal z = (p0[axe3] - Cmin[axe3])*Wscale;
+
+		textC[0] = x;
+		textC[1] = y;
+		textC[2] = z;
+
+	}
+
+	m_vtexcoords3.endEdit();
+}
 
 void VisualModelImpl::computePositions()
 {
@@ -1371,6 +1451,10 @@ void VisualModelImpl::computeMesh()
         }
         m_positions.endEdit();
     }
+	if (m_genTex3d.getValue()) {
+		this->computeTextureCoords3();
+		this->applyUVWTransformation();
+	}
 
     lastMeshRev = m_topology->getRevision();
 

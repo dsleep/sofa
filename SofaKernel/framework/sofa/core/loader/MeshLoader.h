@@ -134,7 +134,8 @@ public:
 
     // Point coordinates in 3D in double.
     Data< helper::vector< Vec3 > > d_positions; ///< Vertices of the mesh loaded
-
+	// texture coordinates in 2D.
+	Data< helper::vector<sofa::defaulttype::Vec<2, SReal> > > textcoords;
     //Tab of 1D elements
     Data< helper::vector< Polyline > > d_polylines; ///< Polylines of the mesh loaded
 

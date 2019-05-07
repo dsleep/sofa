@@ -312,8 +312,8 @@ void Texture::update()
 void Texture::init()
 {
     io::Image::TextureType textureType = image->getTextureType();
-    target = GL_TEXTURE_2D; // Default value in case the format is not supported.
-
+    //target = GL_TEXTURE_2D; // Default value in case the format is not supported.
+	target = targetTable[textureType];//2d or 3d
     // Check OpenGL support.
     if (!isPowerOfTwo(image->getWidth()) ||
         !isPowerOfTwo(image->getHeight()) ||
