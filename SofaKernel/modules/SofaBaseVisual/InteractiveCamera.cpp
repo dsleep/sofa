@@ -199,11 +199,10 @@ void InteractiveCamera::processMouseEvent(core::objectmodel::MouseEvent* me)
         lastMousePosY = posY;
     }
     else if(me->getState() == core::objectmodel::MouseEvent::MiddlePressed)
-    {	//TIPS: disabled middle button since middle button is used by surflab haptic devices
-        /*isMoving = true;
+    {	isMoving = true;
         currentMode = ZOOM_MODE;
         lastMousePosX = posX;
-        lastMousePosY = posY;*/
+        lastMousePosY = posY;
     }
     else
         //Mouse Move

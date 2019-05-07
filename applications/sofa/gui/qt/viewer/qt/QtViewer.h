@@ -136,6 +136,7 @@ private:
 
     double lastProjectionMatrix[16];
     double lastModelviewMatrix[16];
+	bool circularView; // the circular view for TIPS laproscopic simulation
 
 public:
 
@@ -278,6 +279,7 @@ private:
     void	DisplayMenu(void);
     virtual void	drawScene() override ;
     void  MakeStencilMask();
+	void MakeCircularStencilMask();
 
     void	ApplySceneTransformation(int x, int y);
     //int		handle(int event);	// required by FLTK

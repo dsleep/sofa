@@ -243,6 +243,7 @@ void QtViewer::initializeGL(void)
     static GLfloat lmodel_local[] =
     { GL_FALSE };
     bool initialized = false;
+	circularView = true;
 
     if (!initialized)
     {
@@ -676,7 +677,7 @@ void QtViewer::DisplayOBJs()
 {
 
     if (_background == 0)
-        DrawLogo();
+        //DrawLogo();
 
     if (!groot)
         return;
@@ -802,6 +803,35 @@ void QtViewer::MakeStencilMask()
 
 }
 
+void QtViewer::MakeCircularStencilMask()
+{
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0, _W, 0, _H);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glStencilFunc(GL_ALWAYS, 0x1, 0x1);
+	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+	glColor4f(0, 0, 0, 0);
+	float r = std::min(_W, _H) / 2;//radius
+	glBegin(GL_TRIANGLE_FAN);
+	glVertex2f(_W / 2, _H / 2);
+	for (int n = 0; n <= 100; ++n)
+	{
+		float t = 2 * M_PI*(float)n / (float)100;
+		glVertex2f(_W / 2 + sin(t)*r, _H / 2 + cos(t)*r);
+	}
+	glEnd();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+}
+
 // ---------------------------------------------------------
 // ---
 // ---------------------------------------------------------
@@ -823,6 +853,18 @@ void QtViewer::drawScene(void)
     sofa::component::visualmodel::BaseCamera::StereoStrategy sStrat = currentCamera->getStereoStrategy();
     double sShift = currentCamera->getStereoShift();
     bool stencil = false;
+	//TIPS stencil test
+	if (circularView) {
+		glEnable(GL_STENCIL_TEST);
+		MakeCircularStencilMask();
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_EQUAL, 1, 0xFF);// draw only where stencil's value is 1
+	}
+	else
+	{
+		glDisable(GL_STENCIL_TEST);
+	}
+
     bool viewport = false;
     bool supportStereo = currentCamera->isStereo();
     sofa::core::visual::VisualParams::Viewport vpleft, vpright;
@@ -903,7 +945,8 @@ void QtViewer::drawScene(void)
                 break;
             }
         }
-    }else
+    }
+	else
     {
         twopass = false;
     }
@@ -1224,6 +1267,11 @@ void QtViewer::keyPressEvent(QKeyEvent * e)
         // control the GUI
         switch (e->key())
         {
+		case Qt::Key_P:
+		{
+			std::cout << "QtViewer: key_P pressed! \n";
+			circularView = !circularView;
+		}
 
 #ifdef TRACKING
         case Qt::Key_X:
