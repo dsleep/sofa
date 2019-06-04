@@ -26,9 +26,12 @@
 #include "GUIManager.h"
 #include "BaseGUI.h"
 #include "RealGUI.h"
+#include "report.h"
+//#include "report.cpp"
 using sofa::gui::GUIManager;
 using sofa::gui::BaseGUI;
 using sofa::gui::qt::RealGUI;
+using sofa::gui::qt::SofaProcedureReport;
 bool usingAA = false;
 #define int2string(a) std::to_string(a)
 using namespace std;
@@ -266,6 +269,9 @@ namespace sofa
 				//RealGUI* realGUI = dynamic_cast<RealGUI*>(GUIManager::getGUI());
 				//realGUI->populateReport(programStartDate);
 				//realGUI->showReport();
+				//SofaProcedureReport* scoring = new SofaProcedureReport();
+				scoring->populate();
+				scoring->show();
 			}
 
 			//const ContactVector* lastContacts;

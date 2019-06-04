@@ -85,6 +85,9 @@
 #include <windows.h>
 //#include <ctime>
 //#include <chrono>
+#include "report.h"
+//#include "report.cpp"
+
 namespace sofa
 {
     
@@ -134,6 +137,7 @@ namespace sofa
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
 
                 double time_init;
+				sofa::gui::qt::SofaProcedureReport* scoring = new sofa::gui::qt::SofaProcedureReport(NULL);
 			protected:
 				enum ToolFunction {
                     //TOOLFUNCTION_ANIMATE,
