@@ -24,8 +24,9 @@ set(MOC_HEADER_FILES
     QTabulationModifyObject.h
     QTransformationWidget.h
     RealGUI.h
+	report.h
     SimpleDataWidget.h
-    SofaMouseManager.h    
+    SofaMouseManager.h
     SofaVideoRecorderManager.h
     SofaPluginManager.h
     WDoubleLineEdit.h
@@ -74,10 +75,11 @@ set(SOURCE_FILES
     QTabulationModifyObject.cpp
     QTransformationWidget.cpp
     RealGUI.cpp
+	report.cpp
     SimpleDataWidget.cpp
     SofaMouseManager.cpp
     SofaPluginManager.cpp
-    SofaVideoRecorderManager.cpp    
+    SofaVideoRecorderManager.cpp
     StructDataWidget.cpp
     TableDataWidget.cpp
     WDoubleLineEdit.cpp
@@ -91,7 +93,8 @@ set(UI_FILES
     GUI.ui
     MouseManager.ui
     PluginManager.ui
-    VideoRecorderManager.ui    
+	report.ui
+    VideoRecorderManager.ui
 )
 
 
@@ -208,7 +211,7 @@ if(Qt5Core_FOUND)
     # Install Qt plugins
     if(EXISTS "${QT_PLUGINS_DIR}/iconengines")
         install(DIRECTORY "${QT_PLUGINS_DIR}/iconengines" DESTINATION "bin" COMPONENT applications)
-    endif()
+endif()
     if(EXISTS "${QT_PLUGINS_DIR}/imageformats")
         install(DIRECTORY "${QT_PLUGINS_DIR}/imageformats" DESTINATION "bin" COMPONENT applications)
     endif()
@@ -257,7 +260,7 @@ sofa_install_targets(SofaGui SofaGuiQt "SofaGui/sofa/gui/qt")
 # Create build and install versions of .ini file for resources finding
 set(RESOURCES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/etc/${PROJECT_NAME}.ini.in "${CMAKE_BINARY_DIR}/etc/${PROJECT_NAME}.ini")
-set(RESOURCES_DIR "../share/sofa/gui/qt")
+    set(RESOURCES_DIR "../share/sofa/gui/qt")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/etc/${PROJECT_NAME}.ini.in "${CMAKE_BINARY_DIR}/etc/installed${PROJECT_NAME}.ini")
 install(FILES "${CMAKE_BINARY_DIR}/etc/installed${PROJECT_NAME}.ini" DESTINATION etc RENAME ${PROJECT_NAME}.ini COMPONENT applications)
 
