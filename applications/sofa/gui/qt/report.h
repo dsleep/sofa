@@ -21,7 +21,7 @@ namespace gui
 namespace qt
 {
 
-	class SofaProcedureReport : public QScrollArea
+	class SOFA_SOFAGUIQT_API SofaProcedureReport : public QScrollArea
 {
 		Q_OBJECT
 		std::unique_ptr<Ui_Report> ui;
