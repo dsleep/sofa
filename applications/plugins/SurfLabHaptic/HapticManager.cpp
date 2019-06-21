@@ -23,12 +23,16 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include "HapticManager.h"
+#include "GUIManager.h"
+#include "BaseGUI.h"
+#include "RealGUI.h"
 #include "report.h"
-#include "surflablogin.h"
 
+//#include "report.cpp"
+using sofa::gui::GUIManager;
+using sofa::gui::BaseGUI;
+using sofa::gui::qt::RealGUI;
 using sofa::gui::qt::SofaProcedureReport;
-
-using sofa::gui::qt::SurfLabLogin;
 bool usingAA = false;
 #define int2string(a) std::to_string(a)
 using namespace std;
@@ -66,15 +70,12 @@ namespace sofa
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
+
 				//std::cout << "haptic manager construction" << std::endl;
-				login = new SurfLabLogin(NULL);
-				login->show();
 			}
 
 			HapticManager::~HapticManager()
 			{
-				delete scoring;
-				delete login;
 			}
 
 			void HapticManager::init()
@@ -169,8 +170,22 @@ namespace sofa
 					warnings.append("omniDriver is missing, the device id is set to 0 and may not be accurate");
 				}
 
-				/* looking for Haptic surfaces */
+				simulation::Node *context = dynamic_cast<simulation::Node*>(this->getContext()->getRootContext());
+				vector<sofa::component::visualmodel::OglShader*> CurrentInstrumentShaders;
+				context->getTreeObjects<sofa::component::visualmodel::OglShader>(&CurrentInstrumentShaders);
+								
+				string InstrumentGLSL("instrument.glsl");
+				//sout << "Detected NewOmniDriver:" << sendl;
+				for (unsigned int i = 0; i < CurrentInstrumentShaders.size(); i++)
+				{
+					string InstrumentGLSL("instrument.glsl");
+					if (CurrentInstrumentShaders[i]->fragFilename.getFullPath(0).find(InstrumentGLSL) != std::string::npos)
+					{
+						InstrumentShaders.push_back(CurrentInstrumentShaders[i]);
+					}
+				}
 
+				/* looking for Haptic surfaces */
 				std::vector<core::CollisionModel*> modelVeinSurfaces;
 				std::vector<core::CollisionModel*> modelCurveSurfaces;
 				std::vector<core::CollisionModel*> SafetySurfaces;
@@ -196,9 +211,9 @@ namespace sofa
 				if (detectionNP == NULL) warnings.append("NarrowPhaseDetection not found");
 
 				std::string path = sofa::helper::system::DataRepository.getFirstPath();
-				sout << "get first path:" << path<<std::endl;
-				base_path_share = path.substr(0, path.find("examples"));// .append("share");
-				sout << "base_path_share" << base_path_share << std::endl;			
+				//std::cout << "get first path:" << path<<std::endl;
+				base_path_share = path.substr(0, path.find("examples")).append("share");
+				//std::cout << "base_path_share" << base_path_share << std::endl;			
 
 				if (programStartDate.compare("") == 0) //only initilize this once
 				{
@@ -217,8 +232,7 @@ namespace sofa
 				//std::string screenshotsFolder = std::string("explorer " + base_path_share);
 				//std::string screenshotsFolder =  "explorer C:\\Users\\Ruiliang\\Academics\\SOFA\\TipsSofa1612\\src\\share\\TIPS_screenshot";
 				//system(screenshotsFolder.c_str()); //system() only works for "\\" format
-				//std::cout << "screenshotsFolder:" << endl;
-
+				//std::cout << "screenshotsFolder:" << screenshotsFolder << endl;
 			}
 
 
@@ -249,11 +263,8 @@ namespace sofa
 						capture.saveScreen(out,5);
 						if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
 						 {
-						 string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";						 
-						 string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
 						 hasInstrumentTurnedGreen = true;
-						 updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-						 search_string, replace_string);
+						 SetInstrumentColor(0, 1, 0);
 						 last_update_time = this->getContext()->getTime();
 						 hasPutInBag = true;
 						 }
@@ -267,8 +278,11 @@ namespace sofa
 				std::cout << "numOfElementsCutonFat: " << numOfElementsCutonFat - numOfElementsCutonVeins << std::endl;
 
 				//UF - DS TODO FIX GUI
-				scoring = new SofaProcedureReport(NULL);
-				scoring->populate(login->studentName);
+				//RealGUI* realGUI = dynamic_cast<RealGUI*>(GUIManager::getGUI());
+				//realGUI->populateReport(programStartDate);
+				//realGUI->showReport();
+				//SofaProcedureReport* scoring = new SofaProcedureReport();
+				scoring->populate();
 				scoring->show();
 			}
 
@@ -522,11 +536,8 @@ namespace sofa
 							{
 								if (!hasInstrumentTurnedRed)
 								{
-									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-									string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 									hasInstrumentTurnedRed = true;
-									updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-										search_string, replace_string);
+									SetInstrumentColor(1, 0, 0);
 									last_update_time = this->getContext()->getTime();
 								}
 
@@ -570,11 +581,8 @@ namespace sofa
 							}
 							if (!hasInstrumentTurnedRed)
 							{
-								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 								hasInstrumentTurnedRed = true;
-								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-									search_string, replace_string);								
+								SetInstrumentColor(1, 0, 0);
 								last_update_time = this->getContext()->getTime();
 							}				
 							continue; // skip this element of safety surface
@@ -594,11 +602,8 @@ namespace sofa
 							}
 							if (!hasInstrumentTurnedRed)
 							{
-								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 								hasInstrumentTurnedRed = true;
-								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-									search_string, replace_string);
+								SetInstrumentColor(1, 0, 0);
 								last_update_time = this->getContext()->getTime();
 							}			
 							continue; // skip this element of safety surface
@@ -618,11 +623,8 @@ namespace sofa
 							//cout << "vein_clips_map[surf->getName()].size():" << vein_clips_map[surf->getName()].size() << endl;
 							if (!hasInstrumentTurnedRed )
 							{
-								string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 								hasInstrumentTurnedRed = true;
-								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-									search_string, replace_string);
+								SetInstrumentColor(1, 0, 0);
 								last_update_time = this->getContext()->getTime();
 							}
 							mistatkeTolerance--;
@@ -674,11 +676,8 @@ namespace sofa
 								{
 									if (!hasInstrumentTurnedRed)
 									{
-										string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-										string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 										hasInstrumentTurnedRed = true;
-										updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-											search_string, replace_string);
+										SetInstrumentColor(1, 0, 0);
 										last_update_time = this->getContext()->getTime();
 									}
 									mistatkeTolerance--;
@@ -694,11 +693,8 @@ namespace sofa
 								{
 									if (!hasInstrumentTurnedRed)
 									{
-										string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-										string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 										hasInstrumentTurnedRed = true;
-										updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-											search_string, replace_string);
+										SetInstrumentColor(1, 0, 0);
 										last_update_time = this->getContext()->getTime();
 									}
 									mistatkeTolerance--;
@@ -715,11 +711,8 @@ namespace sofa
 								{
 									if (!hasInstrumentTurnedGreen && !hasInstrumentTurnedRed)
 									{
-										string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-										string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
 										hasInstrumentTurnedGreen = true;
-										updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-											search_string, replace_string);
+										SetInstrumentColor(0, 1, 0);
 										last_update_time = this->getContext()->getTime();
 									}
 									achievementsCount++;
@@ -1238,6 +1231,7 @@ namespace sofa
 				//	}					
 				//}
 				//cout << "toolState.id = " << toolState.id << endl;
+				
 				unsigned char newButtonState = toolState.newButtonState;
 				const unsigned char FIRST = 1, SECOND = 2;
 				keyDown = false;
@@ -1366,11 +1360,8 @@ namespace sofa
 							{
 								if (!hasInstrumentTurnedRed)
 								{
-									string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-									string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 									hasInstrumentTurnedRed = true;
-									updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-										search_string, replace_string);
+									SetInstrumentColor(1, 0, 0);
 									last_update_time = this->getContext()->getTime();
 								}
 								mistatkeTolerance--;
@@ -1443,10 +1434,7 @@ namespace sofa
 					if (this->getContext()->getTime() - last_update_time >= 0.2)
 					{
 						hasInstrumentTurnedRed = false;
-						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-						string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
-						updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-							replace_string, search_string);
+						SetInstrumentColor(0, 0, 0);
 					}
 					
 				}
@@ -1454,10 +1442,7 @@ namespace sofa
 				{
 					if (this->getContext()->getTime() - last_update_time >= 0.1)
 					{
-						string search_string = "vec3 boundaryColor = vec3( 0., 0., 0. );";
-						string replace_string = "vec3 boundaryColor = vec3( 0., 1., 0. );";
-						updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-							replace_string, search_string);
+						SetInstrumentColor(0, 0, 0);
 						hasInstrumentTurnedGreen = false;
 						//Sleep(400);
 						if (hasPutInBag){
@@ -1469,45 +1454,45 @@ namespace sofa
 				updateTool();
 			}
 
-			int HapticManager::updateShader(string Input, string Output, string searchstring, string replacestring)
-			{
-				string temp_share_path = base_path_share;
-				string input = temp_share_path.append(Input);
-				temp_share_path = base_path_share;
-				string output = temp_share_path.append(Output);
-				std::cout << "input and output path: " << input << "  " << output << std::endl;
-				string search_string = searchstring;
-				string replace_string = replacestring;
-				string inbuf;
-				fstream input_file(input, ios::in);
-				ofstream output_file(output);
-				while (!input_file.eof())
-				{
-					getline(input_file, inbuf);
+			//int HapticManager::updateShader(string Input, string Output, string searchstring, string replacestring)
+			//{
+			//	string temp_share_path = base_path_share;
+			//	string input = temp_share_path.append(Input);
+			//	temp_share_path = base_path_share;
+			//	string output = temp_share_path.append(Output);
+			//	//std::cout << "input and output path: " << input << "  " << output << std::endl;
+			//	string search_string = searchstring;
+			//	string replace_string = replacestring;
+			//	string inbuf;
+			//	fstream input_file(input, ios::in);
+			//	ofstream output_file(output);
+			//	while (!input_file.eof())
+			//	{
+			//		getline(input_file, inbuf);
 
-					int spot = inbuf.find(search_string);
-					if (spot >= 0)
-					{
-						string tmpstring = inbuf.substr(0, spot);
-						tmpstring += replace_string;
-						tmpstring += inbuf.substr(spot + search_string.length(), inbuf.length());
-						inbuf = tmpstring;
-					}
-					output_file << inbuf << endl;
-				}
-				input_file.close();
-				output_file.close();
-				int resultRem = remove(input.c_str());
-				if (resultRem != 0)
-					perror("Error removing file");
-				int resultRen = rename(output.c_str(), input.c_str());
-				if (resultRen != 0)
-					perror("Error renaming file");
-				if (resultRem == 0 && resultRen == 0)
-					return 1;
-				else
-					return 0;
-			}
+			//		int spot = inbuf.find(search_string);
+			//		if (spot >= 0)
+			//		{
+			//			string tmpstring = inbuf.substr(0, spot);
+			//			tmpstring += replace_string;
+			//			tmpstring += inbuf.substr(spot + search_string.length(), inbuf.length());
+			//			inbuf = tmpstring;
+			//		}
+			//		output_file << inbuf << endl;
+			//	}
+			//	input_file.close();
+			//	output_file.close();
+			//	int resultRem = remove(input.c_str());
+			//	if (resultRem != 0)
+			//		perror("Error removing file");
+			//	int resultRen = rename(output.c_str(), input.c_str());
+			//	if (resultRen != 0)
+			//		perror("Error renaming file");
+			//	if (resultRem == 0 && resultRen == 0)
+			//		return 1;
+			//	else
+			//		return 0;
+			//}
 
 			int HapticManager::hasBeenCut(std::string name)
 			{
@@ -1517,6 +1502,15 @@ namespace sofa
 				}
 				return 0;
 			}
+
+			void HapticManager::SetInstrumentColor(float R, float G, float B)
+			{
+				for (int Iter = 0; Iter < InstrumentShaders.size(); Iter++)
+				{
+					InstrumentShaders[Iter]->setFloat3(0, "boundaryColor", R, G, B);
+				}
+			}
+
 			/*int isCutBetweenClips()
 			{
 			int nbS = 0, nbL = 0, nbE = 0;

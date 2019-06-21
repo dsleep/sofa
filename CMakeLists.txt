@@ -125,6 +125,14 @@ endif()
 
 ### Windows config
 if(MSVC)
+	set(CMAKE_DEBUGGABLE_RELEASE true CACHE BOOL "Debuggable Release")
+
+	if(CMAKE_DEBUGGABLE_RELEASE)
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" CACHE STRING "" FORCE)
+		set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF" CACHE STRING "" FORCE)
+	endif()
+
+
     #define BOOST_ALL_DYN_LINK needed for dynamic linking with boost libraries
     add_definitions(-DBOOST_ALL_DYN_LINK)
 

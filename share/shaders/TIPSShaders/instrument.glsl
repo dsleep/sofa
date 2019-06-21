@@ -17,7 +17,7 @@ void main()
 #ifdef FragmentShader //------------------------------------
 varying vec3 normal;
 varying vec3 lightDir;
-vec3 boundaryColor = vec3( 0., 0., 0. );
+uniform vec3 boundaryColor = vec3( 0., 0., 0. );
 void main()
 {
 	vec3 NNormal = normalize( normal );

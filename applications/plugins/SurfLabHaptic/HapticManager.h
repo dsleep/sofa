@@ -57,6 +57,8 @@
 #include <SofaBaseTopology/EdgeSetTopologyModifier.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <SofaLoader/MeshObjLoader.h>
+#include <SofaOpenglVisual/OglShader.h>
+
 #include <SofaMeshCollision/TriangleModel.h>
 #include <SofaMeshCollision/LineModel.h>
 #include <SofaMeshCollision/PointModel.h>
@@ -169,6 +171,7 @@ namespace sofa
 				} toolState;
 
 				std::vector<core::CollisionModel*> modelSurfaces;
+				std::vector<sofa::component::visualmodel::OglShader*> InstrumentShaders;
 				core::collision::Intersection* intersectionMethod;
 				core::collision::NarrowPhaseDetection* detectionNP;
 				//sofa::component::topology::TriangleSetTopologyContainer* mesh;
@@ -226,7 +229,7 @@ namespace sofa
 				
 				//updateShader is used for replace a string in shader file, it will replace 
 				//the searchstring from the input file to be the replacestring of the output file
-				int updateShader(std::string Input, std::string Output, std::string searchstring, std::string replacestring);
+				//int updateShader(std::string Input, std::string Output, std::string searchstring, std::string replacestring);
 				static std::string base_path_share ;
 				bool hasInstrumentTurnedRed = false;
 				bool hasInstrumentTurnedGreen = false;
@@ -235,6 +238,8 @@ namespace sofa
 				static int achievementsCount;
 				int hasBeenCut(std::string name);//check if a collision model has been cut or not, return 1 for yes, 0 for no.
 				
+
+				void SetInstrumentColor(float R, float G, float B);
 			};
 
 		} // namespace collision
