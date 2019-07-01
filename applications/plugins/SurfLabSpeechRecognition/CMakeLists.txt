@@ -21,7 +21,7 @@ find_package(SofaGeneral REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${README_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_SURFLABSPEECHRECOGNITION")
-target_link_libraries(${PROJECT_NAME} SofaComponentGeneral ${CMAKE_CURRENT_SOURCE_DIR}/sphinxlib/SphinxLib.lib)
+target_link_libraries(${PROJECT_NAME} SofaComponentGeneral ${CMAKE_CURRENT_SOURCE_DIR}/sphinxlib/SphinxLib.lib ${Boost_LIBRARIES})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/.." 
 	${CMAKE_CURRENT_SOURCE_DIR}/sphinxlib 
 	${CMAKE_CURRENT_SOURCE_DIR}/sphinxlib/sphinxbase
