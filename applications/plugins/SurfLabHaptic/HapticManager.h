@@ -86,8 +86,7 @@
 //#include <ctime>
 //#include <chrono>
 #include "report.h"
-//#include "report.cpp"
-
+#include "surflablogin.h"
 namespace sofa
 {
     
@@ -100,7 +99,7 @@ namespace sofa
 
 			//Changes for force feedback safety
 			class ForceFeedback;
-
+			
 			class SOFA_SURFLABHAPTIC_API HapticManager : public sofa::component::controller::Controller, sofa::core::visual::VisualModel
 			{
 			public:
@@ -135,9 +134,12 @@ namespace sofa
 				SingleLink<HapticManager, ToolModel, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> toolModel;
 				/* we need a link to the omni driver just so we can get the proper ID */
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
-
-                double time_init;
-				sofa::gui::qt::SofaProcedureReport* scoring = new sofa::gui::qt::SofaProcedureReport(NULL);
+				
+				sofa::gui::qt::SofaProcedureReport* scoring;// = new sofa::gui::qt::SofaProcedureReport(NULL);
+				sofa::gui::qt::SurfLabLogin* login;// = new sofa::gui::qt::SurfLabLogin(NULL);
+                
+				double time_init;
+				
 			protected:
 				enum ToolFunction {
                     //TOOLFUNCTION_ANIMATE,

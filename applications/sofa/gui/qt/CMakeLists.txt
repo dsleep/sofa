@@ -25,6 +25,7 @@ set(MOC_HEADER_FILES
     QTransformationWidget.h
     RealGUI.h
 	report.h
+	surflablogin.h
     SimpleDataWidget.h
     SofaMouseManager.h
     SofaVideoRecorderManager.h
@@ -81,6 +82,7 @@ set(SOURCE_FILES
     SofaPluginManager.cpp
     SofaVideoRecorderManager.cpp
     StructDataWidget.cpp
+	surflablogin.cpp
     TableDataWidget.cpp
     WDoubleLineEdit.cpp
     viewer/SofaViewer.cpp
@@ -94,6 +96,7 @@ set(UI_FILES
     MouseManager.ui
     PluginManager.ui
 	report.ui
+	surflablogin.ui
     VideoRecorderManager.ui
 )
 

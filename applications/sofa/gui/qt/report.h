@@ -41,12 +41,12 @@ namespace qt
 
     // +++++ File path modifications
     std::string path = sofa::helper::system::DataRepository.getFirstPath();
-    std::string base_path_share = path.substr(0, path.find("examples")).append("share/TIPS_screenshot");
+    std::string base_path_share = path.substr(0, path.find("examples")).append("/TIPS_screenshot");
     QFont font;
 
 public:
     SofaProcedureReport(QWidget* parent = 0);
-	void populate();
+	void populate(QString studentName);
 	~SofaProcedureReport();
 };
 

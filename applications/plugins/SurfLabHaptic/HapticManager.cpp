@@ -23,15 +23,12 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include "HapticManager.h"
-#include "GUIManager.h"
-#include "BaseGUI.h"
-#include "RealGUI.h"
 #include "report.h"
-//#include "report.cpp"
-using sofa::gui::GUIManager;
-using sofa::gui::BaseGUI;
-using sofa::gui::qt::RealGUI;
+#include "surflablogin.h"
+
 using sofa::gui::qt::SofaProcedureReport;
+
+using sofa::gui::qt::SurfLabLogin;
 bool usingAA = false;
 #define int2string(a) std::to_string(a)
 using namespace std;
@@ -69,12 +66,15 @@ namespace sofa
 				, clampMesh(initData(&clampMesh, "mesh/cube.obj", "clampMesh", " Path to the clipper model"))
 			{
 				this->f_listening.setValue(true);
-
 				//std::cout << "haptic manager construction" << std::endl;
+				login = new SurfLabLogin(NULL);
+				login->show();
 			}
 
 			HapticManager::~HapticManager()
 			{
+				delete scoring;
+				delete login;
 			}
 
 			void HapticManager::init()
@@ -196,9 +196,9 @@ namespace sofa
 				if (detectionNP == NULL) warnings.append("NarrowPhaseDetection not found");
 
 				std::string path = sofa::helper::system::DataRepository.getFirstPath();
-				//std::cout << "get first path:" << path<<std::endl;
-				base_path_share = path.substr(0, path.find("examples")).append("share");
-				//std::cout << "base_path_share" << base_path_share << std::endl;			
+				sout << "get first path:" << path<<std::endl;
+				base_path_share = path.substr(0, path.find("examples"));// .append("share");
+				sout << "base_path_share" << base_path_share << std::endl;			
 
 				if (programStartDate.compare("") == 0) //only initilize this once
 				{
@@ -217,7 +217,8 @@ namespace sofa
 				//std::string screenshotsFolder = std::string("explorer " + base_path_share);
 				//std::string screenshotsFolder =  "explorer C:\\Users\\Ruiliang\\Academics\\SOFA\\TipsSofa1612\\src\\share\\TIPS_screenshot";
 				//system(screenshotsFolder.c_str()); //system() only works for "\\" format
-				//std::cout << "screenshotsFolder:" << screenshotsFolder << endl;
+				//std::cout << "screenshotsFolder:" << endl;
+
 			}
 
 
@@ -266,11 +267,8 @@ namespace sofa
 				std::cout << "numOfElementsCutonFat: " << numOfElementsCutonFat - numOfElementsCutonVeins << std::endl;
 
 				//UF - DS TODO FIX GUI
-				//RealGUI* realGUI = dynamic_cast<RealGUI*>(GUIManager::getGUI());
-				//realGUI->populateReport(programStartDate);
-				//realGUI->showReport();
-				//SofaProcedureReport* scoring = new SofaProcedureReport();
-				scoring->populate();
+				scoring = new SofaProcedureReport(NULL);
+				scoring->populate(login->studentName);
 				scoring->show();
 			}
 
@@ -576,7 +574,7 @@ namespace sofa
 								string replace_string = "vec3 boundaryColor = vec3( 1., 0., 0. );";
 								hasInstrumentTurnedRed = true;
 								updateShader("\\shaders\\TIPSShaders\\instrument.glsl", "\\shaders\\TIPSShaders\\outinstrument.glsl",
-									search_string, replace_string);
+									search_string, replace_string);								
 								last_update_time = this->getContext()->getTime();
 							}				
 							continue; // skip this element of safety surface
@@ -1477,7 +1475,7 @@ namespace sofa
 				string input = temp_share_path.append(Input);
 				temp_share_path = base_path_share;
 				string output = temp_share_path.append(Output);
-				//std::cout << "input and output path: " << input << "  " << output << std::endl;
+				std::cout << "input and output path: " << input << "  " << output << std::endl;
 				string search_string = searchstring;
 				string replace_string = replacestring;
 				string inbuf;
