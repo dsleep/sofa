@@ -27,7 +27,7 @@
 #include <sofa/core/objectmodel/MouseEvent.h>
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 #include <sofa/core/objectmodel/KeyreleasedEvent.h>
-
+#include <sofa/core/objectmodel/HapticDeviceEvent.h>
 
 #include <sofa/core/objectmodel/IdleEvent.h>
 using sofa::core::objectmodel::IdleEvent ;
@@ -181,6 +181,16 @@ void ScriptController::handleEvent(core::objectmodel::Event *event)
 void ScriptController::draw(const core::visual::VisualParams* vis)
 {
     script_draw(vis);
+}
+
+//UF - DS
+void ScriptController::onHapticDeviceEvent(sofa::core::objectmodel::HapticDeviceEvent* e)
+{
+	int deviceID = e->getDeviceId();
+	int deviceState = e->getButtonState();
+	sofa::defaulttype::Vector3 pos = e->getPosition();
+
+	script_onHapticDeviceEvent(deviceID, deviceState, pos);
 }
 
 } // namespace controller

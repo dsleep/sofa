@@ -434,6 +434,28 @@ static PyObject * PythonScriptController_onMouseMove(PyObject * /*self*/, PyObje
     Py_RETURN_NONE;
 }
 
+//UF - DS
+static PyObject * PythonScriptController_onHaptic(PyObject * self, PyObject * args)
+{
+	(void)args; (void)self;
+
+	int d, e;
+	float x, y, z;
+	if (!PyArg_ParseTuple(args, "iifff", &d, &e, &x, &y, &z))
+	{
+		PyErr_BadArgument();
+		Py_RETURN_NONE;
+	}
+
+
+#ifdef LOG_UNIMPLEMENTED_METHODS
+	PythonScriptController* obj = dynamic_cast<PythonScriptController*>(((PySPtr<Base>*)self)->object.get());
+	std::cerr << obj->m_classname.getValueString() << ".onHaptic not implemented in " << obj->name.getValueString() << std::endl;
+#endif
+
+	Py_RETURN_NONE;
+}
+
 
 SP_CLASS_METHODS_BEGIN(PythonScriptController)
 SP_CLASS_METHOD(PythonScriptController,onLoaded)
@@ -457,6 +479,8 @@ SP_CLASS_METHOD(PythonScriptController,onScriptEvent)
 SP_CLASS_METHOD(PythonScriptController,draw)
 SP_CLASS_METHOD(PythonScriptController,onIdle)
 SP_CLASS_METHOD(PythonScriptController,instance)
+//UF - DS
+SP_CLASS_METHOD(PythonScriptController,onHaptic)
 SP_CLASS_METHODS_END
 
 

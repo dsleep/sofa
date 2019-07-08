@@ -148,6 +148,9 @@ public:
      */
     void draw(const core::visual::VisualParams*) override ;
 
+	//UF - DS
+	virtual void onHapticDeviceEvent(sofa::core::objectmodel::HapticDeviceEvent*) override;
+
 protected:
     /// @name Script interface
     ///   Function that need to be implemented for each script language
@@ -192,6 +195,9 @@ protected:
 
     /// Idle event is sent a regular interval from the host application
     virtual void script_onIdleEvent(const sofa::core::objectmodel::IdleEvent* event) = 0;
+
+	//UF - DS
+	virtual void script_onHapticDeviceEvent(const int deviceID, const int deviceState, const sofa::defaulttype::Vector3 &pos) = 0;
 
     /// @}
 

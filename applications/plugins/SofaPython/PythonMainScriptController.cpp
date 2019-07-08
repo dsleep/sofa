@@ -113,6 +113,9 @@ void PythonMainScriptController::loadScript()
     BIND_SCRIPT_FUNC_WITH_MESSAGE(draw)
     BIND_SCRIPT_FUNC_WITH_MESSAGE(onIdle)
 
+	//UF - DS
+	BIND_SCRIPT_FUNC_WITH_MESSAGE(onHaptic)
+
     #undef BIND_SCRIPT_FUNC_WITH_MESSAGE
 
     msg_info() << msg.str();
@@ -255,6 +258,13 @@ void PythonMainScriptController::script_draw(const VisualParams*)
 void PythonMainScriptController::script_onMouseMove(const int posX,const int posY)
 {
      SP_CALL_FILEFUNC(const_cast<char*>("onMouseMove"),const_cast<char*>("(ii)"), posX,posY)
+}
+
+//UF - DS
+void PythonMainScriptController::script_onHapticDeviceEvent(const int deviceID, const int deviceState, const sofa::defaulttype::Vector3 &pos)
+{
+	PythonEnvironment::gil lock(__func__);
+	SP_CALL_MODULEFUNC(m_Func_onHaptic, "(iifff)", deviceID, deviceState, pos.at(0), pos.at(1), pos.at(2))
 }
 
 void PythonMainScriptController::handleEvent(Event *event)

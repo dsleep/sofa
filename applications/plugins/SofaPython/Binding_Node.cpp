@@ -91,11 +91,70 @@ static PyObject * Node_reset(PyObject * self, PyObject * /*args*/) {
 /// init a node
 static PyObject * Node_init(PyObject * self, PyObject * /*args*/) {
     Node* node = get_node(self);
-
+	
     node->init(ExecParams::defaultInstance());
 
     Py_RETURN_NONE;
 }
+
+//UF - DS
+static PyObject * Node_setActive(PyObject * self, PyObject *args) {
+	Node* node = get_node(self);
+
+	int IsActive = 0;
+	if (!PyArg_ParseTuple(args, "d", &IsActive)) {
+		return NULL;
+	}
+	
+	node->setActive(IsActive != 0);
+
+	Py_RETURN_NONE;
+}
+
+//UF - DS
+void discoverChildNodes(sofa::helper::vector< BaseNode* > &oChildren, BaseNode* n, const TagSet& tags)
+{
+	sofa::helper::vector< BaseNode* > children = n->getChildren();
+	for (size_t i = 0; i < children.size(); i++)
+	{
+		if (children[i]->getTags().includes(tags))
+		{
+			oChildren.push_back(children[i]);
+		}
+		discoverChildNodes(oChildren, children[i], tags);
+	}
+}
+
+/*
+  arguments:
+  self: a Node object
+  tags: a list of tags
+
+  return:
+	an array of nodes
+*/
+static PyObject * Node_findChildNodes(PyObject * self, PyObject *args) 
+{
+	Node* node = get_node(self);
+
+	char *Tags;
+	if (!PyArg_ParseTuple(args, "s", &Tags)) {
+		return NULL;
+	}
+
+	TagSet tags;
+	tags.insert(Tag(std::string(Tags)));
+	sofa::helper::vector< BaseNode* > children;
+	discoverChildNodes(children, node, tags);
+		
+	PyObject *list = PyList_New(children.size());
+	for (unsigned i = 0; i < children.size(); ++i) {
+		PyList_SetItem(list, i, sofa::PythonFactory::toPython(children[i]));
+	}
+
+	return list;
+}
+
 
 static PyObject * Node_getChild(PyObject * self, PyObject * args, PyObject * kw) {
     /// BaseNode is not bound in SofaPython, so getChildNode is bound in Node
@@ -590,6 +649,10 @@ SP_CLASS_METHOD(Node, propagatePositionAndVelocity)
 SP_CLASS_METHOD(Node, isInitialized)
 SP_CLASS_METHOD(Node, printGraph)
 SP_CLASS_METHOD(Node,getAsACreateObjectParameter)
+//UF - DS
+SP_CLASS_METHOD(Node, setActive)
+SP_CLASS_METHOD(Node, findChildNodes)
+
 SP_CLASS_METHODS_END
 
 SP_CLASS_TYPE_SPTR_GETATTR(Node, Node, Context)
