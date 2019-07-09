@@ -35,6 +35,15 @@ void SurfLabLogin::on_ButtonBox_clicked(QAbstractButton *button)
         ui->name->clear();
     }
 }
+SurfLabLogin* SurfLabLogin::getInstance()
+{
+	/*if (!instance)
+		instance = new SurfLabLogin(NULL);
+	return instance;*/
+
+	static SurfLabLogin instance;
+	return &instance;
+}
 }
 }
 }

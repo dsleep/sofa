@@ -137,9 +137,7 @@ namespace sofa
 				/* we need a link to the omni driver just so we can get the proper ID */
 				SingleLink<HapticManager, sofa::core::behavior::BaseController, BaseLink::FLAG_STOREPATH | BaseLink::FLAG_STRONGLINK> omniDriver;
 				
-				sofa::gui::qt::SofaProcedureReport* scoring;// = new sofa::gui::qt::SofaProcedureReport(NULL);
-				sofa::gui::qt::SurfLabLogin* login;// = new sofa::gui::qt::SurfLabLogin(NULL);
-                
+				
 				double time_init;
 				
 			protected:
@@ -199,6 +197,10 @@ namespace sofa
 				static std::string programCompletionTime;
 				static int numOfElementsCutonVeins;
 				static int numOfElementsCutonFat;
+				//TODO Make both of the below singleton classes if at all possible
+				sofa::gui::qt::SofaProcedureReport* scoring = new sofa::gui::qt::SofaProcedureReport(NULL);
+				sofa::gui::qt::SurfLabLogin* login = sofa::gui::qt::SurfLabLogin::getInstance();
+
 			private:
 				void updateTool();
 				void doContain();

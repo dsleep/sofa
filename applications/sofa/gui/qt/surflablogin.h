@@ -28,11 +28,13 @@ public:
     QString studentEmail;
     QString studentName;
     QString destinationEmail;
-
+	//static SurfLabLogin* instance;
+	static SurfLabLogin* getInstance();
 private slots:
 
     void on_ButtonBox_clicked(QAbstractButton *button);
 };
+	//SurfLabLogin* SurfLabLogin::instance = 0;
 }
 }
 }

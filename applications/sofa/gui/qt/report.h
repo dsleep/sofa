@@ -28,6 +28,7 @@ namespace qt
 
     int errCount = 0;
     int errCountThisTime = 0;
+	int succCountThisTime = 0;
     int succCount = 0;
     QString student = "Student";//system username
     QString sessionNum = "sessionNum";
@@ -38,6 +39,7 @@ namespace qt
     QStringList succList;
     std::string errString ="";
     std::string programStartDate = "";
+	std::string report_filename = "";
 
     // +++++ File path modifications
     std::string path = sofa::helper::system::DataRepository.getFirstPath();
@@ -46,10 +48,12 @@ namespace qt
 
 public:
     SofaProcedureReport(QWidget* parent = 0);
-	void populate(QString studentName);
+	void populate(QString studentName, std::string programStartDate);
+	void emailReport(std::string studentEmail, std::string mentorEmail);
+	void prepareReportEmail(std::string studentEmail);
 	~SofaProcedureReport();
 };
-
+	//SofaProcedureReport* SofaProcedureReport::instance = 0;
 }
 }
 }
