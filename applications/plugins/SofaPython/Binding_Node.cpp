@@ -94,6 +94,9 @@ static PyObject * Node_init(PyObject * self, PyObject * /*args*/) {
 	
     node->init(ExecParams::defaultInstance());
 
+	//UF - DS reset the opengl shaders for our nodes
+	getSimulation()->initTextures(node);
+
     Py_RETURN_NONE;
 }
 
@@ -102,7 +105,7 @@ static PyObject * Node_setActive(PyObject * self, PyObject *args) {
 	Node* node = get_node(self);
 
 	int IsActive = 0;
-	if (!PyArg_ParseTuple(args, "d", &IsActive)) {
+	if (!PyArg_ParseTuple(args, "i", &IsActive)) {
 		return NULL;
 	}
 	

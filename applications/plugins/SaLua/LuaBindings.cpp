@@ -199,6 +199,10 @@ int Node_init(lua_State* L)
 {
     Node *o = toSOFAObject<Node>(L, 1);
     o->init(sofa::core::ExecParams::defaultInstance());
+
+	//UF - DS reset the opengl shaders for our nodes
+	getSimulation()->initTextures(o);
+
     return 0;
 }
 

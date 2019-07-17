@@ -170,7 +170,7 @@ namespace sofa
 				context->getTreeObjects<sofa::component::visualmodel::OglShader>(&CurrentInstrumentShaders);
 								
 				string InstrumentGLSL("instrument.glsl");
-				//sout << "Detected NewOmniDriver:" << sendl;
+				InstrumentShaders.clear();
 				for (unsigned int i = 0; i < CurrentInstrumentShaders.size(); i++)
 				{
 					string InstrumentGLSL("instrument.glsl");
@@ -371,7 +371,6 @@ namespace sofa
 
 			void HapticManager::drawVisual(const core::visual::VisualParams* vparams)
 			{
-
 				if (!vparams->displayFlags().getShowVisualModels()) return;
 				//core::visual::tristate showCLS(true);
 				//vparams->displayFlags().setShowCollisionModels();//How to use this...struggling

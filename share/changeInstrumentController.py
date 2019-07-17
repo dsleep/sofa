@@ -1,8 +1,5 @@
 import Sofa
 import sys
-from collections import namedtuple
-
-HapticInstrument = namedtuple('HapticInstrument', 'activated node currentInstrument instrumentNodes')
 
 class ChangeInstrumentController(Sofa.PythonScriptController):
 
@@ -22,11 +19,14 @@ class ChangeInstrumentController(Sofa.PythonScriptController):
 		for child in childrenNodes:
 		
 			InstrumentChildren = child.findChildNodes('instrument')
-			currentHaptic = HapticInstrument( activated = False, node = child, currentInstrument = 0, instrumentNodes = InstrumentChildren )		
+			currentHaptic = { "activated" : False, "node" : child, "currentInstrument" : 0, "instrumentNodes" : InstrumentChildren }
 			
 			i = 0
-			for hapticChild in currentHaptic.instrumentNodes:
-				hapticChild.setActive(i == 0)
+			for hapticChild in currentHaptic["instrumentNodes"]:
+				if i == 0:
+					hapticChild.setActive(1)
+				else:
+					hapticChild.setActive(0)
 				print('ChangeInstrumentController: initGraph: Instrument: ' + hapticChild.name)
 				i += 1
 			
@@ -35,27 +35,28 @@ class ChangeInstrumentController(Sofa.PythonScriptController):
 		sys.stdout.flush()		
 		return 0			
 
-	def changeInstrument(inHaptic):
-		inHaptic.instrumentNodes[inHaptic.currentInstrument].setActive(0)
-		inHaptic.currentInstrument = (inHaptic.currentInstrument+1)%len(inHaptic.currentInstrument)		
-		print('Changing instrument TO: ' + inHaptic.node.name + 'Instr: ' + inHaptic.instrumentNodes[h.currentInstrument].name)
-		inHaptic.haptics[inHaptic.currentInstrument].setActive(1)
-		inHaptic.haptics[inHaptic.currentInstrument].init()	
+	def changeInstrument(self, inHaptic):					
+		inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].setActive(0)
+		inHaptic["currentInstrument"] = (inHaptic["currentInstrument"]+1)%len(inHaptic["instrumentNodes"])		
+		print('Changing instrument TO: ' + inHaptic["node"].name + 'Instr: ' + inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].name)
+		inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].setActive(1)
+		inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].init()	
 		return 0		
 	
-	def IsValidIndex(Array,idx):
+	def IsValidIndex(self,Array,idx):
 		if idx >= 0 and idx < len(Array):
 			return True
 		else:	
 			return False		
 			
-	def changeInstrumentTo(inHaptic, Idx):
-		if inHaptic.currentInstrument != Idx and IsValidIndex(inHaptic.instrumentNodes, Idx ):
-			inHaptic.instrumentNodes[inHaptic.currentInstrument].setActive(0)
-			inHaptic.currentInstrument = Idx
-			print('Changing instrument TO: ' + inHaptic.node.name + 'Instr: ' + inHaptic.instrumentNodes[h.currentInstrument].name)
-			inHaptic.haptics[inHaptic.currentInstrument].setActive(1)
-			inHaptic.haptics[inHaptic.currentInstrument].init()	
+	def changeInstrumentTo(self, inHaptic, Idx):
+		print('changeInstrumentTo')
+		if inHaptic["currentInstrument"] != Idx and self.IsValidIndex(inHaptic["instrumentNodes"], Idx ):
+			inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].setActive(0)
+			inHaptic["currentInstrument"] = Idx
+			print('Changing instrument TO: ' + inHaptic["node"].name + 'Instr: ' + inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].name)
+			inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].setActive(1)
+			inHaptic["instrumentNodes"][inHaptic["currentInstrument"]].init()	
 		else:
 			print('Instrument already changed')
 			
@@ -65,14 +66,14 @@ class ChangeInstrumentController(Sofa.PythonScriptController):
 	# key and mouse events; use this to add some user interaction to your scripts 
 	def onKeyPressed(self,k):
 	
-		if c == 'C':
-			if IsValidIndex(0,self.haptics):
+		if k == 'C':
+			if self.IsValidIndex(self.haptics,0):
 				self.changeInstrument(self.haptics[0])		
-		elif c == 'V':
-			if IsValidIndex(1,self.haptics):
+		elif k == 'V':
+			if self.IsValidIndex(self.haptics,1):
 				self.changeInstrument(self.haptics[1])				
 				
-		print 'onKeyPressed '+k
+		print 'onKeyPressed '+ str(k) + ':' + str(ord('C'))
 		sys.stdout.flush()
 		return 0 
 		
@@ -92,10 +93,10 @@ class ChangeInstrumentController(Sofa.PythonScriptController):
 			self.Tool_Target_1 = d-2;		  
 		elif c == 0 and d == 0 and self.Hp1Down == 1:
 			self.Hp1Down = 0;
-			if IsValidIndex(0,self.haptics) and self.Tool_Target_1>0:
+			if self.IsValidIndex(0,self.haptics) and self.Tool_Target_1>0:
 				self.changeInstrumentTo(self.haptics[0],self.Tool_Target_1)
 				self.Tool_Target_1 = 0
-			elif IsValidIndex(0,self.haptics):
+			elif self.IsValidIndex(0,self.haptics):
 				self.changeInstrument(self.haptics[0])
 				print('xyz:' + px + py + pz)		  
 		elif c == 1 and d >= 1 and d!=2:
@@ -103,7 +104,7 @@ class ChangeInstrumentController(Sofa.PythonScriptController):
 			self.Tool_Target_2 = d-2		
 		elif c == 1 and d == 0 and self.Hp2Down == 1:
 			self.Hp2Down = 0;
-			if IsValidIndex(self.haptics,1) and self.Tool_Target_2>0:
+			if self.IsValidIndex(self.haptics,1) and self.Tool_Target_2>0:
 			  self.changeInstrumentTo(self.haptics[1],self.Tool_Target_2)
 			  self.Tool_Target_2 = 0
 			elif IsValidIndex(self.haptics,1):
