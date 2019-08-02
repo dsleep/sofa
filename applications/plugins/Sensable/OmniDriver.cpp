@@ -69,7 +69,7 @@ static HHD hHD = HD_INVALID_HANDLE ;
 static bool isInitialized = false;
 static HDSchedulerHandle hStateHandle = HD_INVALID_HANDLE;
 
-static sofa::helper::system::atomic<int> doUpdate;
+static std::atomic<int> doUpdate;
 
 void printError(FILE *stream, const HDErrorInfo *error,
         const char *message)
@@ -106,7 +106,7 @@ HDCallbackCode HDCALLBACK stateCallbackOmni(void *userData)
     if(doUpdate)
     {
         copyDeviceDataCallbackOmni(userData);
-        doUpdate.dec(); // set to 0
+        doUpdate.fetch_sub(1); // set to 0
     }
 
 
@@ -188,7 +188,7 @@ HDCallbackCode HDCALLBACK stateCallbackOmni(void *userData)
     // which forcefeedback ?
     ForceFeedback* ff = 0;
     for (int i=0; i<data->forceFeedbacks.size() && !ff; i++)
-        if (data->forceFeedbacks[i]->indice==data->forceFeedbackIndice)
+        if (data->forceFeedbacks[i]->d_indice ==data->forceFeedbackIndice)
             ff = data->forceFeedbacks[i];
 
     if (ff != NULL)
@@ -487,7 +487,7 @@ void OmniDriver::handleEvent(core::objectmodel::Event *event)
         sofa::helper::AdvancedTimer::stepBegin("OmniDriver::1");
         //hdScheduleSynchronous(copyDeviceDataCallbackOmni, (void *) &data, HD_MAX_SCHEDULER_PRIORITY);
 
-        doUpdate.inc(); // set to 1
+        doUpdate.fetch_add(1); // set to 1
         while(doUpdate)
         {
 #ifdef SOFA_HAVE_BOOST
@@ -516,7 +516,7 @@ void OmniDriver::handleEvent(core::objectmodel::Event *event)
                 data.forceFeedbackIndice=currentToolIndex;
                 // which forcefeedback ?
                 for (int i=0; i<data.forceFeedbacks.size(); i++)
-                    if (data.forceFeedbacks[i]->indice==data.forceFeedbackIndice)
+                    if (data.forceFeedbacks[i]->d_indice ==data.forceFeedbackIndice)
                         data.forceFeedbacks[i]->setReferencePosition(world_H_virtualTool);
 
                 /// TODO : SHOULD INCLUDE VELOCITY !!

@@ -27,7 +27,7 @@
 
 #include "initConnectingTissue.h"
 #include <sofa/core/behavior/BaseController.h>
-#include <SofaOpenglVisual/OglModel.h>
+//#include <SofaOpenglVisual/OglModel.h>
 #include <SofaUserInteraction/Controller.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
@@ -41,6 +41,7 @@
 #include <SofaConstraint/BilateralInteractionConstraint.h>
 
 #include <SofaBaseMechanics/BarycentricMappers/BarycentricMapperMeshTopology.h>
+#include <SofaBaseTopology/TriangleSetTopologyContainer.h>
 
 namespace sofa
 {

@@ -157,7 +157,7 @@ namespace sofa
 				{
 					simulation::Node::SPtr node;
 					sofa::component::visualmodel::OglModel::SPtr visu;
-					sofa::component::mapping::RigidMapping< Rigid3dTypes, ExtVec3fTypes  >::SPtr mapping;
+					sofa::component::mapping::RigidMapping< Rigid3dTypes, ExtVec3Types  >::SPtr mapping;
 				};
 
 				Data<double> forceScale;

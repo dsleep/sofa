@@ -96,7 +96,7 @@ namespace sofa
 			bool desktop = false;
 			int compteur_debug = 0;
 
-			static sofa::helper::system::atomic<int> doUpdate;
+			static std::atomic<int> doUpdate;
 
 
 
@@ -571,8 +571,9 @@ namespace sofa
 							visualNode[i].visu->updateVisual();
 
 							// create the visual mapping and at it to the graph //
-							visualNode[i].mapping = sofa::core::objectmodel::New< sofa::component::mapping::RigidMapping< Rigid3dTypes, ExtVec3fTypes > >();
+							visualNode[i].mapping = sofa::core::objectmodel::New< sofa::component::mapping::RigidMapping< Rigid3dTypes, ExtVec3Types > > ();
 							visualNode[i].node->addObject(visualNode[i].mapping);
+							
 							visualNode[i].mapping->setModels(rigidDOF.get(), visualNode[i].visu.get());
 							visualNode[i].mapping->name.setValue("RigidMapping");
 							visualNode[i].mapping->f_mapConstraints.setValue(false);
@@ -600,7 +601,7 @@ namespace sofa
 
 					for (int j = 0; j <= VN_X; j++)
 					{
-						sofa::defaulttype::ResizableExtVector< sofa::defaulttype::Vec<3, float> > &scaleMapping = *(visualNode[j].mapping->points.beginEdit());
+						sofa::defaulttype::ResizableExtVector< sofa::defaulttype::Vec3d > &scaleMapping = *(visualNode[j].mapping->points.beginEdit());
 						for (unsigned int i = 0; i<scaleMapping.size(); i++)
 							scaleMapping[i] *= (float)(1.0*scale.getValue() / 100.0);
 						visualNode[j].mapping->points.endEdit();
@@ -743,7 +744,7 @@ namespace sofa
 						float rapport = ((float)data.scale) / oldScale;
 						for (int j = 0; j<NVISUALNODE; j++)
 						{
-							sofa::defaulttype::ResizableExtVector< sofa::defaulttype::Vec<3, float> > &scaleMapping = *(visualNode[j].mapping->points.beginEdit());
+							sofa::defaulttype::ResizableExtVector< sofa::defaulttype::Vec3d > &scaleMapping = *(visualNode[j].mapping->points.beginEdit());
 							for (unsigned int i = 0; i<scaleMapping.size(); i++)
 								scaleMapping[i] *= rapport;
 							visualNode[j].mapping->points.endEdit();

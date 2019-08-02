@@ -8,6 +8,13 @@ find_package(SofaHaptics REQUIRED)
 find_package(SofaOpenglVisual REQUIRED)
 find_package(SofaGeneral REQUIRED)
 
+find_package(OpenHaptics)
+
+if( NOT OPENHAPTICS_FOUND )
+    message( SEND_ERROR "OpenHaptics library not found, GeomagicDriver cannot compile")
+endif()
+
+
 set(HEADER_FILES
     EnslavementForceFeedback.h
     NewOmniDriver.h
@@ -23,14 +30,17 @@ set(SOURCE_FILES
 
 set(README_FILES PluginSensable.txt)
 
+find_package(SofaGeneral REQUIRED)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
 include_directories(${OPENHAPTICS_INCLUDE_DIR})
 include_directories(${OPENHAPTICS_UTIL_INCLUDE_DIR})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${README_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_SENSABLEPLUGIN")
-target_link_libraries(${PROJECT_NAME} SofaHaptics SofaOpenglVisual ${OPENHAPTICS_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} SofaComponentGeneral SofaHaptics SofaOpenglVisual ${OPENHAPTICS_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
         COMPONENT Sensable_libraries
